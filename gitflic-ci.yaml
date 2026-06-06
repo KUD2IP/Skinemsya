@@ -1,0 +1,50 @@
+# Данный файл - шаблонная конфигурация CI/CD конвейера. Он может быть изменен по Вашему усмотрению. 
+# Некоторые шаблоны требуют предварительной настройки перед запуском.
+#
+# Подробнее о синтаксисе можно узнать в документации:
+# https://docs.gitflic.ru/cicd/gitflic-ci-yaml
+
+variables:
+  # `showDateTime` покажет прошедшее время в миллисекундах. 
+  # Для этого нужно указать `--batch-mode`.
+  MAVEN_OPTS: >-
+    -Dhttps.protocols=TLSv1.2
+    -Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository
+    -Dorg.slf4j.simpleLogger.showDateTime=true
+    -Djava.awt.headless=true
+
+  MAVEN_CLI_OPTS: >-
+    --batch-mode
+    --errors
+    --fail-at-end
+    --show-version
+    --no-transfer-progress
+    -DinstallAtEnd=true
+    -DdeployAtEnd=true
+
+image: maven:3-openjdk-8
+
+# Кеширует скачанные зависимости
+# `mvn deploy` поместит собранный .jar в этот репозиторий. Если размер кеша слишком большой,
+# можно добавить `-Dmaven.install.skip=true` в `MAVEN_OPTS` или в `.mvn/maven.config`
+cache:
+  paths:
+    - .m2/repository
+
+verify:
+  stage: test
+  script:
+    - 'mvn $MAVEN_CLI_OPTS verify'
+  artifacts:
+    reports:
+      junit:
+        paths:
+          - target/surefire-reports/*
+          - target/failsafe-reports/*
+deploy:
+  stage: deploy
+  script:
+    - 'mvn $MAVEN_CLI_OPTS deploy --settings ci_settings.xml'
+  rules:
+    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+      when: manual
