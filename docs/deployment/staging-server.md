@@ -373,5 +373,5 @@ APP_VERSION=manual docker compose -f docker-compose.prod.yml up -d
 ## Ограничения staging
 
 - ~512 MB backend + ~256 MB Postgres — только для проверки.
-- Файлы в MinIO (S3-совместимое хранилище в docker).
+- Файлы в MinIO (S3-совместимое хранилище в docker). На слабых VPS без **x86-64-v2** используется образ `minio/minio:RELEASE.*-cpuv1`, не `latest`.
 - ML-сервис не развёрнут без отдельной настройки `ML_SERVICE_URL`.
