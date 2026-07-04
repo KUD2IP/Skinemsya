@@ -1,7 +1,7 @@
 # Staging на VPS (skinemsya-vse.ru)
 
-Пошаговая инструкция для **пустого Ubuntu 24.04** и деплоя через **GitFlic CI/CD**.  
-Сервер слабый (~1 GB RAM, ~10 GB диск) — стек минимальный: **PostgreSQL + backend + Caddy** (HTTPS и раздача фронта). MinIO и ML-сервис на staging не поднимаем.
+Пошаговая инструкция для **пустого Ubuntu 24.04** и деплоя через **GitHub Actions**.  
+Сервер слабый (~1 GB RAM, ~10 GB диск) — стек минимальный: **PostgreSQL + MinIO + backend + Caddy** (HTTPS и раздача фронта).
 
 ---
 
@@ -115,7 +115,7 @@ sudo chown -R deploy:deploy /opt/skinemsya
 **На своей машине** (не на сервере):
 
 ```bash
-ssh-keygen -t ed25519 -C "gitflic-deploy" -f ~/.ssh/skinemsya_deploy -N ""
+ssh-keygen -t ed25519 -C "github-deploy" -f ~/.ssh/skinemsya_deploy -N ""
 ```
 
 Публичный ключ добавь на сервер:
@@ -138,9 +138,9 @@ ssh -i ~/.ssh/skinemsya_deploy deploy@<IP_СЕРВЕРА>
 
 ### 2.8. Секреты приложения (.env)
 
-**На сервере `.env` вручную не создаётся** — его кладёт job `deploy:staging` из GitFlic (см. часть 4).
+**На сервере `.env` вручную не создаётся** — его кладёт job `deploy-staging` из GitHub Actions (см. часть 4).
 
-Локально подготовь файл по шаблону `deploy/env.production.example` и загрузи в GitFlic одной переменной `STAGING_ENV_FILE`.
+Локально подготовь файл по шаблону `deploy/env.production.example` и добавь в GitHub Secrets.
 
 ---
 
@@ -152,81 +152,76 @@ ssh -i ~/.ssh/skinemsya_deploy deploy@<IP_СЕРВЕРА>
 
 ---
 
-## Часть 4. GitFlic CI/CD variables
+## Часть 4. GitHub Actions secrets
 
-### 4.1. Один файл с секретами приложения
+Репозиторий backend → **Settings → Secrets and variables → Actions → New repository secret**.
 
-1. Скопируй шаблон локально:
-   ```bash
-   cp deploy/env.production.example ~/skinemsya-staging.env
-   nano ~/skinemsya-staging.env
-   ```
-2. В GitFlic → **Settings → CI/CD → Variables** → **Добавить**:
-   - **Ключ:** `STAGING_ENV_FILE`
-   - **Тип:** **Файл** (File)
-   - **Значение:** вставь содержимое `skinemsya-staging.env` (или загрузи файл)
-   - **Masked:** по желанию (для файла обычно не нужно)
+### 4.1. Секреты приложения (один из вариантов)
 
-Pipeline скопирует его в `deploy/.env` на сервере и допишет `APP_VERSION=<commit>`.
+**Вариант A (рекомендуется):** secret `STAGING_ENV` — вставь **весь** `.env` целиком (GitHub поддерживает multiline secrets).
 
-**Альтернатива**, если тип «Файл» недоступен: одна переменная `STAGING_ENV_B64` — base64 всего `.env`:
 ```bash
-base64 < ~/skinemsya-staging.env | pbcopy   # macOS
+cp deploy/env.production.example ~/skinemsya-staging.env
+nano ~/skinemsya-staging.env
+# скопируй содержимое в secret STAGING_ENV
 ```
 
-### 4.2. Переменные для SSH (репозиторий backend)
+**Вариант B:** secret `STAGING_ENV_B64` — base64 всего файла:
 
-| Variable | Masked | Назначение |
+```bash
+base64 < ~/skinemsya-staging.env | pbcopy   # macOS
+# или: base64 -w0 ~/skinemsya-staging.env   # Linux
+```
+
+Pipeline допишет `APP_VERSION=<commit>` при деплое.
+
+### 4.2. Переменные для SSH
+
+| Secret | Обязательный | Назначение |
 | --- | --- | --- |
-| `SSH_PRIVATE_KEY` | ✅ | приватный ключ `skinemsya_deploy` |
-| `SSH_KNOWN_HOSTS` | ❌ | `ssh-keyscan -p 22 skinemsya-vse.ru` |
-| `STAGING_HOST` | ❌ | IP или домен VPS |
-| `STAGING_USER` | ❌ | `deploy` |
-| `STAGING_SSH_PORT` | ❌ | `22` |
+| `SSH_PRIVATE_KEY` | ✅ | приватный ключ `skinemsya_deploy` (весь файл, включая `-----BEGIN...`) |
+| `STAGING_HOST` | ✅ | IP или домен VPS (`skinemsya-vse.ru`) |
+| `STAGING_USER` | ✅ | `deploy` |
+| `STAGING_SSH_PORT` | ❌ | `22` (если нестандартный порт) |
+| `SSH_KNOWN_HOSTS` | ❌ | `ssh-keyscan -p 22 skinemsya-vse.ru` (если не задан — workflow сгенерирует сам) |
 
-### 4.3. Репозиторий фронта (`skinemsya_ui`)
-
-Фронт деплоится **отдельным pipeline** из репозитория `skinemsya_ui` (файл `gitflic-ci.yaml` там же).
-
-В **репозитории UI** задай те же SSH-переменные, что в п. 4.2 (`SSH_PRIVATE_KEY`, `SSH_KNOWN_HOSTS`, `STAGING_*`).
-
-`STAGING_ENV_FILE` фронту **не нужен** — секреты только у backend.
-
-Фронт собирается без `VITE_API_BASE_URL`: запросы идут на `/api/v1` того же домена (`https://skinemsya-vse.ru`).
-
-Job **`deploy:staging`** в UI-каталоге кладёт `dist/` в `/opt/skinemsya/deploy/frontend/` — Caddy сразу отдаёт новые файлы, перезапуск не нужен.
-
-Получить `SSH_KNOWN_HOSTS`:
+Получить `SSH_KNOWN_HOSTS` (опционально):
 
 ```bash
 ssh-keyscan -p 22 skinemsya-vse.ru
 ```
 
-Скопируй **весь** вывод в переменную.
+### 4.3. Environment `staging` (опционально)
 
-### Runner
+В **Settings → Environments** создай environment `staging` и включи **Required reviewers**, если нужно подтверждение деплоя перед запуском job.
 
-Нужен GitFlic Runner с поддержкой `services: docker:dind` для job `build:backend-image`.
+### 4.4. Репозиторий фронта (`skinemsya_ui`)
 
-- `test:unit` — обычный Maven-контейнер.
-- `build:backend-image` — Docker-in-Docker.
-- `deploy:staging` — SSH на VPS (ручной запуск).
+Фронт деплоится **отдельным workflow** из репозитория UI. Задай там те же SSH-secrets (`SSH_PRIVATE_KEY`, `STAGING_HOST`, `STAGING_USER`, `STAGING_SSH_PORT`).
+
+`STAGING_ENV` фронту **не нужен** — секреты только у backend.
+
+Фронт собирается без `VITE_API_BASE_URL`: запросы идут на `/api/v1` того же домена.
+
+Job деплоя фронта кладёт `dist/` в `/opt/skinemsya/deploy/frontend/` — Caddy сразу отдаёт новые файлы, перезапуск не нужен.
 
 ---
 
 ## Часть 5. Первый деплой
 
-### 5.1. Backend (репозиторий `skinemsya_java`)
+### 5.1. Backend (этот репозиторий)
 
-1. Push в **main/master**.
-2. Дождись `test:unit` и `build:backend-image`.
-3. Запусти вручную **`deploy:staging`**.
+1. Push в **main** (или **master**).
+2. Дождись успешного workflow **Backend CI/CD** (jobs `Unit tests` + `Build Docker image`).
+3. **Actions → Backend CI/CD → Run workflow**:
+   - ветка: `main`
+   - ✅ **Deploy to staging after build**
+4. Дождись job `Deploy to staging`.
 
 ### 5.2. Frontend (репозиторий `skinemsya_ui`)
 
-1. Push в **main/master**.
-2. Дождись `test:typecheck` и `build`.
-3. Запусти вручную **`deploy:staging`**.
+1. Push в **main**.
+2. Запусти ручной deploy workflow фронта (если настроен аналогично).
 
 Порядок первого раза: **сначала backend** (поднимет Postgres, MinIO, Caddy), **потом frontend** (положит статику в `deploy/frontend/`).
 
@@ -239,18 +234,23 @@ docker compose -f docker-compose.prod.yml logs -f backend
 curl -fsS https://skinemsya-vse.ru/actuator/health
 ```
 
-5. Открой бота в Telegram → Mini App.
+Открой бота в Telegram → Mini App.
 
 ---
 
 ## Часть 6. Обновления
 
-| Репозиторий | Автоматически | Вручную |
+| Репозиторий | Автоматически (push в main) | Вручную |
 | --- | --- | --- |
-| `skinemsya_java` | unit-тесты, сборка Docker-образа | `deploy:staging` |
-| `skinemsya_ui` | typecheck, `npm run build` | `deploy:staging` |
+| backend | unit-тесты, сборка Docker-образа | Run workflow → Deploy to staging |
+| frontend | typecheck, build | Run workflow → deploy |
 
-Backend и frontend деплоятся **независимо** — можно обновить только API или только UI.
+Backend и frontend деплоятся **независимо**.
+
+### Быстрый деплой backend после push
+
+1. Push в `main` → дождись зелёной сборки.
+2. **Actions → Backend CI/CD → Run workflow** → включи **Deploy to staging**.
 
 ---
 
@@ -274,6 +274,8 @@ rsync -avz --delete dist/ deploy@<IP>:/opt/skinemsya/deploy/frontend/
 cd /opt/skinemsya
 gunzip -c skinemsya-backend.tar.gz | docker load
 cd deploy
+cp /path/to/your/.env .env   # или создай из deploy/env.production.example
+chmod 600 .env
 APP_VERSION=manual docker compose -f docker-compose.prod.yml up -d
 ```
 
@@ -287,11 +289,13 @@ APP_VERSION=manual docker compose -f docker-compose.prod.yml up -d
 | Нет HTTPS | DNS, порты 80/443, `docker compose logs caddy` |
 | Mini App не авторизует | `TELEGRAM_BOT_TOKEN`, домен в BotFather |
 | OOM | `free -h`, swap, `docker stats` |
+| Deploy job падает на SSH | `SSH_PRIVATE_KEY`, `STAGING_HOST`, `authorized_keys` на сервере |
+| Deploy job падает на .env | secret `STAGING_ENV` или `STAGING_ENV_B64` |
 
 ---
 
 ## Ограничения staging
 
 - ~512 MB backend + ~256 MB Postgres — только для проверки.
-- Файлы локально в volume, не S3.
+- Файлы в MinIO (S3-совместимое хранилище в docker).
 - ML-сервис не развёрнут без отдельной настройки `ML_SERVICE_URL`.

@@ -5,8 +5,8 @@
 {$APP_DOMAIN} {
 	encode gzip zstd
 
-	@api path /api/*
-	handle @api {
+	@backend path /api/* /actuator/*
+	handle @backend {
 		reverse_proxy backend:8080
 	}
 

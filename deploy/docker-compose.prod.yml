@@ -1,5 +1,5 @@
 # Production/staging stack for a small VPS.
-# Файл deploy/.env создаётся job deploy:staging из переменных GitFlic CI/CD.
+# Файл deploy/.env создаётся job deploy-staging из GitHub Actions secrets.
 
 name: skinemsya
 
