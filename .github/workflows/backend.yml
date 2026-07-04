@@ -137,14 +137,20 @@ jobs:
           STAGING_SSH_PORT: ${{ secrets.STAGING_SSH_PORT }}
           SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
         run: |
-          eval "$(ssh-agent -s)"
-          echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
-          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          if ! ssh-keygen -y -f ~/.ssh/deploy_key >/dev/null 2>&1; then
+            echo "SSH_PRIVATE_KEY secret is invalid. Paste the full private key file, including BEGIN/END lines." >&2
+            exit 1
+          fi
           if [ -n "${SSH_KNOWN_HOSTS:-}" ]; then
-            echo "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+            printf '%s\n' "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
           else
             ssh-keyscan -p "${STAGING_SSH_PORT:-22}" "$STAGING_HOST" >> ~/.ssh/known_hosts
           fi
+          chmod 644 ~/.ssh/known_hosts
 
       - name: Sync deploy files
         env:
@@ -152,9 +158,10 @@ jobs:
           STAGING_USER: ${{ secrets.STAGING_USER }}
           STAGING_SSH_PORT: ${{ secrets.STAGING_SSH_PORT }}
         run: |
-          ssh -p "${STAGING_SSH_PORT:-22}" "${STAGING_USER}@${STAGING_HOST}" "mkdir -p ${DEPLOY_PATH}/deploy"
-          rsync -avz -e "ssh -p ${STAGING_SSH_PORT:-22}" deploy/ "${STAGING_USER}@${STAGING_HOST}:${DEPLOY_PATH}/deploy/"
-          scp -P "${STAGING_SSH_PORT:-22}" skinemsya-backend.tar.gz "${STAGING_USER}@${STAGING_HOST}:${DEPLOY_PATH}/"
+          SSH_OPTS="-i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes -p ${STAGING_SSH_PORT:-22}"
+          ssh $SSH_OPTS "${STAGING_USER}@${STAGING_HOST}" "mkdir -p ${DEPLOY_PATH}/deploy"
+          rsync -avz -e "ssh $SSH_OPTS" deploy/ "${STAGING_USER}@${STAGING_HOST}:${DEPLOY_PATH}/deploy/"
+          scp $SSH_OPTS skinemsya-backend.tar.gz "${STAGING_USER}@${STAGING_HOST}:${DEPLOY_PATH}/"
 
       - name: Load image and restart stack
         env:
@@ -163,7 +170,8 @@ jobs:
           STAGING_SSH_PORT: ${{ secrets.STAGING_SSH_PORT }}
           APP_VERSION: ${{ needs.build-image.outputs.app_version }}
         run: |
-          ssh -p "${STAGING_SSH_PORT:-22}" "${STAGING_USER}@${STAGING_HOST}" <<EOSSH
+          SSH_OPTS="-i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes -p ${STAGING_SSH_PORT:-22}"
+          ssh $SSH_OPTS "${STAGING_USER}@${STAGING_HOST}" <<EOSSH
           set -euo pipefail
           chmod 600 "${DEPLOY_PATH}/deploy/.env"
           cd "${DEPLOY_PATH}"

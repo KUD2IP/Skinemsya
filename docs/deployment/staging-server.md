@@ -185,6 +185,28 @@ Pipeline допишет `APP_VERSION=<commit>` при деплое.
 | `STAGING_SSH_PORT` | ❌ | `22` (если нестандартный порт) |
 | `SSH_KNOWN_HOSTS` | ❌ | `ssh-keyscan -p 22 skinemsya-vse.ru` (если не задан — workflow сгенерирует сам) |
 
+**Как правильно добавить `SSH_PRIVATE_KEY`:**
+
+```bash
+# На своей машине — скопируй ВЕСЬ приватный ключ (не .pub!)
+cat ~/.ssh/skinemsya_deploy
+```
+
+В GitHub secret вставь **целиком**, включая строки:
+```
+-----BEGIN OPENSSH PRIVATE KEY-----
+...
+-----END OPENSSH PRIVATE KEY-----
+```
+
+Проверка локально (должен войти без пароля):
+
+```bash
+ssh -i ~/.ssh/skinemsya_deploy deploy@skinemsya-vse.ru
+```
+
+На сервере публичный ключ должен быть в `/home/deploy/.ssh/authorized_keys`.
+
 Получить `SSH_KNOWN_HOSTS` (опционально):
 
 ```bash
@@ -200,6 +222,8 @@ ssh-keyscan -p 22 skinemsya-vse.ru
 Фронт деплоится **отдельным workflow** из репозитория UI. Задай там те же SSH-secrets (`SSH_PRIVATE_KEY`, `STAGING_HOST`, `STAGING_USER`, `STAGING_SSH_PORT`).
 
 `STAGING_ENV` фронту **не нужен** — секреты только у backend.
+
+Полная инструкция по фронту: репозиторий `skinemsya_ui` → `docs/DEPLOYMENT.md`.
 
 Фронт собирается без `VITE_API_BASE_URL`: запросы идут на `/api/v1` того же домена.
 
@@ -221,7 +245,10 @@ Job деплоя фронта кладёт `dist/` в `/opt/skinemsya/deploy/fro
 ### 5.2. Frontend (репозиторий `skinemsya_ui`)
 
 1. Push в **main**.
-2. Запусти ручной deploy workflow фронта (если настроен аналогично).
+2. Дождись `Typecheck` + `Build`.
+3. **Actions → Frontend CI/CD → Run workflow** → ✅ **Deploy to staging**.
+
+Инструкция: `skinemsya_ui/docs/DEPLOYMENT.md`.
 
 Порядок первого раза: **сначала backend** (поднимет Postgres, MinIO, Caddy), **потом frontend** (положит статику в `deploy/frontend/`).
 
@@ -290,7 +317,17 @@ APP_VERSION=manual docker compose -f docker-compose.prod.yml up -d
 | Mini App не авторизует | `TELEGRAM_BOT_TOKEN`, домен в BotFather |
 | OOM | `free -h`, swap, `docker stats` |
 | Deploy job падает на SSH | `SSH_PRIVATE_KEY`, `STAGING_HOST`, `authorized_keys` на сервере |
+| `Permission denied (publickey)` | См. чеклист ниже |
 | Deploy job падает на .env | secret `STAGING_ENV` или `STAGING_ENV_B64` |
+
+### `Permission denied (publickey)` — чеклист
+
+1. **GitHub secret `SSH_PRIVATE_KEY`** — это **приватный** ключ (`skinemsya_deploy`), не `.pub`
+2. Ключ вставлен **целиком** с `BEGIN`/`END` строками
+3. На сервере в `/home/deploy/.ssh/authorized_keys` лежит **соответствующий публичный** ключ
+4. `STAGING_USER=deploy`, `STAGING_HOST` — IP или домен сервера
+5. Локально работает: `ssh -i ~/.ssh/skinemsya_deploy deploy@<HOST>`
+6. Secrets заданы в **том репозитории**, из которого запускаешь deploy (backend и frontend — отдельно)
 
 ---
 
