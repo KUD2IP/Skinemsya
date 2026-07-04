@@ -1,0 +1,17 @@
+management:
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    root: WARN
+    skinemsya.vse.ru: INFO
+    org.springframework.web: WARN
+
+skinemsya:
+  cors:
+    allowed-origin-patterns:
+      - https://skinemsya-vse.ru
+      - https://www.skinemsya-vse.ru
+      - https://web.telegram.org

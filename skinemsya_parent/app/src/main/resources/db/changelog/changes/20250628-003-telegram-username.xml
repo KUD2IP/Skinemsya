@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20250628-003" author="system">
+        <addColumn tableName="users">
+            <column name="telegram_username" type="VARCHAR(32)"/>
+        </addColumn>
+        <createIndex tableName="users" indexName="uk_users_telegram_username" unique="true">
+            <column name="telegram_username"/>
+        </createIndex>
+        <rollback>
+            <dropIndex tableName="users" indexName="uk_users_telegram_username"/>
+            <dropColumn tableName="users" columnName="telegram_username"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
