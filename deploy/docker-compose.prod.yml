@@ -1,5 +1,6 @@
 # Production/staging stack for a small VPS.
 # Файл deploy/.env создаётся job deploy-staging из GitHub Actions secrets.
+# HTTPS и статика фронта — nginx на хосте (конфиг вручную на сервере, не в репо).
 
 name: skinemsya
 
@@ -59,6 +60,8 @@ services:
       S3_ACCESS_KEY: ${S3_ACCESS_KEY:?set S3_ACCESS_KEY}
       S3_SECRET_KEY: ${S3_SECRET_KEY:?set S3_SECRET_KEY}
       TELEGRAM_BOT_POLLING_ENABLED: ${TELEGRAM_BOT_POLLING_ENABLED:-true}
+    ports:
+      - '127.0.0.1:8080:8080'
     depends_on:
       postgres:
         condition: service_healthy
@@ -69,33 +72,6 @@ services:
         limits:
           memory: 512M
 
-  # Caddy = reverse-proxy + HTTPS (аналог nginx + certbot в одном контейнере).
-  # Конфиг: deploy/Caddyfile. Сертификаты Let's Encrypt — автоматически.
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      APP_DOMAIN: ${APP_DOMAIN:?set APP_DOMAIN}
-      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL}
-    ports:
-      - '80:80'
-      - '443:443'
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - ./frontend:/srv:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - backend
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-
 volumes:
   postgres_data:
   minio_data:
-  caddy_data:
-  caddy_config:

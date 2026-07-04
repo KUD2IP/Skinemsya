@@ -31,7 +31,7 @@ CI/CD workflow: [.github/workflows/backend.yml](.github/workflows/backend.yml)
 | Путь | Описание |
 | --- | --- |
 | `skinemsya_parent/` | Maven-модули backend |
-| `deploy/` | Production compose, Caddy, шаблон `.env` |
+| `deploy/` | Production compose, шаблон `.env` |
 | `docs/` | Архитектура, модули, деплой |
 | `Dockerfile` | Multi-stage сборка backend-образа |
 

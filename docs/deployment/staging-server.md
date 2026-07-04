@@ -1,7 +1,7 @@
 # Staging на VPS (skinemsya-vse.ru)
 
 Пошаговая инструкция для **пустого Ubuntu 24.04** и деплоя через **GitHub Actions**.  
-Сервер слабый (~1 GB RAM, ~10 GB диск) — стек минимальный: **PostgreSQL + MinIO + backend + Caddy** (HTTPS и раздача фронта).
+Сервер слабый (~1 GB RAM, ~10 GB диск) — стек: **PostgreSQL + MinIO + backend (Docker)** и **nginx + certbot на хосте** (HTTPS и статика фронта).
 
 ---
 
@@ -10,7 +10,7 @@
 | URL | Назначение |
 | --- | --- |
 | `https://skinemsya-vse.ru` | Mini App (статика) |
-| `https://skinemsya-vse.ru/api/v1/...` | Backend API (прокси Caddy → backend) |
+| `https://skinemsya-vse.ru/api/v1/...` | Backend API (прокси nginx → backend :8080) |
 | `https://skinemsya-vse.ru/actuator/health` | Healthcheck backend |
 
 Фронт ходит на API **с того же origin** (`/api/v1`), отдельный поддомен для API не нужен.
@@ -110,7 +110,43 @@ sudo mkdir -p /opt/skinemsya/deploy/frontend
 sudo chown -R deploy:deploy /opt/skinemsya
 ```
 
-### 2.7. SSH-ключ для CI/CD
+### 2.7. Nginx + HTTPS (на хосте, один раз)
+
+Порты **80/443** — nginx на сервере. Конфиг **не в репозитории**, создаётся вручную на VPS.
+
+```bash
+sudo apt install -y nginx certbot python3-certbot-nginx
+```
+
+Останови Caddy, если остался в Docker:
+
+```bash
+cd /opt/skinemsya/deploy
+docker compose -f docker-compose.prod.yml stop caddy 2>/dev/null || true
+docker compose -f docker-compose.prod.yml rm -f caddy 2>/dev/null || true
+```
+
+1. Создай `/etc/nginx/sites-available/skinemsya` (полный конфиг — в README деплоя или у админа).
+2. Сначала получи сертификат, если его ещё нет:
+   ```bash
+   sudo certbot certonly --nginx -d skinemsya-vse.ru -d www.skinemsya-vse.ru --email you@example.com --agree-tos --no-eff-email
+   ```
+3. Включи сайт:
+   ```bash
+   sudo ln -sf /etc/nginx/sites-available/skinemsya /etc/nginx/sites-enabled/skinemsya
+   sudo rm -f /etc/nginx/sites-enabled/default
+   sudo nginx -t && sudo systemctl enable nginx && sudo systemctl reload nginx
+   ```
+
+Проверка:
+
+```bash
+curl -fsS https://skinemsya-vse.ru/actuator/health
+curl -X POST https://skinemsya-vse.ru/api/v1/auth/telegram \
+  -H 'Content-Type: application/json' -d '{"initData":"test"}'
+```
+
+### 2.8. SSH-ключ для CI/CD
 
 **На своей машине** (не на сервере):
 
@@ -136,7 +172,7 @@ sudo chmod 600 /home/deploy/.ssh/authorized_keys
 ssh -i ~/.ssh/skinemsya_deploy deploy@<IP_СЕРВЕРА>
 ```
 
-### 2.8. Секреты приложения (.env)
+### 2.9. Секреты приложения (.env)
 
 **На сервере `.env` вручную не создаётся** — его кладёт job `deploy-staging` из GitHub Actions (см. часть 4).
 
@@ -228,7 +264,7 @@ ssh-keyscan -p 22 skinemsya-vse.ru
 
 Фронт собирается без `VITE_API_BASE_URL`: запросы идут на `/api/v1` того же домена.
 
-Job деплоя фронта кладёт `dist/` в `/opt/skinemsya/deploy/frontend/` — Caddy сразу отдаёт новые файлы, перезапуск не нужен.
+Job деплоя фронта кладёт `dist/` в `/opt/skinemsya/deploy/frontend/` — nginx сразу отдаёт новые файлы, перезапуск не нужен.
 
 ---
 
@@ -251,7 +287,7 @@ Job деплоя фронта кладёт `dist/` в `/opt/skinemsya/deploy/fro
 
 Инструкция: `skinemsya_ui/docs/DEPLOYMENT.md`.
 
-Порядок первого раза: **сначала backend** (поднимет Postgres, MinIO, Caddy), **потом frontend** (положит статику в `deploy/frontend/`).
+Порядок первого раза: **nginx на хосте** → **backend** (Docker) → **frontend** (статика в `deploy/frontend/`).
 
 ### 5.3. Проверка
 
@@ -313,10 +349,10 @@ APP_VERSION=manual docker compose -f docker-compose.prod.yml up -d
 
 | Симптом | Что проверить |
 | --- | --- |
-| 502 / API недоступен | `docker compose logs backend`; проверь `curl -X POST https://skinemsya-vse.ru/api/v1/auth/telegram` (не должен быть 405) |
-| Фронт открывается, в логах бека пусто | Caddy не проксирует `/api` → передеплой backend с актуальным `Caddyfile` |
-| Кнопка в группе открывает чат с ботом | Задай `TELEGRAM_WEB_APP_SHORT_NAME` в BotFather и в `STAGING_ENV` |
-| Нет HTTPS | DNS, порты 80/443, `docker compose logs caddy` |
+| 502 / API недоступен | `docker compose logs backend`; `curl -X POST .../api/v1/auth/telegram` (не 405) |
+| Фронт открывается, в логах бека пусто | nginx: `location /api/` → `127.0.0.1:8080`; `ss -tlnp \| grep 8080` |
+| Кнопка в группе открывает чат с ботом | `TELEGRAM_WEB_APP_SHORT_NAME` в BotFather и `STAGING_ENV` |
+| Нет HTTPS | `sudo nginx -t`; `sudo certbot certificates`; DNS, порты 80/443 |
 | Mini App не авторизует | `TELEGRAM_BOT_TOKEN`, домен в BotFather |
 | OOM | `free -h`, swap, `docker stats` |
 | Deploy job падает на SSH | `SSH_PRIVATE_KEY`, `STAGING_HOST`, `authorized_keys` на сервере |
