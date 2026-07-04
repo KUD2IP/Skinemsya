@@ -1,0 +1,24 @@
+spring:
+  liquibase:
+    enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: none
+
+skinemsya:
+  jwt:
+    secret: test-jwt-secret-at-least-32-characters-long
+    access-ttl: 15m
+    refresh-ttl: 7d
+  telegram:
+    bot-token: test-bot-token-for-integration-tests-32chars
+    auth-max-age-seconds: 86400
+    mini-app-url: https://example.test/mini-app
+    webhook-secret: test-webhook-secret
+    bot-username: testbot
+    web-app-short-name: app
+    bot-polling-enabled: false
+
+logging:
+  level:
+    liquibase: INFO

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <include file="db/changelog/changes/20250615-001-foundation.xml"/>
+    <include file="db/changelog/changes/20250616-001-users.xml"/>
+    <include file="db/changelog/changes/20250616-002-refresh-tokens.xml"/>
+    <include file="db/changelog/changes/20250628-001-groups.xml"/>
+    <include file="db/changelog/changes/20250628-002-events.xml"/>
+    <include file="db/changelog/changes/20250628-003-telegram-username.xml"/>
+
+</databaseChangeLog>

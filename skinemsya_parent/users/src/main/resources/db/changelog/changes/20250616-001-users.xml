@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20250616-001" author="system">
+        <createTable tableName="users">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" primaryKeyName="pk_users"/>
+            </column>
+            <column name="telegram_user_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="display_name" type="VARCHAR(255)"/>
+            <column name="created_at" type="TIMESTAMPTZ">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMPTZ">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint tableName="users" columnNames="telegram_user_id"
+                             constraintName="uk_users_telegram_user_id"/>
+
+        <createTable tableName="user_profiles">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" primaryKeyName="pk_user_profiles"/>
+            </column>
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="payment_details" type="TEXT"/>
+            <column name="phone" type="VARCHAR(20)"/>
+            <column name="notification_settings" type="JSONB"/>
+        </createTable>
+
+        <addUniqueConstraint tableName="user_profiles" columnNames="user_id"
+                             constraintName="uk_user_profiles_user_id"/>
+
+        <addForeignKeyConstraint baseTableName="user_profiles" baseColumnNames="user_id"
+                                 referencedTableName="users" referencedColumnNames="id"
+                                 constraintName="fk_user_profiles_users"/>
+
+        <rollback>
+            <dropTable tableName="user_profiles"/>
+            <dropTable tableName="users"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

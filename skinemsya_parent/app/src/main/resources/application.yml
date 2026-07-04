@@ -1,0 +1,68 @@
+spring:
+  application:
+    name: skinemsya
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  config:
+    import:
+      - optional:file:.env[.properties]
+      - optional:file:../../.env[.properties]
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER:skinemsya}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.xml
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when_authorized
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+skinemsya:
+  jwt:
+    secret: ${JWT_SECRET:}
+    access-ttl: ${JWT_ACCESS_TTL:15m}
+    refresh-ttl: ${JWT_REFRESH_TTL:7d}
+  telegram:
+    bot-token: ${TELEGRAM_BOT_TOKEN:}
+    auth-max-age-seconds: ${TELEGRAM_AUTH_MAX_AGE_SECONDS:86400}
+    mini-app-url: ${TELEGRAM_MINI_APP_URL:}
+    webhook-secret: ${TELEGRAM_WEBHOOK_SECRET:}
+    bot-username: ${TELEGRAM_BOT_USERNAME:}
+    web-app-short-name: ${TELEGRAM_WEB_APP_SHORT_NAME:}
+    bot-polling-enabled: ${TELEGRAM_BOT_POLLING_ENABLED:true}
+  cors:
+    allowed-origin-patterns:
+      - http://localhost:*
+      - http://127.0.0.1:*
+      - https://web.telegram.org
+  ml-service:
+    url: ${ML_SERVICE_URL:}
+    timeout: ${ML_SERVICE_TIMEOUT:30s}
+  file-storage:
+    path: ${FILE_STORAGE_PATH:./storage}
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{X-Correlation-Id:-}]"

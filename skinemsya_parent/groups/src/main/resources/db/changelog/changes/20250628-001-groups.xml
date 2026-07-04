@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20250628-001" author="system">
+        <createTable tableName="groups">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" primaryKeyName="pk_groups"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="telegram_chat_id" type="BIGINT"/>
+            <column name="owner_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMPTZ">
+                <constraints nullable="false"/>
+            </column>
+            <column name="deleted_at" type="TIMESTAMPTZ"/>
+        </createTable>
+
+        <addUniqueConstraint tableName="groups" columnNames="telegram_chat_id"
+                             constraintName="uk_groups_telegram_chat_id"/>
+
+        <addForeignKeyConstraint baseTableName="groups" baseColumnNames="owner_id"
+                                 referencedTableName="users" referencedColumnNames="id"
+                                 constraintName="fk_groups_users"/>
+
+        <createIndex tableName="groups" indexName="idx_groups_deleted_at">
+            <column name="deleted_at"/>
+        </createIndex>
+
+        <createTable tableName="group_members">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" primaryKeyName="pk_group_members"/>
+            </column>
+            <column name="group_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="joined_at" type="TIMESTAMPTZ">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint tableName="group_members" columnNames="group_id,user_id"
+                             constraintName="uk_group_members_group_user"/>
+
+        <addForeignKeyConstraint baseTableName="group_members" baseColumnNames="group_id"
+                                 referencedTableName="groups" referencedColumnNames="id"
+                                 constraintName="fk_group_members_groups"/>
+
+        <addForeignKeyConstraint baseTableName="group_members" baseColumnNames="user_id"
+                                 referencedTableName="users" referencedColumnNames="id"
+                                 constraintName="fk_group_members_users"/>
+
+        <rollback>
+            <dropTable tableName="group_members"/>
+            <dropTable tableName="groups"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
