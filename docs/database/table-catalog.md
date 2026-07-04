@@ -109,6 +109,7 @@ Ownership means only this module has repositories for the table. Other modules c
 | id | BIGSERIAL PK | |
 | event_id | BIGINT FK NOT NULL | |
 | user_id | BIGINT FK NOT NULL | |
+| selection_completed_at | TIMESTAMPTZ | Завершение выбора позиций |
 | UNIQUE(event_id, user_id) | | |
 
 ### positions (модуль: receipts)
@@ -122,6 +123,8 @@ Ownership means only this module has repositories for the table. Other modules c
 | quantity | DECIMAL(10,2) NOT NULL | |
 | total_price_kopecks | BIGINT NOT NULL | |
 | is_shared | BOOLEAN DEFAULT false | |
+| is_tips | BOOLEAN DEFAULT false | Позиция-чаевые |
+| low_confidence | BOOLEAN DEFAULT false | Низкий confidence ML |
 | source | VARCHAR(20) NOT NULL | MANUAL / RECEIPT |
 
 ### position_selections (модуль: receipts)
@@ -131,6 +134,7 @@ Ownership means only this module has repositories for the table. Other modules c
 | id | BIGSERIAL PK | |
 | position_id | BIGINT FK NOT NULL | |
 | user_id | BIGINT FK NOT NULL | |
+| selected_quantity | DECIMAL(10,2) NOT NULL | Количество, выбранное участником |
 | UNIQUE(position_id, user_id) | | |
 
 ### shared_position_targets (модуль: receipts)
@@ -182,6 +186,7 @@ Ownership means only this module has repositories for the table. Other modules c
 | id | BIGSERIAL PK | |
 | debt_id | BIGINT FK UNIQUE NOT NULL | |
 | status | VARCHAR(30) NOT NULL | |
+| screenshot_file_id | BIGINT FK | Скрин перевода (files) |
 | debtor_confirmed_at | TIMESTAMPTZ | |
 | payer_confirmed_at | TIMESTAMPTZ | |
 

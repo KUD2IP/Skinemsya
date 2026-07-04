@@ -11,5 +11,10 @@
     <include file="db/changelog/changes/20250628-001-groups.xml"/>
     <include file="db/changelog/changes/20250628-002-events.xml"/>
     <include file="db/changelog/changes/20250628-003-telegram-username.xml"/>
+    <include file="db/changelog/changes/20250704-001-phase4-files.xml"/>
+    <include file="db/changelog/changes/20250704-002-phase4-receipts.xml"/>
+    <include file="db/changelog/changes/20250704-003-phase5-debts-payments.xml"/>
+    <include file="db/changelog/changes/20250704-004-phase6-notifications.xml"/>
+    <include file="db/changelog/changes/20250704-005-user-preferred-bank.xml"/>
 
 </databaseChangeLog>

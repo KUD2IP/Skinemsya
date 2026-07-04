@@ -14,6 +14,8 @@ public interface GroupService {
 
     Group createFromChat(long telegramChatId, String chatTitle, long userId);
 
+    void joinChatLinkedGroup(long groupId, long userId);
+
     Group addMember(long groupId, long ownerUserId, long memberUserId);
 
     GroupMember addMemberByTelegramUserId(long groupId, long ownerUserId, long telegramUserId);
@@ -23,6 +25,8 @@ public interface GroupService {
     PageResult<GroupMemberView> listMembers(long groupId, long userId, PageRequest pageRequest);
 
     Optional<Group> findById(long groupId);
+
+    Optional<Group> findByTelegramChatId(long telegramChatId);
 
     PageResult<Group> listForUser(long userId, PageRequest pageRequest);
 

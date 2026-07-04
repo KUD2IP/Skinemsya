@@ -37,6 +37,26 @@
             <artifactId>events</artifactId>
         </dependency>
         <dependency>
+            <groupId>skinemsya.vse.ru</groupId>
+            <artifactId>files</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>skinemsya.vse.ru</groupId>
+            <artifactId>receipts</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>skinemsya.vse.ru</groupId>
+            <artifactId>debts</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>skinemsya.vse.ru</groupId>
+            <artifactId>payments</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>skinemsya.vse.ru</groupId>
+            <artifactId>notifications</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>

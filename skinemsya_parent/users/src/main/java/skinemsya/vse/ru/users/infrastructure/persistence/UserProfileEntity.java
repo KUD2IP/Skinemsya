@@ -26,6 +26,9 @@ public class UserProfileEntity {
     @Column(name = "phone")
     private String phone;
 
+    @Column(name = "preferred_bank")
+    private String preferredBank;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "notification_settings", columnDefinition = "jsonb")
     private String notificationSettings;
@@ -60,6 +63,14 @@ public class UserProfileEntity {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public String getPreferredBank() {
+        return preferredBank;
+    }
+
+    public void setPreferredBank(String preferredBank) {
+        this.preferredBank = preferredBank;
     }
 
     public String getNotificationSettings() {

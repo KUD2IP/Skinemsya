@@ -43,6 +43,9 @@ class ChatLinkedGroupBootstrapServiceTest {
     @Mock
     private UserService userService;
 
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
     private ChatLinkedGroupBootstrapService bootstrapService;
 
     @BeforeEach
@@ -51,7 +54,8 @@ class ChatLinkedGroupBootstrapServiceTest {
                 groupRepository,
                 groupMemberRepository,
                 groupMapper,
-                userService
+                userService,
+                eventPublisher
         );
         when(userService.findById(USER_ID)).thenReturn(Optional.of(
                 new User(USER_ID, 100_001L, "User", null, Instant.now(), Instant.now())

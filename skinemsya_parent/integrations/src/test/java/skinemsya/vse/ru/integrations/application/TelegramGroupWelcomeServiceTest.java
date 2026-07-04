@@ -104,7 +104,8 @@ class TelegramGroupWelcomeServiceTest {
                 long chatId,
                 String text,
                 String buttonText,
-                String chatType
+                String chatType,
+                String startParam
         ) {
             buttonMessages.add(text);
             return new TelegramSentMessage(42L);

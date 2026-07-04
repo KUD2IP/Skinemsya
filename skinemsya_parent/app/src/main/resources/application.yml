@@ -61,7 +61,15 @@ skinemsya:
     url: ${ML_SERVICE_URL:}
     timeout: ${ML_SERVICE_TIMEOUT:30s}
   file-storage:
+    type: ${FILE_STORAGE_TYPE:local}
     path: ${FILE_STORAGE_PATH:./storage}
+    max-upload-size-bytes: ${FILE_MAX_UPLOAD_SIZE_BYTES:20971520}
+    s3:
+      endpoint: ${S3_ENDPOINT:}
+      region: ${S3_REGION:us-east-1}
+      bucket: ${S3_BUCKET:skinemsya-files}
+      access-key: ${S3_ACCESS_KEY:}
+      secret-key: ${S3_SECRET_KEY:}
 
 logging:
   pattern:

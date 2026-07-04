@@ -13,7 +13,22 @@ public interface TelegramBotClient {
 
     void sendHtmlMessage(long chatId, String text);
 
-    TelegramSentMessage sendMessageWithOpenAppButton(long chatId, String text, String buttonText, String chatType);
+    default TelegramSentMessage sendMessageWithOpenAppButton(
+            long chatId,
+            String text,
+            String buttonText,
+            String chatType
+    ) {
+        return sendMessageWithOpenAppButton(chatId, text, buttonText, chatType, null);
+    }
+
+    TelegramSentMessage sendMessageWithOpenAppButton(
+            long chatId,
+            String text,
+            String buttonText,
+            String chatType,
+            String startParam
+    );
 
     void pinMessage(long chatId, long messageId);
 

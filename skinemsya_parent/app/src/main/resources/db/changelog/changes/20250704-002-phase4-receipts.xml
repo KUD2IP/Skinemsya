@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20250704-002-receipts" author="skinemsya">
+        <createTable tableName="receipts">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="event_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_receipts_event"
+                             references="events(id)"/>
+            </column>
+            <column name="file_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_receipts_file"
+                             references="files(id)"/>
+            </column>
+            <column name="status" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ml_raw_json" type="JSONB"/>
+            <column name="created_at" type="TIMESTAMPTZ">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="positions">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="event_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_positions_event"
+                             references="events(id)"/>
+            </column>
+            <column name="receipt_id" type="BIGINT">
+                <constraints foreignKeyName="fk_positions_receipt"
+                             references="receipts(id)"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="quantity" type="DECIMAL(10,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_price_kopecks" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_shared" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_tips" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="low_confidence" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="source" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <sql>
+            ALTER TABLE positions ADD CONSTRAINT chk_positions_total_price CHECK (total_price_kopecks >= 0);
+            ALTER TABLE positions ADD CONSTRAINT chk_positions_quantity CHECK (quantity > 0);
+        </sql>
+
+        <createTable tableName="position_selections">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="position_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_selections_position"
+                             references="positions(id)"/>
+            </column>
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_selections_user"
+                             references="users(id)"/>
+            </column>
+            <column name="selected_quantity" type="DECIMAL(10,2)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint tableName="position_selections"
+                             columnNames="position_id, user_id"
+                             constraintName="uq_position_selections_position_user"/>
+
+        <createTable tableName="shared_position_targets">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="position_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_shared_targets_position"
+                             references="positions(id)"/>
+            </column>
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false" foreignKeyName="fk_shared_targets_user"
+                             references="users(id)"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint tableName="shared_position_targets"
+                             columnNames="position_id, user_id"
+                             constraintName="uq_shared_targets_position_user"/>
+
+        <addColumn tableName="event_participants">
+            <column name="selection_completed_at" type="TIMESTAMPTZ"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

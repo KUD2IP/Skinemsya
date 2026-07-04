@@ -29,6 +29,10 @@
             <artifactId>groups</artifactId>
         </dependency>
         <dependency>
+            <groupId>skinemsya.vse.ru</groupId>
+            <artifactId>events</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>

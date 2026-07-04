@@ -105,12 +105,19 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserProfile updateProfile(long userId, String paymentDetails, String phone, String notificationSettings) {
+    public UserProfile updateProfile(
+            long userId,
+            String paymentDetails,
+            String phone,
+            String preferredBank,
+            String notificationSettings
+    ) {
         var profile = userProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new DomainException(ErrorCode.NOT_FOUND, "User profile not found"));
 
         profile.setPaymentDetails(paymentDetails);
         profile.setPhone(phone);
+        profile.setPreferredBank(preferredBank != null && preferredBank.isBlank() ? null : preferredBank);
         profile.setNotificationSettings(notificationSettings);
         return userMapper.toDomain(userProfileRepository.save(profile));
     }
@@ -120,7 +127,11 @@ public class UserServiceImpl implements UserService {
     public PaymentDetails getPaymentDetails(long userId) {
         var profile = userProfileRepository.findByUserId(userId)
                 .orElseThrow(() -> new DomainException(ErrorCode.NOT_FOUND, "User profile not found"));
-        return new PaymentDetails(profile.getPaymentDetails(), profile.getPhone());
+        return new PaymentDetails(
+                profile.getPaymentDetails(),
+                profile.getPhone(),
+                profile.getPreferredBank()
+        );
     }
 
     @Override

@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import skinemsya.vse.ru.events.domain.EventStatus;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface EventRepository extends JpaRepository<EventEntity, Long> {
@@ -18,4 +19,6 @@ public interface EventRepository extends JpaRepository<EventEntity, Long> {
     boolean existsByGroupIdAndDeletedAtIsNullAndStatusNot(long groupId, EventStatus status);
 
     List<EventEntity> findByGroupIdAndStatusAndDeletedAtIsNull(long groupId, EventStatus status);
+
+    List<EventEntity> findByGroupIdAndDeletedAtIsNullAndStatusIn(long groupId, Collection<EventStatus> statuses);
 }

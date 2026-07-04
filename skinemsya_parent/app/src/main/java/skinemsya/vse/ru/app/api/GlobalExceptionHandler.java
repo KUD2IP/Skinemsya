@@ -17,14 +17,16 @@ import skinemsya.vse.ru.common.domain.DomainException;
 import skinemsya.vse.ru.common.domain.ErrorCode;
 import skinemsya.vse.ru.common.domain.TypedDomainException;
 import skinemsya.vse.ru.events.domain.exception.EventsDomainException;
+import skinemsya.vse.ru.files.domain.exception.FilesDomainException;
 import skinemsya.vse.ru.groups.domain.exception.GroupsDomainException;
+import skinemsya.vse.ru.receipts.domain.exception.ReceiptsDomainException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    @ExceptionHandler({GroupsDomainException.class, EventsDomainException.class})
+    @ExceptionHandler({GroupsDomainException.class, EventsDomainException.class, FilesDomainException.class, ReceiptsDomainException.class})
     public ResponseEntity<ApiErrorResponse> handleModuleDomainException(
             TypedDomainException ex,
             HttpServletRequest request

@@ -6,6 +6,7 @@ public record UserResponse(
         String displayName,
         String paymentDetails,
         String phone,
+        String preferredBank,
         String notificationSettings
 ) {
 }

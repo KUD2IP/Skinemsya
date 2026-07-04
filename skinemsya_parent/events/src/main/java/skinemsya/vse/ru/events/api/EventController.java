@@ -21,6 +21,7 @@ import skinemsya.vse.ru.common.security.AuthenticatedUser;
 import skinemsya.vse.ru.events.api.dto.CreateEventRequest;
 import skinemsya.vse.ru.events.api.dto.EventResponse;
 import skinemsya.vse.ru.events.api.dto.UpdateEventRequest;
+import skinemsya.vse.ru.events.application.EventAccessPort;
 import skinemsya.vse.ru.events.application.EventService;
 import skinemsya.vse.ru.events.domain.Event;
 import skinemsya.vse.ru.events.domain.exception.EventNotFoundException;
@@ -30,10 +31,16 @@ import skinemsya.vse.ru.groups.application.GroupAccessService;
 public class EventController {
 
     private final EventService eventService;
+    private final EventAccessPort eventAccessPort;
     private final GroupAccessService groupAccessService;
 
-    public EventController(EventService eventService, GroupAccessService groupAccessService) {
+    public EventController(
+            EventService eventService,
+            EventAccessPort eventAccessPort,
+            GroupAccessService groupAccessService
+    ) {
         this.eventService = eventService;
+        this.eventAccessPort = eventAccessPort;
         this.groupAccessService = groupAccessService;
     }
 
@@ -102,6 +109,15 @@ public class EventController {
     ) {
         long userId = requireUserId(authenticatedUser);
         eventService.delete(eventId, userId);
+    }
+
+    @PostMapping("/api/v1/events/{eventId}/send-to-distribution")
+    public EventResponse sendToDistribution(
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+            @PathVariable long eventId
+    ) {
+        long userId = requireUserId(authenticatedUser);
+        return toResponse(eventAccessPort.sendToDistribution(eventId, userId));
     }
 
     private static long requireUserId(AuthenticatedUser authenticatedUser) {

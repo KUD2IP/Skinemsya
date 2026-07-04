@@ -5,7 +5,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import skinemsya.vse.ru.auth.domain.AuthResult;
+import skinemsya.vse.ru.auth.domain.ChatBootstrap;
+import skinemsya.vse.ru.auth.domain.ChatSuggestedAction;
 import skinemsya.vse.ru.auth.domain.TokenPair;
+import skinemsya.vse.ru.events.application.EventDeepLinkAccessService;
+import skinemsya.vse.ru.events.application.EventService;
 import skinemsya.vse.ru.groups.application.GroupService;
 import skinemsya.vse.ru.integrations.application.TelegramBotClient;
 import skinemsya.vse.ru.integrations.application.TelegramInitDataValidator;
@@ -26,6 +30,8 @@ public class AuthService {
     private final RefreshTokenService refreshTokenService;
     private final GroupService groupService;
     private final TelegramBotClient telegramBotClient;
+    private final EventService eventService;
+    private final EventDeepLinkAccessService eventDeepLinkAccessService;
 
     public AuthService(
             TelegramInitDataValidator telegramInitDataValidator,
@@ -33,7 +39,9 @@ public class AuthService {
             JwtTokenService jwtTokenService,
             RefreshTokenService refreshTokenService,
             GroupService groupService,
-            TelegramBotClient telegramBotClient
+            TelegramBotClient telegramBotClient,
+            EventService eventService,
+            EventDeepLinkAccessService eventDeepLinkAccessService
     ) {
         this.telegramInitDataValidator = telegramInitDataValidator;
         this.userService = userService;
@@ -41,6 +49,8 @@ public class AuthService {
         this.refreshTokenService = refreshTokenService;
         this.groupService = groupService;
         this.telegramBotClient = telegramBotClient;
+        this.eventService = eventService;
+        this.eventDeepLinkAccessService = eventDeepLinkAccessService;
     }
 
     public AuthResult authenticate(String initData) {
@@ -59,7 +69,45 @@ public class AuthService {
                 );
             }
         });
-        return new AuthResult(session.tokens(), Optional.empty());
+        validatedInitData.eventId().ifPresent(eventId -> {
+            try {
+                eventDeepLinkAccessService.ensureAccess(eventId, session.userId());
+            } catch (RuntimeException ex) {
+                log.warn(
+                        "Event deep link access bootstrap failed for eventId={}, userId={}",
+                        eventId,
+                        session.userId(),
+                        ex
+                );
+            }
+        });
+        return new AuthResult(session.tokens(), buildBootstrap(validatedInitData, session.userId()));
+    }
+
+    private Optional<ChatBootstrap> buildBootstrap(TelegramInitData validatedInitData, long userId) {
+        if (validatedInitData.eventId().isPresent()) {
+            long eventId = validatedInitData.eventId().get();
+            return eventService.findById(eventId).map(event -> {
+                var group = groupService.findById(event.groupId()).orElse(null);
+                return new ChatBootstrap(
+                        event.groupId(),
+                        group != null ? group.name() : null,
+                        group != null ? group.type() : null,
+                        ChatSuggestedAction.OPEN_APP,
+                        eventId
+                );
+            });
+        }
+        return validatedInitData.chat().flatMap(chat ->
+                groupService.findByTelegramChatId(chat.chatId())
+                        .map(group -> new ChatBootstrap(
+                                group.id(),
+                                group.name(),
+                                group.type(),
+                                ChatSuggestedAction.OPEN_APP,
+                                null
+                        ))
+        );
     }
 
     private String resolveChatTitle(long chatId, String titleFromInitData) {

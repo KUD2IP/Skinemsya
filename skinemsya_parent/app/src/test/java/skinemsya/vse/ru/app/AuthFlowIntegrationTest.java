@@ -137,7 +137,10 @@ class AuthFlowIntegrationTest {
                         .content("{\"initData\":\"" + escapeJson(initData) + "\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
-                .andExpect(jsonPath("$.chatBootstrap").doesNotExist())
+                .andExpect(jsonPath("$.chatBootstrap.groupId").isNumber())
+                .andExpect(jsonPath("$.chatBootstrap.groupName").value("Office lunch"))
+                .andExpect(jsonPath("$.chatBootstrap.groupType").value("CHAT_LINKED"))
+                .andExpect(jsonPath("$.chatBootstrap.suggestedAction").value("OPEN_APP"))
                 .andReturn();
 
         var accessToken = readJsonField(authResponse.getResponse().getContentAsString(), "accessToken");
@@ -163,7 +166,9 @@ class AuthFlowIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"initData\":\"" + escapeJson(initData) + "\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.chatBootstrap").doesNotExist())
+                .andExpect(jsonPath("$.chatBootstrap.groupId").isNumber())
+                .andExpect(jsonPath("$.chatBootstrap.groupType").value("CHAT_LINKED"))
+                .andExpect(jsonPath("$.chatBootstrap.suggestedAction").value("OPEN_APP"))
                 .andReturn();
 
         var accessToken = readJsonField(authResponse.getResponse().getContentAsString(), "accessToken");

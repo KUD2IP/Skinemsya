@@ -64,12 +64,16 @@ public class TelegramBotClientImpl implements TelegramBotClient {
             long chatId,
             String text,
             String buttonText,
-            String chatType
+            String chatType,
+            String startParam
     ) {
         Map<String, Object> button = new LinkedHashMap<>();
         button.put("text", buttonText);
         if (isGroupChat(chatType)) {
-            button.put("url", buildMiniAppDeepLink(TelegramStartParam.forChat(chatId)));
+            String deepLink = startParam != null && !startParam.isBlank()
+                    ? startParam
+                    : TelegramStartParam.forChat(chatId);
+            button.put("url", buildMiniAppDeepLink(deepLink));
         } else {
             button.put("web_app", Map.of("url", requireMiniAppUrl()));
         }

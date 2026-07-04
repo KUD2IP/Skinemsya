@@ -1,0 +1,11 @@
+.git
+.idea
+**/.m2
+**/target
+storage
+.env
+*.md
+docs
+deploy/.env
+deploy/frontend
+deploy/data

@@ -47,6 +47,15 @@ class EventServiceTest {
     @Mock
     private UserService userService;
 
+    @Mock
+    private EventParticipantSyncService eventParticipantSyncService;
+
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    private DistributionReadinessPort distributionReadinessPort;
+
     @InjectMocks
     private EventServiceImpl eventService;
 

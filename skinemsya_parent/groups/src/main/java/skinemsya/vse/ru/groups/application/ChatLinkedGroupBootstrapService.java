@@ -1,7 +1,9 @@
 package skinemsya.vse.ru.groups.application;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import skinemsya.vse.ru.common.event.GroupMemberJoined;
 import skinemsya.vse.ru.groups.domain.Group;
 import skinemsya.vse.ru.groups.domain.GroupRole;
 import skinemsya.vse.ru.groups.domain.exception.GroupUserNotFoundException;
@@ -20,17 +22,20 @@ public class ChatLinkedGroupBootstrapService {
     private final GroupMemberRepository groupMemberRepository;
     private final GroupMapper groupMapper;
     private final UserService userService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ChatLinkedGroupBootstrapService(
             GroupRepository groupRepository,
             GroupMemberRepository groupMemberRepository,
             GroupMapper groupMapper,
-            UserService userService
+            UserService userService,
+            ApplicationEventPublisher eventPublisher
     ) {
         this.groupRepository = groupRepository;
         this.groupMemberRepository = groupMemberRepository;
         this.groupMapper = groupMapper;
         this.userService = userService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -53,6 +58,8 @@ public class ChatLinkedGroupBootstrapService {
 
         var role = resolveRole(group, userId);
         groupMemberRepository.insertIfAbsent(group.getId(), userId, role.name(), now);
+
+        eventPublisher.publishEvent(new GroupMemberJoined(group.getId(), userId));
 
         return groupMapper.toDomain(group);
     }

@@ -17,7 +17,13 @@ public interface UserService {
 
     User upsertFromTelegram(TelegramUserData telegramUserData);
 
-    UserProfile updateProfile(long userId, String paymentDetails, String phone, String notificationSettings);
+    UserProfile updateProfile(
+            long userId,
+            String paymentDetails,
+            String phone,
+            String preferredBank,
+            String notificationSettings
+    );
 
     PaymentDetails getPaymentDetails(long userId);
 

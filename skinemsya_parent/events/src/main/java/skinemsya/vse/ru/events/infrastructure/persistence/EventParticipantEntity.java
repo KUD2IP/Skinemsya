@@ -7,6 +7,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import java.time.Instant;
+
 @Entity
 @Table(name = "event_participants")
 public class EventParticipantEntity {
@@ -20,6 +22,9 @@ public class EventParticipantEntity {
 
     @Column(name = "user_id", nullable = false)
     private Long userId;
+
+    @Column(name = "selection_completed_at")
+    private Instant selectionCompletedAt;
 
     public Long getId() {
         return id;
@@ -43,5 +48,13 @@ public class EventParticipantEntity {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public Instant getSelectionCompletedAt() {
+        return selectionCompletedAt;
+    }
+
+    public void setSelectionCompletedAt(Instant selectionCompletedAt) {
+        this.selectionCompletedAt = selectionCompletedAt;
     }
 }

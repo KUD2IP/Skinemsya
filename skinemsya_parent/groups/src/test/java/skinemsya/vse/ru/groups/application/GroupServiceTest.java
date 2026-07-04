@@ -48,6 +48,9 @@ class GroupServiceTest {
     @Mock
     private ChatLinkedGroupBootstrapService chatLinkedGroupBootstrapService;
 
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
     @InjectMocks
     private GroupServiceImpl groupService;
 

@@ -1,5 +1,6 @@
 package skinemsya.vse.ru.groups.application;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -7,6 +8,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import skinemsya.vse.ru.common.api.PageRequest;
 import skinemsya.vse.ru.common.api.PageResult;
+import skinemsya.vse.ru.common.event.GroupMemberJoined;
 import skinemsya.vse.ru.groups.domain.Group;
 import skinemsya.vse.ru.groups.domain.GroupMember;
 import skinemsya.vse.ru.groups.domain.GroupMemberView;
@@ -42,6 +44,7 @@ public class GroupServiceImpl implements GroupService {
     private final UserService userService;
     private final Optional<GroupDeletionGuard> groupDeletionGuard;
     private final ChatLinkedGroupBootstrapService chatLinkedGroupBootstrapService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public GroupServiceImpl(
             GroupRepository groupRepository,
@@ -49,7 +52,8 @@ public class GroupServiceImpl implements GroupService {
             GroupMapper groupMapper,
             UserService userService,
             Optional<GroupDeletionGuard> groupDeletionGuard,
-            ChatLinkedGroupBootstrapService chatLinkedGroupBootstrapService
+            ChatLinkedGroupBootstrapService chatLinkedGroupBootstrapService,
+            ApplicationEventPublisher eventPublisher
     ) {
         this.groupRepository = groupRepository;
         this.groupMemberRepository = groupMemberRepository;
@@ -57,6 +61,7 @@ public class GroupServiceImpl implements GroupService {
         this.userService = userService;
         this.groupDeletionGuard = groupDeletionGuard;
         this.chatLinkedGroupBootstrapService = chatLinkedGroupBootstrapService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -85,6 +90,18 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
+    public void joinChatLinkedGroup(long groupId, long userId) {
+        var group = getActiveGroup(groupId);
+        if (group.getType() != GroupType.CHAT_LINKED) {
+            return;
+        }
+        requireUserExists(userId);
+        if (ensureMember(groupId, userId, GroupRole.MEMBER)) {
+            eventPublisher.publishEvent(new GroupMemberJoined(groupId, userId));
+        }
+    }
+
+    @Override
     public Group addMember(long groupId, long ownerUserId, long memberUserId) {
         var group = getActiveGroup(groupId);
         requireOwner(group, ownerUserId);
@@ -92,7 +109,9 @@ public class GroupServiceImpl implements GroupService {
             throw new StandaloneGroupRequiredForManualMemberException();
         }
         requireUserExists(memberUserId);
-        ensureMember(groupId, memberUserId, GroupRole.MEMBER);
+        if (ensureMember(groupId, memberUserId, GroupRole.MEMBER)) {
+            eventPublisher.publishEvent(new GroupMemberJoined(groupId, memberUserId));
+        }
         return groupMapper.toDomain(group);
     }
 
@@ -204,11 +223,12 @@ public class GroupServiceImpl implements GroupService {
         }
     }
 
-    private void ensureMember(long groupId, long userId, GroupRole roleForNewMember) {
+    private boolean ensureMember(long groupId, long userId, GroupRole roleForNewMember) {
         if (groupMemberRepository.existsByGroupIdAndUserId(groupId, userId)) {
-            return;
+            return false;
         }
         groupMemberRepository.insertIfAbsent(groupId, userId, roleForNewMember.name(), Instant.now());
+        return true;
     }
 
     private void addMemberEntity(long groupId, long userId, GroupRole role, Instant joinedAt) {
@@ -218,6 +238,12 @@ public class GroupServiceImpl implements GroupService {
         member.setRole(role);
         member.setJoinedAt(joinedAt);
         groupMemberRepository.save(member);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Group> findByTelegramChatId(long telegramChatId) {
+        return groupRepository.findByTelegramChatId(telegramChatId).map(groupMapper::toDomain);
     }
 
     private void requireUserExists(long userId) {

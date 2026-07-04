@@ -18,6 +18,7 @@ import java.time.Instant;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.authenticate;
@@ -172,5 +173,86 @@ class GroupsEventsFlowIntegrationTest {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].name").value("Snacks"));
+    }
+
+    @Test
+    void shouldAddLateJoinerToActiveDraftEvent() throws Exception {
+        var ownerToken = authenticate(mockMvc, 200_008L, "OwnerLate");
+        var ownerId = fetchUserId(mockMvc, ownerToken);
+
+        var groupResponse = mockMvc.perform(post("/api/v1/groups/standalone")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Late join\"}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        long groupId = Long.parseLong(readJsonNumberField(groupResponse, "id"));
+
+        var eventResponse = mockMvc.perform(post("/api/v1/groups/" + groupId + "/events")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Open collection\",\"payerId\":" + ownerId + "}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        long eventId = Long.parseLong(readJsonNumberField(eventResponse, "id"));
+
+        var lateToken = authenticate(mockMvc, 200_009L, "LateUser", "lateuser");
+        mockMvc.perform(post("/api/v1/groups/" + groupId + "/members")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"telegramUsername\":\"lateuser\"}"))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/v1/events/" + eventId + "/participants-status")
+                        .header("Authorization", "Bearer " + lateToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalParticipants").value(2));
+    }
+
+    @Test
+    void shouldLaunchSoloEventWithSingleParticipant() throws Exception {
+        var ownerToken = authenticate(mockMvc, 200_010L, "SoloOwner");
+        var ownerId = fetchUserId(mockMvc, ownerToken);
+
+        mockMvc.perform(put("/api/v1/users/me/profile")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentDetails\":\"Card solo\"}"))
+                .andExpect(status().isOk());
+
+        var groupResponse = mockMvc.perform(post("/api/v1/groups/standalone")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Solo group\"}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        long groupId = Long.parseLong(readJsonNumberField(groupResponse, "id"));
+
+        var eventResponse = mockMvc.perform(post("/api/v1/groups/" + groupId + "/events")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Solo event\",\"payerId\":" + ownerId + "}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        long eventId = Long.parseLong(readJsonNumberField(eventResponse, "id"));
+
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/positions")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Coffee\",\"quantity\":1,\"totalPriceKopecks\":30000}"))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/send-to-distribution")
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DISTRIBUTION"));
     }
 }

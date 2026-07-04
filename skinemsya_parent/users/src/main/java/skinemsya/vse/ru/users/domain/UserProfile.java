@@ -5,6 +5,7 @@ public record UserProfile(
         long userId,
         String paymentDetails,
         String phone,
+        String preferredBank,
         String notificationSettings
 ) {
 }

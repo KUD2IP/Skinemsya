@@ -36,6 +36,7 @@ public class UserController {
                 user.displayName(),
                 profile.paymentDetails(),
                 profile.phone(),
+                profile.preferredBank(),
                 profile.notificationSettings()
         );
     }
@@ -52,6 +53,7 @@ public class UserController {
                 userId,
                 request.paymentDetails(),
                 request.phone(),
+                request.preferredBank(),
                 request.notificationSettings()
         );
         return new UserResponse(
@@ -60,6 +62,7 @@ public class UserController {
                 user.displayName(),
                 profile.paymentDetails(),
                 profile.phone(),
+                profile.preferredBank(),
                 profile.notificationSettings()
         );
     }

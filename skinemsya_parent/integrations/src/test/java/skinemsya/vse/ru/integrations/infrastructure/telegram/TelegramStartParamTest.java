@@ -17,4 +17,10 @@ class TelegramStartParamTest {
     void shouldIgnoreUnknownStartParam() {
         assertThat(TelegramStartParam.parseChatId("invite_abc")).isEmpty();
     }
+
+    @Test
+    void shouldEncodeAndDecodeEventId() {
+        assertThat(TelegramStartParam.forEvent(42L)).isEqualTo("event_42");
+        assertThat(TelegramStartParam.parseEventId("event_42")).contains(42L);
+    }
 }

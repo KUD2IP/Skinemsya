@@ -6,6 +6,7 @@ public record ChatBootstrap(
         long groupId,
         String groupName,
         GroupType groupType,
-        ChatSuggestedAction suggestedAction
+        ChatSuggestedAction suggestedAction,
+        Long eventId
 ) {
 }

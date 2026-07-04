@@ -18,6 +18,8 @@ skinemsya:
     bot-username: testbot
     web-app-short-name: app
     bot-polling-enabled: false
+  file-storage:
+    max-upload-size-bytes: 1024
 
 logging:
   level:

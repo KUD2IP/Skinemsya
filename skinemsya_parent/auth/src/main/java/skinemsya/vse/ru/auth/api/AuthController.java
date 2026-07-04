@@ -40,7 +40,8 @@ public class AuthController {
                         bootstrap.groupId(),
                         bootstrap.groupName(),
                         bootstrap.groupType(),
-                        bootstrap.suggestedAction()
+                        bootstrap.suggestedAction(),
+                        bootstrap.eventId()
                 ))
                 .orElse(null);
         return toResponse(authResult.tokens(), chatBootstrap);
