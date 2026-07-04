@@ -149,6 +149,7 @@ ssh -i ~/.ssh/skinemsya_deploy deploy@<IP_СЕРВЕРА>
 1. В @BotFather → **Bot Settings → Domain** → добавь `skinemsya-vse.ru`.
 2. **Menu Button / Web App** → URL: `https://skinemsya-vse.ru`.
 3. Если используешь short name (`t.me/bot/app`) — пропиши `TELEGRAM_WEB_APP_SHORT_NAME` в `.env`.
+   **Обязательно для кнопки в групповом чате**, иначе ссылка откроет личку с ботом вместо Mini App.
 
 ---
 
@@ -312,7 +313,9 @@ APP_VERSION=manual docker compose -f docker-compose.prod.yml up -d
 
 | Симптом | Что проверить |
 | --- | --- |
-| 502 / API недоступен | `docker compose logs backend` |
+| 502 / API недоступен | `docker compose logs backend`; проверь `curl -X POST https://skinemsya-vse.ru/api/v1/auth/telegram` (не должен быть 405) |
+| Фронт открывается, в логах бека пусто | Caddy не проксирует `/api` → передеплой backend с актуальным `Caddyfile` |
+| Кнопка в группе открывает чат с ботом | Задай `TELEGRAM_WEB_APP_SHORT_NAME` в BotFather и в `STAGING_ENV` |
 | Нет HTTPS | DNS, порты 80/443, `docker compose logs caddy` |
 | Mini App не авторизует | `TELEGRAM_BOT_TOKEN`, домен в BotFather |
 | OOM | `free -h`, swap, `docker stats` |

@@ -18,7 +18,7 @@
 
 ```caddy
 skinemsya-vse.ru {
-    @backend path /api/* /actuator/*
+    @backend path_prefix /api /actuator
     handle @backend {
         reverse_proxy backend:8080
     }
