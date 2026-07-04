@@ -51,6 +51,7 @@ jobs:
         run: >
           mvn $MAVEN_CLI_OPTS -pl skinemsya_parent/app -am
           -Dtest='!*IntegrationTest,!SkinemsyaApplicationTest,!LiquibaseMigrationTest'
+          -Dsurefire.failIfNoSpecifiedTests=false
           -DfailIfNoTests=false
           test
 
