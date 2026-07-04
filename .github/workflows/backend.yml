@@ -158,10 +158,12 @@ jobs:
           STAGING_USER: ${{ secrets.STAGING_USER }}
           STAGING_SSH_PORT: ${{ secrets.STAGING_SSH_PORT }}
         run: |
-          SSH_OPTS="-i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes -p ${STAGING_SSH_PORT:-22}"
+          SSH_PORT="${STAGING_SSH_PORT:-22}"
+          SSH_OPTS="-i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes -p ${SSH_PORT}"
+          SCP_OPTS="-i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes -P ${SSH_PORT}"
           ssh $SSH_OPTS "${STAGING_USER}@${STAGING_HOST}" "mkdir -p ${DEPLOY_PATH}/deploy"
           rsync -avz -e "ssh $SSH_OPTS" deploy/ "${STAGING_USER}@${STAGING_HOST}:${DEPLOY_PATH}/deploy/"
-          scp $SSH_OPTS skinemsya-backend.tar.gz "${STAGING_USER}@${STAGING_HOST}:${DEPLOY_PATH}/"
+          scp $SCP_OPTS skinemsya-backend.tar.gz "${STAGING_USER}@${STAGING_HOST}:${DEPLOY_PATH}/"
 
       - name: Load image and restart stack
         env:
@@ -170,7 +172,8 @@ jobs:
           STAGING_SSH_PORT: ${{ secrets.STAGING_SSH_PORT }}
           APP_VERSION: ${{ needs.build-image.outputs.app_version }}
         run: |
-          SSH_OPTS="-i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes -p ${STAGING_SSH_PORT:-22}"
+          SSH_PORT="${STAGING_SSH_PORT:-22}"
+          SSH_OPTS="-i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes -p ${SSH_PORT}"
           ssh $SSH_OPTS "${STAGING_USER}@${STAGING_HOST}" <<EOSSH
           set -euo pipefail
           chmod 600 "${DEPLOY_PATH}/deploy/.env"
