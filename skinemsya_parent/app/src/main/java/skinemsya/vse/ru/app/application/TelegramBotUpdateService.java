@@ -15,7 +15,8 @@ import skinemsya.vse.ru.users.domain.TelegramUserData;
 public class TelegramBotUpdateService {
 
     private static final Logger log = LoggerFactory.getLogger(TelegramBotUpdateService.class);
-    private static final String START_HINT = """
+    private static final String START_HINT =
+            """
             Откройте приложение — вы уже в группе этого чата.
 
             Дальше: создайте мероприятие → укажите плательщика → добавьте позиции или чек.""";
@@ -32,8 +33,7 @@ public class TelegramBotUpdateService {
             TelegramGroupWelcomeService groupWelcomeService,
             TelegramBotClient telegramBotClient,
             UserService userService,
-            GroupService groupService
-    ) {
+            GroupService groupService) {
         this.groupWelcomeService = groupWelcomeService;
         this.telegramBotClient = telegramBotClient;
         this.userService = userService;

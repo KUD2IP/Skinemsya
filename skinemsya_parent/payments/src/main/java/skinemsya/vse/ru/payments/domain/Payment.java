@@ -10,6 +10,4 @@ public record Payment(
         Instant debtorConfirmedAt,
         Instant payerConfirmedAt,
         Instant createdAt,
-        Instant updatedAt
-) {
-}
+        Instant updatedAt) {}

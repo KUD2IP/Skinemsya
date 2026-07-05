@@ -1,5 +1,14 @@
 package skinemsya.vse.ru.groups.application;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.Instant;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -7,10 +16,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import skinemsya.vse.ru.common.domain.ErrorCode;
-import skinemsya.vse.ru.groups.domain.exception.GroupOwnerAccessRequiredException;
 import skinemsya.vse.ru.groups.domain.Group;
 import skinemsya.vse.ru.groups.domain.GroupRole;
 import skinemsya.vse.ru.groups.domain.GroupType;
+import skinemsya.vse.ru.groups.domain.exception.GroupOwnerAccessRequiredException;
 import skinemsya.vse.ru.groups.infrastructure.mapper.GroupMapper;
 import skinemsya.vse.ru.groups.infrastructure.persistence.GroupEntity;
 import skinemsya.vse.ru.groups.infrastructure.persistence.GroupMemberEntity;
@@ -18,17 +27,6 @@ import skinemsya.vse.ru.groups.infrastructure.persistence.GroupMemberRepository;
 import skinemsya.vse.ru.groups.infrastructure.persistence.GroupRepository;
 import skinemsya.vse.ru.users.application.UserService;
 import skinemsya.vse.ru.users.domain.User;
-
-import java.time.Instant;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class GroupServiceTest {
@@ -104,7 +102,8 @@ class GroupServiceTest {
 
         groupService.addMember(10L, OWNER_ID, MEMBER_ID);
 
-        verify(groupMemberRepository).insertIfAbsent(eq(10L), eq(MEMBER_ID), eq(GroupRole.MEMBER.name()), any(Instant.class));
+        verify(groupMemberRepository)
+                .insertIfAbsent(eq(10L), eq(MEMBER_ID), eq(GroupRole.MEMBER.name()), any(Instant.class));
     }
 
     @Test

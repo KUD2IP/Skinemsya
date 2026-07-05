@@ -1,9 +1,8 @@
 package skinemsya.vse.ru.payments.api.dto;
 
+import java.time.Instant;
 import skinemsya.vse.ru.payments.domain.Payment;
 import skinemsya.vse.ru.payments.domain.PaymentStatus;
-
-import java.time.Instant;
 
 public record PaymentResponse(
         long id,
@@ -13,8 +12,7 @@ public record PaymentResponse(
         Instant debtorConfirmedAt,
         Instant payerConfirmedAt,
         Instant createdAt,
-        Instant updatedAt
-) {
+        Instant updatedAt) {
     public static PaymentResponse from(Payment payment) {
         return new PaymentResponse(
                 payment.id(),
@@ -24,7 +22,6 @@ public record PaymentResponse(
                 payment.debtorConfirmedAt(),
                 payment.payerConfirmedAt(),
                 payment.createdAt(),
-                payment.updatedAt()
-        );
+                payment.updatedAt());
     }
 }

@@ -2,6 +2,13 @@ package skinemsya.vse.ru.integrations.infrastructure.telegram;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.net.SocketTimeoutException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -14,14 +21,6 @@ import skinemsya.vse.ru.integrations.application.TelegramBotClient;
 import skinemsya.vse.ru.integrations.domain.TelegramSentMessage;
 import skinemsya.vse.ru.integrations.infrastructure.config.TelegramIntegrationProperties;
 
-import java.net.SocketTimeoutException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 @Component
 public class TelegramBotClientImpl implements TelegramBotClient {
 
@@ -33,10 +32,7 @@ public class TelegramBotClientImpl implements TelegramBotClient {
     private volatile String resolvedBotUsername;
 
     public TelegramBotClientImpl(
-            TelegramIntegrationProperties properties,
-            RestClient.Builder restClientBuilder,
-            ObjectMapper objectMapper
-    ) {
+            TelegramIntegrationProperties properties, RestClient.Builder restClientBuilder, ObjectMapper objectMapper) {
         this.properties = properties;
         this.restClient = restClientBuilder.build();
         this.objectMapper = objectMapper;
@@ -61,18 +57,12 @@ public class TelegramBotClientImpl implements TelegramBotClient {
 
     @Override
     public TelegramSentMessage sendMessageWithOpenAppButton(
-            long chatId,
-            String text,
-            String buttonText,
-            String chatType,
-            String startParam
-    ) {
+            long chatId, String text, String buttonText, String chatType, String startParam) {
         Map<String, Object> button = new LinkedHashMap<>();
         button.put("text", buttonText);
         if (isGroupChat(chatType)) {
-            String deepLink = startParam != null && !startParam.isBlank()
-                    ? startParam
-                    : TelegramStartParam.forChat(chatId);
+            String deepLink =
+                    startParam != null && !startParam.isBlank() ? startParam : TelegramStartParam.forChat(chatId);
             button.put("url", buildMiniAppDeepLink(deepLink));
         } else {
             button.put("web_app", Map.of("url", requireMiniAppUrl()));
@@ -88,11 +78,12 @@ public class TelegramBotClientImpl implements TelegramBotClient {
 
     @Override
     public void pinMessage(long chatId, long messageId) {
-        callApi("pinChatMessage", Map.of(
-                "chat_id", chatId,
-                "message_id", messageId,
-                "disable_notification", true
-        ));
+        callApi(
+                "pinChatMessage",
+                Map.of(
+                        "chat_id", chatId,
+                        "message_id", messageId,
+                        "disable_notification", true));
     }
 
     @Override
@@ -137,8 +128,7 @@ public class TelegramBotClientImpl implements TelegramBotClient {
         List<Map<String, String>> commands = List.of(
                 Map.of("command", "start", "description", "Начать работу с Skinemsya"),
                 Map.of("command", "open", "description", "Открыть приложение"),
-                Map.of("command", "help", "description", "Справка по командам")
-        );
+                Map.of("command", "help", "description", "Справка по командам"));
         callApi("setMyCommands", Map.of("commands", commands));
     }
 
@@ -213,7 +203,8 @@ public class TelegramBotClientImpl implements TelegramBotClient {
         var botToken = requireBotToken();
         String url = "https://api.telegram.org/bot" + botToken + "/" + method;
         try {
-            String responseBody = restClient.post()
+            String responseBody = restClient
+                    .post()
                     .uri(url)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(payload)
@@ -224,8 +215,7 @@ public class TelegramBotClientImpl implements TelegramBotClient {
             throw new DomainException(
                     ErrorCode.INTEGRATION_ERROR,
                     "Telegram API HTTP error: " + ex.getStatusCode().value(),
-                    ex
-            );
+                    ex);
         } catch (DomainException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -235,17 +225,13 @@ public class TelegramBotClientImpl implements TelegramBotClient {
 
     private JsonNode callApiGet(String url, String method) {
         try {
-            String responseBody = restClient.get()
-                    .uri(url)
-                    .retrieve()
-                    .body(String.class);
+            String responseBody = restClient.get().uri(url).retrieve().body(String.class);
             return extractResult(responseBody, method);
         } catch (RestClientResponseException ex) {
             throw new DomainException(
                     ErrorCode.INTEGRATION_ERROR,
                     "Telegram API HTTP error: " + ex.getStatusCode().value(),
-                    ex
-            );
+                    ex);
         } catch (DomainException ex) {
             throw ex;
         } catch (Exception ex) {

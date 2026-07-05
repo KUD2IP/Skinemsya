@@ -1,5 +1,10 @@
 package skinemsya.vse.ru.files.infrastructure.storage;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.nio.file.Path;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import skinemsya.vse.ru.files.infrastructure.config.FileStorageProperties;
@@ -13,12 +18,6 @@ import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.nio.file.Path;
-import java.util.UUID;
 
 public class S3FileStorage implements FileStorage {
 
@@ -35,8 +34,10 @@ public class S3FileStorage implements FileStorage {
         if (s3.bucket() == null || s3.bucket().isBlank()) {
             throw new IllegalStateException("S3 bucket is not configured");
         }
-        if (s3.accessKey() == null || s3.accessKey().isBlank()
-                || s3.secretKey() == null || s3.secretKey().isBlank()) {
+        if (s3.accessKey() == null
+                || s3.accessKey().isBlank()
+                || s3.secretKey() == null
+                || s3.secretKey().isBlank()) {
             throw new IllegalStateException("S3 credentials are not configured");
         }
 
@@ -44,10 +45,10 @@ public class S3FileStorage implements FileStorage {
         this.s3Client = S3Client.builder()
                 .endpointOverride(URI.create(s3.endpoint().trim()))
                 .region(Region.of(s3.region()))
-                .credentialsProvider(StaticCredentialsProvider.create(
-                        AwsBasicCredentials.create(s3.accessKey().trim(), s3.secretKey().trim())
-                ))
-                .serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build())
+                .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(
+                        s3.accessKey().trim(), s3.secretKey().trim())))
+                .serviceConfiguration(
+                        S3Configuration.builder().pathStyleAccessEnabled(true).build())
                 .build();
         ensureBucketExists();
     }
@@ -57,7 +58,8 @@ public class S3FileStorage implements FileStorage {
             s3Client.headBucket(HeadBucketRequest.builder().bucket(bucket).build());
         } catch (Exception ex) {
             try {
-                s3Client.createBucket(CreateBucketRequest.builder().bucket(bucket).build());
+                s3Client.createBucket(
+                        CreateBucketRequest.builder().bucket(bucket).build());
                 log.info("Created S3 bucket {}", bucket);
             } catch (Exception createEx) {
                 log.warn("Could not ensure S3 bucket {} exists", bucket, createEx);
@@ -71,9 +73,7 @@ public class S3FileStorage implements FileStorage {
         try {
             byte[] bytes = content.readAllBytes();
             s3Client.putObject(
-                    PutObjectRequest.builder().bucket(bucket).key(fileName).build(),
-                    RequestBody.fromBytes(bytes)
-            );
+                    PutObjectRequest.builder().bucket(bucket).key(fileName).build(), RequestBody.fromBytes(bytes));
             return fileName;
         } catch (IOException ex) {
             throw new IllegalStateException("Failed to store file", ex);
@@ -87,6 +87,7 @@ public class S3FileStorage implements FileStorage {
 
     @Override
     public InputStream read(String storagePath) {
-        return s3Client.getObject(GetObjectRequest.builder().bucket(bucket).key(storagePath).build());
+        return s3Client.getObject(
+                GetObjectRequest.builder().bucket(bucket).key(storagePath).build());
     }
 }

@@ -1,12 +1,11 @@
 package skinemsya.vse.ru.groups.application;
 
+import java.util.Optional;
 import skinemsya.vse.ru.common.api.PageRequest;
 import skinemsya.vse.ru.common.api.PageResult;
 import skinemsya.vse.ru.groups.domain.Group;
 import skinemsya.vse.ru.groups.domain.GroupMember;
 import skinemsya.vse.ru.groups.domain.GroupMemberView;
-
-import java.util.Optional;
 
 public interface GroupService {
 

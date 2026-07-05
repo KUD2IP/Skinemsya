@@ -11,6 +11,4 @@ public record Event(
         long createdBy,
         EventStatus status,
         Instant createdAt,
-        Instant updatedAt
-) {
-}
+        Instant updatedAt) {}

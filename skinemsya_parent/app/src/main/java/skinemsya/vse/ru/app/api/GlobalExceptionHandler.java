@@ -26,11 +26,14 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    @ExceptionHandler({GroupsDomainException.class, EventsDomainException.class, FilesDomainException.class, ReceiptsDomainException.class})
+    @ExceptionHandler({
+        GroupsDomainException.class,
+        EventsDomainException.class,
+        FilesDomainException.class,
+        ReceiptsDomainException.class
+    })
     public ResponseEntity<ApiErrorResponse> handleModuleDomainException(
-            TypedDomainException ex,
-            HttpServletRequest request
-    ) {
+            TypedDomainException ex, HttpServletRequest request) {
         return toErrorResponse(ex, request);
     }
 
@@ -41,43 +44,27 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiErrorResponse> handleValidationException(
-            MethodArgumentNotValidException ex,
-            HttpServletRequest request
-    ) {
+            MethodArgumentNotValidException ex, HttpServletRequest request) {
         var fields = ex.getBindingResult().getFieldErrors().stream()
                 .map(this::toFieldError)
                 .toList();
-        return ResponseEntity
-                .status(ErrorCode.VALIDATION_ERROR.httpStatus())
+        return ResponseEntity.status(ErrorCode.VALIDATION_ERROR.httpStatus())
                 .body(ApiErrorResponse.of(
-                        ErrorCode.VALIDATION_ERROR.code(),
-                        "Validation failed",
-                        correlationId(request),
-                        fields
-                ));
+                        ErrorCode.VALIDATION_ERROR.code(), "Validation failed", correlationId(request), fields));
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleNotFound(NoResourceFoundException ex, HttpServletRequest request) {
-        return ResponseEntity
-                .status(ErrorCode.NOT_FOUND.httpStatus())
-                .body(ApiErrorResponse.of(
-                        ErrorCode.NOT_FOUND.code(),
-                        "Resource not found",
-                        correlationId(request)
-                ));
+        return ResponseEntity.status(ErrorCode.NOT_FOUND.httpStatus())
+                .body(ApiErrorResponse.of(ErrorCode.NOT_FOUND.code(), "Resource not found", correlationId(request)));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleUnexpectedException(Exception ex, HttpServletRequest request) {
         log.error("Unexpected error", ex);
-        return ResponseEntity
-                .status(ErrorCode.INTERNAL_ERROR.httpStatus())
+        return ResponseEntity.status(ErrorCode.INTERNAL_ERROR.httpStatus())
                 .body(ApiErrorResponse.of(
-                        ErrorCode.INTERNAL_ERROR.code(),
-                        "Internal server error",
-                        correlationId(request)
-                ));
+                        ErrorCode.INTERNAL_ERROR.code(), "Internal server error", correlationId(request)));
     }
 
     private ApiErrorField toFieldError(FieldError fieldError) {
@@ -87,8 +74,7 @@ public class GlobalExceptionHandler {
     private ResponseEntity<ApiErrorResponse> toErrorResponse(TypedDomainException ex, HttpServletRequest request) {
         var errorCode = ex.errorCode();
         log.warn("Domain error [{}]: {}", errorCode.code(), ex.getMessage());
-        return ResponseEntity
-                .status(errorCode.httpStatus())
+        return ResponseEntity.status(errorCode.httpStatus())
                 .body(ApiErrorResponse.of(errorCode.code(), ex.getMessage(), correlationId(request)));
     }
 

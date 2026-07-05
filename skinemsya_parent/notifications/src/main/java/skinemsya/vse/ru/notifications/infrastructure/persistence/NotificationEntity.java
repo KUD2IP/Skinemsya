@@ -8,12 +8,11 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.Instant;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import skinemsya.vse.ru.notifications.domain.NotificationStatus;
 import skinemsya.vse.ru.notifications.domain.NotificationType;
-
-import java.time.Instant;
 
 @Entity
 @Table(name = "notifications")

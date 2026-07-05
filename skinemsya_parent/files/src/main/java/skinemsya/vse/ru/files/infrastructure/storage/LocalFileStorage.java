@@ -1,12 +1,11 @@
 package skinemsya.vse.ru.files.infrastructure.storage;
 
-import skinemsya.vse.ru.files.infrastructure.config.FileStorageProperties;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
+import skinemsya.vse.ru.files.infrastructure.config.FileStorageProperties;
 
 public class LocalFileStorage implements FileStorage {
 

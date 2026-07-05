@@ -1,12 +1,13 @@
 package skinemsya.vse.ru.receipts.application;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import skinemsya.vse.ru.events.application.DistributionReadinessPort;
 import skinemsya.vse.ru.events.application.EventAccessPort;
 import skinemsya.vse.ru.events.domain.EventStatus;
 import skinemsya.vse.ru.events.domain.exception.EventNotDraftException;
-import skinemsya.vse.ru.events.domain.exception.NoPositionsException;
 import skinemsya.vse.ru.receipts.domain.Position;
 import skinemsya.vse.ru.receipts.domain.PositionSource;
 import skinemsya.vse.ru.receipts.domain.exception.PositionNotFoundException;
@@ -14,10 +15,6 @@ import skinemsya.vse.ru.receipts.infrastructure.persistence.PositionEntity;
 import skinemsya.vse.ru.receipts.infrastructure.persistence.PositionRepository;
 import skinemsya.vse.ru.receipts.infrastructure.persistence.PositionSelectionRepository;
 import skinemsya.vse.ru.receipts.infrastructure.persistence.SharedPositionTargetRepository;
-
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.List;
 
 @Service
 @Transactional
@@ -32,8 +29,7 @@ public class PositionServiceImpl implements PositionService {
             PositionRepository positionRepository,
             PositionSelectionRepository selectionRepository,
             SharedPositionTargetRepository sharedTargetRepository,
-            EventAccessPort eventAccessPort
-    ) {
+            EventAccessPort eventAccessPort) {
         this.positionRepository = positionRepository;
         this.selectionRepository = selectionRepository;
         this.sharedTargetRepository = sharedTargetRepository;
@@ -126,8 +122,7 @@ public class PositionServiceImpl implements PositionService {
                 entity.isTips(),
                 entity.isLowConfidence(),
                 entity.getSource(),
-                entity.getCreatedAt()
-        );
+                entity.getCreatedAt());
     }
 
     PositionEntity getPosition(long positionId) {

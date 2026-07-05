@@ -1,5 +1,9 @@
 package skinemsya.vse.ru.payments.application;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,11 +28,6 @@ import skinemsya.vse.ru.payments.infrastructure.persistence.PaymentEntity;
 import skinemsya.vse.ru.payments.infrastructure.persistence.PaymentRepository;
 import skinemsya.vse.ru.users.application.UserService;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-
 @Service
 @Transactional
 public class PaymentServiceImpl implements PaymentService {
@@ -52,8 +51,7 @@ public class PaymentServiceImpl implements PaymentService {
             FileService fileService,
             EventAccessPort eventAccessPort,
             PayerReminderJobRepository reminderJobRepository,
-            ApplicationEventPublisher eventPublisher
-    ) {
+            ApplicationEventPublisher eventPublisher) {
         this.paymentRepository = paymentRepository;
         this.debtRepository = debtRepository;
         this.debtService = debtService;
@@ -75,7 +73,8 @@ public class PaymentServiceImpl implements PaymentService {
 
         var creditor = userService.findById(debt.getCreditorId()).orElseThrow(DebtNotFoundException::new);
         var paymentDetails = userService.getPaymentDetails(debt.getCreditorId());
-        if (paymentDetails.paymentDetails() == null || paymentDetails.paymentDetails().isBlank()) {
+        if (paymentDetails.paymentDetails() == null
+                || paymentDetails.paymentDetails().isBlank()) {
             throw new PayerPaymentDetailsMissingException();
         }
 
@@ -89,8 +88,7 @@ public class PaymentServiceImpl implements PaymentService {
                 paymentDetails.paymentDetails(),
                 paymentDetails.phone(),
                 paymentDetails.preferredBank(),
-                payment != null ? payment.getStatus() : PaymentStatus.CREATED
-        );
+                payment != null ? payment.getStatus() : PaymentStatus.CREATED);
     }
 
     @Override
@@ -133,8 +131,7 @@ public class PaymentServiceImpl implements PaymentService {
                 debtorId,
                 debt.getCreditorId(),
                 debt.getAmountKopecks(),
-                debtor.displayName()
-        ));
+                debtor.displayName()));
         return toDomain(payment);
     }
 
@@ -218,12 +215,7 @@ public class PaymentServiceImpl implements PaymentService {
         payment = paymentRepository.save(payment);
 
         eventPublisher.publishEvent(new PaymentDisputed(
-                debt.getEventId(),
-                payment.getId(),
-                debt.getDebtorId(),
-                debt.getCreditorId(),
-                debt.getAmountKopecks()
-        ));
+                debt.getEventId(), payment.getId(), debt.getDebtorId(), debt.getCreditorId(), debt.getAmountKopecks()));
         return toDomain(payment);
     }
 
@@ -271,7 +263,6 @@ public class PaymentServiceImpl implements PaymentService {
                 entity.getDebtorConfirmedAt(),
                 entity.getPayerConfirmedAt(),
                 entity.getCreatedAt(),
-                entity.getUpdatedAt()
-        );
+                entity.getUpdatedAt());
     }
 }

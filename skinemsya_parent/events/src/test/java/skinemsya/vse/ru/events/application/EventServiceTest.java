@@ -1,33 +1,32 @@
 package skinemsya.vse.ru.events.application;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import skinemsya.vse.ru.events.domain.exception.PayerNotGroupMemberException;
-import skinemsya.vse.ru.events.domain.Event;
-import skinemsya.vse.ru.events.domain.EventStatus;
-import skinemsya.vse.ru.events.infrastructure.mapper.EventMapper;
-import skinemsya.vse.ru.events.infrastructure.persistence.EventEntity;
-import skinemsya.vse.ru.events.infrastructure.persistence.EventParticipantEntity;
-import skinemsya.vse.ru.events.infrastructure.persistence.EventParticipantRepository;
-import skinemsya.vse.ru.events.infrastructure.persistence.EventRepository;
-import skinemsya.vse.ru.groups.application.GroupAccessService;
-import skinemsya.vse.ru.common.domain.ErrorCode;
-import skinemsya.vse.ru.users.application.UserService;
-import skinemsya.vse.ru.users.domain.User;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import skinemsya.vse.ru.common.domain.ErrorCode;
+import skinemsya.vse.ru.events.domain.Event;
+import skinemsya.vse.ru.events.domain.EventStatus;
+import skinemsya.vse.ru.events.domain.exception.PayerNotGroupMemberException;
+import skinemsya.vse.ru.events.infrastructure.mapper.EventMapper;
+import skinemsya.vse.ru.events.infrastructure.persistence.EventEntity;
+import skinemsya.vse.ru.events.infrastructure.persistence.EventParticipantEntity;
+import skinemsya.vse.ru.events.infrastructure.persistence.EventParticipantRepository;
+import skinemsya.vse.ru.events.infrastructure.persistence.EventRepository;
+import skinemsya.vse.ru.groups.application.GroupAccessService;
+import skinemsya.vse.ru.users.application.UserService;
+import skinemsya.vse.ru.users.domain.User;
 
 @ExtendWith(MockitoExtension.class)
 class EventServiceTest {

@@ -8,10 +8,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import skinemsya.vse.ru.receipts.domain.PositionSource;
-
 import java.math.BigDecimal;
 import java.time.Instant;
+import skinemsya.vse.ru.receipts.domain.PositionSource;
 
 @Entity
 @Table(name = "positions")

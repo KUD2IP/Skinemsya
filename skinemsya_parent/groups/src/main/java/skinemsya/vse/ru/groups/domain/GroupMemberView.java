@@ -10,6 +10,4 @@ public record GroupMemberView(
         String displayName,
         String telegramUsername,
         long telegramUserId,
-        Instant joinedAt
-) {
-}
+        Instant joinedAt) {}

@@ -29,8 +29,7 @@ public class SelectionController {
     public void updateSelections(
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @PathVariable long eventId,
-            @Valid @RequestBody UpdateSelectionsRequest request
-    ) {
+            @Valid @RequestBody UpdateSelectionsRequest request) {
         long userId = requireUserId(authenticatedUser);
         var updates = request.selections().stream()
                 .map(item -> new SelectionService.SelectionUpdate(item.positionId(), item.quantity()))
@@ -41,9 +40,7 @@ public class SelectionController {
     @PostMapping("/api/v1/events/{eventId}/complete-selection")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void completeSelection(
-            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
-            @PathVariable long eventId
-    ) {
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser, @PathVariable long eventId) {
         selectionService.completeSelection(eventId, requireUserId(authenticatedUser));
     }
 

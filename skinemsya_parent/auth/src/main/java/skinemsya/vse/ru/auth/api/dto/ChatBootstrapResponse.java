@@ -6,10 +6,4 @@ import skinemsya.vse.ru.groups.domain.GroupType;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ChatBootstrapResponse(
-        long groupId,
-        String groupName,
-        GroupType groupType,
-        ChatSuggestedAction suggestedAction,
-        Long eventId
-) {
-}
+        long groupId, String groupName, GroupType groupType, ChatSuggestedAction suggestedAction, Long eventId) {}

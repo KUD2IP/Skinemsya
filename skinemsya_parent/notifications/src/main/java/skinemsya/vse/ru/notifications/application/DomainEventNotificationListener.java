@@ -3,8 +3,8 @@ package skinemsya.vse.ru.notifications.application;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-import skinemsya.vse.ru.common.event.DebtsCalculated;
 import skinemsya.vse.ru.common.event.DebtorConfirmed;
+import skinemsya.vse.ru.common.event.DebtsCalculated;
 import skinemsya.vse.ru.common.event.EventCompleted;
 import skinemsya.vse.ru.common.event.EventSentToDistribution;
 import skinemsya.vse.ru.common.event.PaymentDisputed;
@@ -25,8 +25,7 @@ public class DomainEventNotificationListener {
             NotificationService notificationService,
             EventAccessPort eventAccessPort,
             GroupService groupService,
-            UserService userService
-    ) {
+            UserService userService) {
         this.notificationService = notificationService;
         this.eventAccessPort = eventAccessPort;
         this.groupService = groupService;
@@ -38,16 +37,13 @@ public class DomainEventNotificationListener {
         var payer = userService.findById(event.payerId()).orElse(null);
         String payerName = payer != null ? payer.displayName() : "Участник";
         String total = NotificationServiceImpl.formatRubles(event.totalKopecks());
-        String message = payerName + " запустил сбор «" + event.eventTitle() + "» на " + total + " ₽. Выберите свои блюда";
+        String message =
+                payerName + " запустил сбор «" + event.eventTitle() + "» на " + total + " ₽. Выберите свои блюда";
 
         groupService.findById(event.groupId()).ifPresent(group -> {
             if (group.telegramChatId() != null) {
                 notificationService.sendToGroupChat(
-                        group.telegramChatId(),
-                        NotificationType.DISTRIBUTION_STARTED,
-                        message,
-                        event.eventId()
-                );
+                        group.telegramChatId(), NotificationType.DISTRIBUTION_STARTED, message, event.eventId());
             }
         });
     }
@@ -63,11 +59,7 @@ public class DomainEventNotificationListener {
         groupService.findById(groupId).ifPresent(group -> {
             if (group.telegramChatId() != null) {
                 notificationService.sendToGroupChat(
-                        group.telegramChatId(),
-                        NotificationType.DEBTS_CALCULATED,
-                        message,
-                        event.eventId()
-                );
+                        group.telegramChatId(), NotificationType.DEBTS_CALCULATED, message, event.eventId());
             }
         });
     }
@@ -78,8 +70,7 @@ public class DomainEventNotificationListener {
         notificationService.send(
                 event.creditorId(),
                 NotificationType.PAYMENT_PENDING,
-                "Проверь перевод от " + event.debtorName() + " (" + amount + " ₽)"
-        );
+                "Проверь перевод от " + event.debtorName() + " (" + amount + " ₽)");
 
         long groupId = eventAccessPort.getEventGroupId(event.eventId());
         groupService.findById(groupId).ifPresent(group -> {
@@ -88,8 +79,7 @@ public class DomainEventNotificationListener {
                         group.telegramChatId(),
                         NotificationType.PAYMENT_PENDING,
                         event.debtorName() + " скинула " + amount + " ₽",
-                        event.eventId()
-                );
+                        event.eventId());
             }
         });
     }
@@ -102,8 +92,7 @@ public class DomainEventNotificationListener {
         notificationService.send(
                 event.debtorId(),
                 NotificationType.PAYMENT_DISPUTED,
-                payerName + " не видит твой перевод " + amount + " ₽ — проверь и отправь снова"
-        );
+                payerName + " не видит твой перевод " + amount + " ₽ — проверь и отправь снова");
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -113,11 +102,7 @@ public class DomainEventNotificationListener {
         groupService.findById(groupId).ifPresent(group -> {
             if (group.telegramChatId() != null) {
                 notificationService.sendToGroupChat(
-                        group.telegramChatId(),
-                        NotificationType.EVENT_COMPLETED,
-                        message,
-                        event.eventId()
-                );
+                        group.telegramChatId(), NotificationType.EVENT_COMPLETED, message, event.eventId());
             }
         });
     }

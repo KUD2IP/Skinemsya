@@ -35,14 +35,14 @@ public class AuthController {
     }
 
     private static TokenResponse toResponse(AuthResult authResult) {
-        var chatBootstrap = authResult.chatBootstrap()
+        var chatBootstrap = authResult
+                .chatBootstrap()
                 .map(bootstrap -> new ChatBootstrapResponse(
                         bootstrap.groupId(),
                         bootstrap.groupName(),
                         bootstrap.groupType(),
                         bootstrap.suggestedAction(),
-                        bootstrap.eventId()
-                ))
+                        bootstrap.eventId()))
                 .orElse(null);
         return toResponse(authResult.tokens(), chatBootstrap);
     }
@@ -53,10 +53,6 @@ public class AuthController {
 
     private static TokenResponse toResponse(TokenPair tokenPair, ChatBootstrapResponse chatBootstrap) {
         return new TokenResponse(
-                tokenPair.accessToken(),
-                tokenPair.refreshToken(),
-                tokenPair.expiresInSeconds(),
-                chatBootstrap
-        );
+                tokenPair.accessToken(), tokenPair.refreshToken(), tokenPair.expiresInSeconds(), chatBootstrap);
     }
 }

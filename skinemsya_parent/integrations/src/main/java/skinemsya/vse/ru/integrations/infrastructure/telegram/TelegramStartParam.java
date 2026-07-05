@@ -7,8 +7,7 @@ public final class TelegramStartParam {
     private static final String CHAT_PREFIX = "chat_";
     private static final String EVENT_PREFIX = "event_";
 
-    private TelegramStartParam() {
-    }
+    private TelegramStartParam() {}
 
     public static String forChat(long chatId) {
         return CHAT_PREFIX + chatId;

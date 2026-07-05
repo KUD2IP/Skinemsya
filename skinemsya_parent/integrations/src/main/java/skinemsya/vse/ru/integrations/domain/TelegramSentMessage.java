@@ -1,4 +1,3 @@
 package skinemsya.vse.ru.integrations.domain;
 
-public record TelegramSentMessage(long messageId) {
-}
+public record TelegramSentMessage(long messageId) {}

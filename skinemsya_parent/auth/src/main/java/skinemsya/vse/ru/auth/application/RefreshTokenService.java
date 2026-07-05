@@ -1,20 +1,18 @@
 package skinemsya.vse.ru.auth.application;
 
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import skinemsya.vse.ru.auth.domain.TokenPair;
-import skinemsya.vse.ru.auth.infrastructure.config.JwtProperties;
-import skinemsya.vse.ru.auth.infrastructure.persistence.RefreshTokenEntity;
-import skinemsya.vse.ru.auth.infrastructure.persistence.RefreshTokenRepository;
-import skinemsya.vse.ru.common.domain.DomainException;
-import skinemsya.vse.ru.common.domain.ErrorCode;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.UUID;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import skinemsya.vse.ru.auth.infrastructure.config.JwtProperties;
+import skinemsya.vse.ru.auth.infrastructure.persistence.RefreshTokenEntity;
+import skinemsya.vse.ru.auth.infrastructure.persistence.RefreshTokenRepository;
+import skinemsya.vse.ru.common.domain.DomainException;
+import skinemsya.vse.ru.common.domain.ErrorCode;
 
 @Service
 @Transactional
@@ -62,7 +60,8 @@ public class RefreshTokenService {
     }
 
     public void revoke(String rawRefreshToken) {
-        var entity = refreshTokenRepository.findByTokenHash(hash(rawRefreshToken)).orElse(null);
+        var entity =
+                refreshTokenRepository.findByTokenHash(hash(rawRefreshToken)).orElse(null);
         if (entity != null && !entity.isRevoked()) {
             entity.setRevoked(true);
             refreshTokenRepository.save(entity);
@@ -73,7 +72,8 @@ public class RefreshTokenService {
         if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
             throw new DomainException(ErrorCode.AUTHENTICATION_ERROR, "Refresh token is missing");
         }
-        var entity = refreshTokenRepository.findByTokenHash(hash(rawRefreshToken))
+        var entity = refreshTokenRepository
+                .findByTokenHash(hash(rawRefreshToken))
                 .orElseThrow(() -> new DomainException(ErrorCode.AUTHENTICATION_ERROR, "Invalid refresh token"));
         if (entity.isRevoked()) {
             throw new DomainException(ErrorCode.AUTHENTICATION_ERROR, "Refresh token is revoked");
@@ -94,6 +94,5 @@ public class RefreshTokenService {
         }
     }
 
-    public record IssuedRefreshToken(String rawToken, long userId) {
-    }
+    public record IssuedRefreshToken(String rawToken, long userId) {}
 }

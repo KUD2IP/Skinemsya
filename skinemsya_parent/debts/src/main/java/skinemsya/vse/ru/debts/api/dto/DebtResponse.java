@@ -1,9 +1,8 @@
 package skinemsya.vse.ru.debts.api.dto;
 
+import java.time.Instant;
 import skinemsya.vse.ru.debts.domain.Debt;
 import skinemsya.vse.ru.debts.domain.DebtStatus;
-
-import java.time.Instant;
 
 public record DebtResponse(
         long id,
@@ -13,8 +12,7 @@ public record DebtResponse(
         long amountKopecks,
         DebtStatus status,
         Instant createdAt,
-        Instant updatedAt
-) {
+        Instant updatedAt) {
     public static DebtResponse from(Debt debt) {
         return new DebtResponse(
                 debt.id(),
@@ -24,7 +22,6 @@ public record DebtResponse(
                 debt.amountKopecks(),
                 debt.status(),
                 debt.createdAt(),
-                debt.updatedAt()
-        );
+                debt.updatedAt());
     }
 }

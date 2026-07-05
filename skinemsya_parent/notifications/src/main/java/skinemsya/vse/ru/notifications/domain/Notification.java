@@ -9,6 +9,4 @@ public record Notification(
         String payload,
         NotificationStatus status,
         Instant sentAt,
-        Instant createdAt
-) {
-}
+        Instant createdAt) {}

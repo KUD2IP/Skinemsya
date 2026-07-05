@@ -1,31 +1,24 @@
 package skinemsya.vse.ru.app.testsupport;
 
-import skinemsya.vse.ru.integrations.infrastructure.telegram.TelegramInitDataValidatorImpl;
-
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
+import skinemsya.vse.ru.integrations.infrastructure.telegram.TelegramInitDataValidatorImpl;
 
 public final class TelegramInitDataTestHelper {
 
     public static final String TEST_BOT_TOKEN = "test-bot-token-for-integration-tests-32chars";
 
-    private TelegramInitDataTestHelper() {
-    }
+    private TelegramInitDataTestHelper() {}
 
     public static String buildInitData(long telegramUserId, String firstName, Instant authDate) {
         return buildInitData(telegramUserId, firstName, authDate, null);
     }
 
-    public static String buildInitData(
-            long telegramUserId,
-            String firstName,
-            Instant authDate,
-            String username
-    ) {
+    public static String buildInitData(long telegramUserId, String firstName, Instant authDate, String username) {
         return buildInitData(TEST_BOT_TOKEN, telegramUserId, firstName, authDate, username);
     }
 
@@ -34,33 +27,14 @@ public final class TelegramInitDataTestHelper {
     }
 
     public static String buildInitData(
-            String botToken,
-            long telegramUserId,
-            String firstName,
-            Instant authDate,
-            String username
-    ) {
+            String botToken, long telegramUserId, String firstName, Instant authDate, String username) {
         return buildInitDataWithChat(botToken, telegramUserId, firstName, authDate, username, null, null, null);
     }
 
     public static String buildInitDataWithChat(
-            long telegramUserId,
-            String firstName,
-            Instant authDate,
-            long chatId,
-            String chatTitle,
-            String chatType
-    ) {
+            long telegramUserId, String firstName, Instant authDate, long chatId, String chatTitle, String chatType) {
         return buildInitDataWithChat(
-                TEST_BOT_TOKEN,
-                telegramUserId,
-                firstName,
-                authDate,
-                null,
-                chatId,
-                chatTitle,
-                chatType
-        );
+                TEST_BOT_TOKEN, telegramUserId, firstName, authDate, null, chatId, chatTitle, chatType);
     }
 
     public static String buildInitDataWithChat(
@@ -70,8 +44,7 @@ public final class TelegramInitDataTestHelper {
             Instant authDate,
             Long chatId,
             String chatTitle,
-            String chatType
-    ) {
+            String chatType) {
         return buildInitDataWithChat(botToken, telegramUserId, firstName, authDate, null, chatId, chatTitle, chatType);
     }
 
@@ -83,8 +56,7 @@ public final class TelegramInitDataTestHelper {
             String username,
             Long chatId,
             String chatTitle,
-            String chatType
-    ) {
+            String chatType) {
         Map<String, String> params = new LinkedHashMap<>();
         params.put("auth_date", String.valueOf(authDate.getEpochSecond()));
         var userJson = new StringBuilder("{\"id\":")
@@ -109,26 +81,14 @@ public final class TelegramInitDataTestHelper {
         String hash = TelegramInitDataValidatorImpl.calculateHash(botToken, dataCheckString);
 
         return params.entrySet().stream()
-                .map(entry -> entry.getKey() + "=" + urlEncode(entry.getValue()))
-                .collect(Collectors.joining("&"))
+                        .map(entry -> entry.getKey() + "=" + urlEncode(entry.getValue()))
+                        .collect(Collectors.joining("&"))
                 + "&hash=" + hash;
     }
 
     public static String buildInitDataWithStartParam(
-            long telegramUserId,
-            String firstName,
-            Instant authDate,
-            String startParam,
-            String chatType
-    ) {
-        return buildInitDataWithStartParam(
-                TEST_BOT_TOKEN,
-                telegramUserId,
-                firstName,
-                authDate,
-                startParam,
-                chatType
-        );
+            long telegramUserId, String firstName, Instant authDate, String startParam, String chatType) {
+        return buildInitDataWithStartParam(TEST_BOT_TOKEN, telegramUserId, firstName, authDate, startParam, chatType);
     }
 
     public static String buildInitDataWithStartParam(
@@ -137,8 +97,7 @@ public final class TelegramInitDataTestHelper {
             String firstName,
             Instant authDate,
             String startParam,
-            String chatType
-    ) {
+            String chatType) {
         Map<String, String> params = new LinkedHashMap<>();
         params.put("auth_date", String.valueOf(authDate.getEpochSecond()));
         params.put("user", "{\"id\":" + telegramUserId + ",\"first_name\":\"" + firstName + "\"}");
@@ -155,8 +114,8 @@ public final class TelegramInitDataTestHelper {
         String hash = TelegramInitDataValidatorImpl.calculateHash(botToken, dataCheckString);
 
         return params.entrySet().stream()
-                .map(entry -> entry.getKey() + "=" + urlEncode(entry.getValue()))
-                .collect(Collectors.joining("&"))
+                        .map(entry -> entry.getKey() + "=" + urlEncode(entry.getValue()))
+                        .collect(Collectors.joining("&"))
                 + "&hash=" + hash;
     }
 

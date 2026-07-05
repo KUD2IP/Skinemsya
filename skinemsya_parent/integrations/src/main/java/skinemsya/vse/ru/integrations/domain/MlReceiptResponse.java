@@ -9,6 +9,4 @@ public record MlReceiptResponse(
         String currency,
         List<MlReceiptItem> items,
         Double confidence,
-        List<String> errors
-) {
-}
+        List<String> errors) {}

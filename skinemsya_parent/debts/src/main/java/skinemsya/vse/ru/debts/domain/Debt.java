@@ -10,6 +10,4 @@ public record Debt(
         long amountKopecks,
         DebtStatus status,
         Instant createdAt,
-        Instant updatedAt
-) {
-}
+        Instant updatedAt) {}

@@ -1,9 +1,8 @@
 package skinemsya.vse.ru.events.infrastructure.persistence;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface EventParticipantRepository extends JpaRepository<EventParticipantEntity, Long> {
 

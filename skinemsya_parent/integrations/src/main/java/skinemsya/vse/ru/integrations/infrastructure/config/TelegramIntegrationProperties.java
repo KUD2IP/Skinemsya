@@ -10,8 +10,7 @@ public record TelegramIntegrationProperties(
         String webhookSecret,
         String botUsername,
         String webAppShortName,
-        Boolean botPollingEnabled
-) {
+        Boolean botPollingEnabled) {
     public TelegramIntegrationProperties {
         if (authMaxAgeSeconds <= 0) {
             authMaxAgeSeconds = 86_400;

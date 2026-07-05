@@ -1,20 +1,19 @@
 package skinemsya.vse.ru.receipts.application;
 
+import java.math.BigDecimal;
+import java.util.List;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import skinemsya.vse.ru.common.event.SelectionsCompleted;
+import skinemsya.vse.ru.debts.application.DebtService;
 import skinemsya.vse.ru.events.application.EventAccessPort;
 import skinemsya.vse.ru.events.domain.EventStatus;
 import skinemsya.vse.ru.events.domain.exception.EventNotInDistributionException;
-import skinemsya.vse.ru.debts.application.DebtService;
 import skinemsya.vse.ru.receipts.domain.exception.PositionNotFoundException;
 import skinemsya.vse.ru.receipts.infrastructure.persistence.PositionRepository;
 import skinemsya.vse.ru.receipts.infrastructure.persistence.PositionSelectionEntity;
 import skinemsya.vse.ru.receipts.infrastructure.persistence.PositionSelectionRepository;
-
-import java.math.BigDecimal;
-import java.util.List;
 
 @Service
 @Transactional
@@ -33,8 +32,7 @@ public class SelectionServiceImpl implements SelectionService {
             EventAccessPort eventAccessPort,
             ApplicationEventPublisher eventPublisher,
             DebtService debtService,
-            PositionAvailabilityService positionAvailabilityService
-    ) {
+            PositionAvailabilityService positionAvailabilityService) {
         this.positionRepository = positionRepository;
         this.selectionRepository = selectionRepository;
         this.eventAccessPort = eventAccessPort;
@@ -49,15 +47,18 @@ public class SelectionServiceImpl implements SelectionService {
         eventAccessPort.requireParticipant(eventId, userId);
 
         for (var update : selections) {
-            var position = positionRepository.findByIdAndEventId(update.positionId(), eventId)
+            var position = positionRepository
+                    .findByIdAndEventId(update.positionId(), eventId)
                     .orElseThrow(PositionNotFoundException::new);
             if (update.quantity() == null || update.quantity().compareTo(BigDecimal.ZERO) <= 0) {
-                selectionRepository.findByPositionIdAndUserId(update.positionId(), userId)
+                selectionRepository
+                        .findByPositionIdAndUserId(update.positionId(), userId)
                         .ifPresent(selectionRepository::delete);
                 continue;
             }
             positionAvailabilityService.requireAvailableQuantity(position, userId, update.quantity());
-            var selection = selectionRepository.findByPositionIdAndUserId(update.positionId(), userId)
+            var selection = selectionRepository
+                    .findByPositionIdAndUserId(update.positionId(), userId)
                     .orElseGet(() -> {
                         var entity = new PositionSelectionEntity();
                         entity.setPositionId(update.positionId());

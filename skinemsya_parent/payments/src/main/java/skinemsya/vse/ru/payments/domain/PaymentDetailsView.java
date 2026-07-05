@@ -9,6 +9,4 @@ public record PaymentDetailsView(
         String paymentDetails,
         String phone,
         String preferredBank,
-        PaymentStatus status
-) {
-}
+        PaymentStatus status) {}

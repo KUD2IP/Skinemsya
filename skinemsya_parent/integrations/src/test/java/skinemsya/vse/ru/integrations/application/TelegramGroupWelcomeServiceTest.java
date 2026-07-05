@@ -1,16 +1,15 @@
 package skinemsya.vse.ru.integrations.application;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import skinemsya.vse.ru.integrations.domain.TelegramSentMessage;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import skinemsya.vse.ru.integrations.domain.TelegramSentMessage;
 
 class TelegramGroupWelcomeServiceTest {
 
@@ -86,8 +85,7 @@ class TelegramGroupWelcomeServiceTest {
         private boolean failNextPin;
 
         @Override
-        public void initialize() {
-        }
+        public void initialize() {}
 
         @Override
         public String getBotUsername() {
@@ -101,12 +99,7 @@ class TelegramGroupWelcomeServiceTest {
 
         @Override
         public TelegramSentMessage sendMessageWithOpenAppButton(
-                long chatId,
-                String text,
-                String buttonText,
-                String chatType,
-                String startParam
-        ) {
+                long chatId, String text, String buttonText, String chatType, String startParam) {
             buttonMessages.add(text);
             return new TelegramSentMessage(42L);
         }
@@ -121,8 +114,7 @@ class TelegramGroupWelcomeServiceTest {
         }
 
         @Override
-        public void sendMessage(long chatId, String text) {
-        }
+        public void sendMessage(long chatId, String text) {}
 
         @Override
         public com.fasterxml.jackson.databind.JsonNode getUpdates(long offset, int timeoutSeconds) {
@@ -135,11 +127,9 @@ class TelegramGroupWelcomeServiceTest {
         }
 
         @Override
-        public void deleteWebhook() {
-        }
+        public void deleteWebhook() {}
 
         @Override
-        public void setMyCommands() {
-        }
+        public void setMyCommands() {}
     }
 }

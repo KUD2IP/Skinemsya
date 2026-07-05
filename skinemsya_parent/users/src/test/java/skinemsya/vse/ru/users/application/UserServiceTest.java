@@ -1,5 +1,15 @@
 package skinemsya.vse.ru.users.application;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.Instant;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -11,17 +21,6 @@ import skinemsya.vse.ru.users.infrastructure.mapper.UserMapper;
 import skinemsya.vse.ru.users.infrastructure.persistence.UserEntity;
 import skinemsya.vse.ru.users.infrastructure.persistence.UserProfileRepository;
 import skinemsya.vse.ru.users.infrastructure.persistence.UserRepository;
-
-import java.time.Instant;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -51,12 +50,8 @@ class UserServiceTest {
 
         when(userRepository.findByTelegramUserId(100_001L)).thenReturn(Optional.empty(), Optional.of(savedEntity));
         when(userRepository.insertTelegramUserIfAbsent(
-                eq(100_001L),
-                eq("Alice"),
-                eq(null),
-                any(Instant.class),
-                any(Instant.class)
-        )).thenReturn(1);
+                        eq(100_001L), eq("Alice"), eq(null), any(Instant.class), any(Instant.class)))
+                .thenReturn(1);
         when(userRepository.save(savedEntity)).thenReturn(savedEntity);
         when(userMapper.toDomain(savedEntity)).thenReturn(domainUser);
 
@@ -65,13 +60,9 @@ class UserServiceTest {
         assertThat(result.displayName()).isEqualTo("Alice");
         verify(userProfileRepository).insertIfAbsent(1L);
         verify(userRepository).clearTelegramUsernameForOtherUsers(eq("alice"), eq(100_001L), any(Instant.class));
-        verify(userRepository).insertTelegramUserIfAbsent(
-                eq(100_001L),
-                eq("Alice"),
-                eq(null),
-                any(Instant.class),
-                any(Instant.class)
-        );
+        verify(userRepository)
+                .insertTelegramUserIfAbsent(
+                        eq(100_001L), eq("Alice"), eq(null), any(Instant.class), any(Instant.class));
         assertThat(savedEntity.getTelegramUsername()).isEqualTo("alice");
     }
 

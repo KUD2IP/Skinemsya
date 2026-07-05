@@ -1,10 +1,9 @@
 package skinemsya.vse.ru.events.application;
 
+import java.util.Optional;
 import skinemsya.vse.ru.common.api.PageRequest;
 import skinemsya.vse.ru.common.api.PageResult;
 import skinemsya.vse.ru.events.domain.Event;
-
-import java.util.Optional;
 
 public interface EventService {
 

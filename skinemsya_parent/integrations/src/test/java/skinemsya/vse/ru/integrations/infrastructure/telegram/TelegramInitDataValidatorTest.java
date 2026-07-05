@@ -1,8 +1,7 @@
 package skinemsya.vse.ru.integrations.infrastructure.telegram;
 
-import org.junit.jupiter.api.Test;
-import skinemsya.vse.ru.common.domain.DomainException;
-import skinemsya.vse.ru.integrations.infrastructure.config.TelegramIntegrationProperties;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -10,17 +9,16 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.junit.jupiter.api.Test;
+import skinemsya.vse.ru.common.domain.DomainException;
+import skinemsya.vse.ru.integrations.infrastructure.config.TelegramIntegrationProperties;
 
 class TelegramInitDataValidatorTest {
 
     private static final String BOT_TOKEN = "test-bot-token-for-integration-tests-32chars";
 
     private final TelegramInitDataValidatorImpl validator = new TelegramInitDataValidatorImpl(
-            new TelegramIntegrationProperties(BOT_TOKEN, 86_400, null, null, null, null, false)
-    );
+            new TelegramIntegrationProperties(BOT_TOKEN, 86_400, null, null, null, null, false));
 
     @Test
     void shouldValidateCorrectInitData() {
@@ -34,7 +32,8 @@ class TelegramInitDataValidatorTest {
 
     @Test
     void shouldRejectInvalidSignature() {
-        var initData = TelegramInitDataTestHelper.buildInitData(BOT_TOKEN, 100_001L, "Alice", Instant.now()) + "tampered";
+        var initData =
+                TelegramInitDataTestHelper.buildInitData(BOT_TOKEN, 100_001L, "Alice", Instant.now()) + "tampered";
 
         assertThatThrownBy(() -> validator.validate(initData))
                 .isInstanceOf(DomainException.class)
@@ -44,11 +43,7 @@ class TelegramInitDataValidatorTest {
     @Test
     void shouldRejectExpiredAuthDate() {
         var initData = TelegramInitDataTestHelper.buildInitData(
-                BOT_TOKEN,
-                100_001L,
-                "Alice",
-                Instant.now().minusSeconds(86_401)
-        );
+                BOT_TOKEN, 100_001L, "Alice", Instant.now().minusSeconds(86_401));
 
         assertThatThrownBy(() -> validator.validate(initData))
                 .isInstanceOf(DomainException.class)
@@ -91,14 +86,7 @@ class TelegramInitDataValidatorTest {
     @Test
     void shouldExtractChatFromInitData() {
         var initData = TelegramInitDataTestHelper.buildInitDataWithChat(
-                BOT_TOKEN,
-                100_001L,
-                "Alice",
-                Instant.now(),
-                -1_002L,
-                "Trip chat",
-                "group"
-        );
+                BOT_TOKEN, 100_001L, "Alice", Instant.now(), -1_002L, "Trip chat", "group");
 
         var result = validator.validateWithChat(initData);
 
@@ -120,13 +108,7 @@ class TelegramInitDataValidatorTest {
     @Test
     void shouldExtractChatFromStartParamWhenChatJsonMissing() {
         var initData = TelegramInitDataTestHelper.buildInitDataWithStartParam(
-                BOT_TOKEN,
-                100_001L,
-                "Alice",
-                Instant.now(),
-                "chat_-100777",
-                "supergroup"
-        );
+                BOT_TOKEN, 100_001L, "Alice", Instant.now(), "chat_-100777", "supergroup");
 
         var result = validator.validateWithChat(initData);
 
@@ -138,8 +120,7 @@ class TelegramInitDataValidatorTest {
 
 class TelegramInitDataTestHelper {
 
-    private TelegramInitDataTestHelper() {
-    }
+    private TelegramInitDataTestHelper() {}
 
     public static String buildInitData(String botToken, long telegramUserId, String firstName, Instant authDate) {
         return buildInitDataWithChat(botToken, telegramUserId, firstName, authDate, null, null, null);
@@ -152,8 +133,7 @@ class TelegramInitDataTestHelper {
             Instant authDate,
             Long chatId,
             String chatTitle,
-            String chatType
-    ) {
+            String chatType) {
         Map<String, String> params = new LinkedHashMap<>();
         params.put("auth_date", String.valueOf(authDate.getEpochSecond()));
         params.put("user", "{\"id\":" + telegramUserId + ",\"first_name\":\"" + firstName + "\"}");
@@ -169,8 +149,8 @@ class TelegramInitDataTestHelper {
         String hash = TelegramInitDataValidatorImpl.calculateHash(botToken, dataCheckString);
 
         return params.entrySet().stream()
-                .map(entry -> entry.getKey() + "=" + urlEncode(entry.getValue()))
-                .collect(Collectors.joining("&"))
+                        .map(entry -> entry.getKey() + "=" + urlEncode(entry.getValue()))
+                        .collect(Collectors.joining("&"))
                 + "&hash=" + hash;
     }
 
@@ -180,8 +160,7 @@ class TelegramInitDataTestHelper {
             String firstName,
             Instant authDate,
             String startParam,
-            String chatType
-    ) {
+            String chatType) {
         Map<String, String> params = new LinkedHashMap<>();
         params.put("auth_date", String.valueOf(authDate.getEpochSecond()));
         params.put("user", "{\"id\":" + telegramUserId + ",\"first_name\":\"" + firstName + "\"}");
@@ -198,8 +177,8 @@ class TelegramInitDataTestHelper {
         String hash = TelegramInitDataValidatorImpl.calculateHash(botToken, dataCheckString);
 
         return params.entrySet().stream()
-                .map(entry -> entry.getKey() + "=" + urlEncode(entry.getValue()))
-                .collect(Collectors.joining("&"))
+                        .map(entry -> entry.getKey() + "=" + urlEncode(entry.getValue()))
+                        .collect(Collectors.joining("&"))
                 + "&hash=" + hash;
     }
 
