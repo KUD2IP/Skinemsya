@@ -8,9 +8,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import skinemsya.vse.ru.debts.domain.DebtStatus;
-
 import java.time.Instant;
+import skinemsya.vse.ru.debts.domain.DebtStatus;
 
 @Entity
 @Table(name = "debts")

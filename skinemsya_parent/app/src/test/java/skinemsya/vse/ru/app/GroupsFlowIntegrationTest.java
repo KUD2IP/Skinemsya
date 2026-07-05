@@ -1,5 +1,17 @@
 package skinemsya.vse.ru.app;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.authenticate;
+import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.escapeJson;
+import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.readJsonNumberField;
+
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -17,19 +29,6 @@ import skinemsya.vse.ru.app.testsupport.TelegramInitDataTestHelper;
 import skinemsya.vse.ru.events.domain.EventStatus;
 import skinemsya.vse.ru.events.infrastructure.persistence.EventEntity;
 import skinemsya.vse.ru.events.infrastructure.persistence.EventRepository;
-
-import java.time.Instant;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.authenticate;
-import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.escapeJson;
-import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.readJsonNumberField;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -74,8 +73,7 @@ class GroupsFlowIntegrationTest {
     void shouldCreateChatLinkedGroupFromSignedInitData() throws Exception {
         var token = authenticate(mockMvc, 100_002L, "Bob");
         var initData = TelegramInitDataTestHelper.buildInitDataWithChat(
-                100_002L, "Bob", Instant.now(), -100_500L, "Team chat", "supergroup"
-        );
+                100_002L, "Bob", Instant.now(), -100_500L, "Team chat", "supergroup");
 
         mockMvc.perform(post("/api/v1/groups/chat-linked")
                         .header("Authorization", "Bearer " + token)
@@ -91,8 +89,7 @@ class GroupsFlowIntegrationTest {
     void shouldRejectChatLinkedInitDataForAnotherTelegramUser() throws Exception {
         var token = authenticate(mockMvc, 100_020L, "TokenOwner");
         var initData = TelegramInitDataTestHelper.buildInitDataWithChat(
-                100_021L, "OtherUser", Instant.now(), -100_520L, "Other chat", "supergroup"
-        );
+                100_021L, "OtherUser", Instant.now(), -100_520L, "Other chat", "supergroup");
 
         mockMvc.perform(post("/api/v1/groups/chat-linked")
                         .header("Authorization", "Bearer " + token)
@@ -106,8 +103,7 @@ class GroupsFlowIntegrationTest {
     void shouldJoinExistingChatLinkedGroupIdempotently() throws Exception {
         var token = authenticate(mockMvc, 100_003L, "Carol");
         var initData = TelegramInitDataTestHelper.buildInitDataWithChat(
-                100_003L, "Carol", Instant.now(), -100_501L, "Weekend", "group"
-        );
+                100_003L, "Carol", Instant.now(), -100_501L, "Weekend", "group");
         var body = "{\"initData\":\"" + escapeJson(initData) + "\"}";
 
         var first = mockMvc.perform(post("/api/v1/groups/chat-linked")
@@ -168,8 +164,7 @@ class GroupsFlowIntegrationTest {
                 .andExpect(jsonPath("$.role").value("MEMBER"))
                 .andExpect(jsonPath("$.telegramUsername").value("group_member"));
 
-        mockMvc.perform(get("/api/v1/groups/" + groupId + "/members")
-                        .header("Authorization", "Bearer " + ownerToken))
+        mockMvc.perform(get("/api/v1/groups/" + groupId + "/members").header("Authorization", "Bearer " + ownerToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items.length()").value(2));
     }
@@ -195,8 +190,7 @@ class GroupsFlowIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("New name"));
 
-        mockMvc.perform(get("/api/v1/groups/" + groupId)
-                        .header("Authorization", "Bearer " + ownerToken))
+        mockMvc.perform(get("/api/v1/groups/" + groupId).header("Authorization", "Bearer " + ownerToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("New name"));
     }
@@ -244,12 +238,10 @@ class GroupsFlowIntegrationTest {
                 .getContentAsString();
         long groupId = Long.parseLong(readJsonNumberField(createResponse, "id"));
 
-        mockMvc.perform(delete("/api/v1/groups/" + groupId)
-                        .header("Authorization", "Bearer " + ownerToken))
+        mockMvc.perform(delete("/api/v1/groups/" + groupId).header("Authorization", "Bearer " + ownerToken))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/v1/groups/" + groupId)
-                        .header("Authorization", "Bearer " + ownerToken))
+        mockMvc.perform(get("/api/v1/groups/" + groupId).header("Authorization", "Bearer " + ownerToken))
                 .andExpect(status().isNotFound());
     }
 
@@ -282,8 +274,7 @@ class GroupsFlowIntegrationTest {
         event.setStatus(EventStatus.DISTRIBUTION);
         eventRepository.save(event);
 
-        mockMvc.perform(delete("/api/v1/groups/" + groupId)
-                        .header("Authorization", "Bearer " + ownerToken))
+        mockMvc.perform(delete("/api/v1/groups/" + groupId).header("Authorization", "Bearer " + ownerToken))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("DOMAIN_RULE_VIOLATION"));
     }
@@ -309,12 +300,10 @@ class GroupsFlowIntegrationTest {
                         .content("{\"name\":\"Draft\",\"payerId\":" + userId + "}"))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(delete("/api/v1/groups/" + groupId)
-                        .header("Authorization", "Bearer " + ownerToken))
+        mockMvc.perform(delete("/api/v1/groups/" + groupId).header("Authorization", "Bearer " + ownerToken))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/v1/groups/" + groupId)
-                        .header("Authorization", "Bearer " + ownerToken))
+        mockMvc.perform(get("/api/v1/groups/" + groupId).header("Authorization", "Bearer " + ownerToken))
                 .andExpect(status().isNotFound());
     }
 
@@ -333,8 +322,7 @@ class GroupsFlowIntegrationTest {
                 .getContentAsString();
         long groupId = Long.parseLong(readJsonNumberField(createResponse, "id"));
 
-        mockMvc.perform(get("/api/v1/groups/" + groupId)
-                        .header("Authorization", "Bearer " + outsiderToken))
+        mockMvc.perform(get("/api/v1/groups/" + groupId).header("Authorization", "Bearer " + outsiderToken))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("AUTHORIZATION_ERROR"));
     }

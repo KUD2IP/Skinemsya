@@ -1,5 +1,7 @@
 package skinemsya.vse.ru.groups.application;
 
+import java.time.Instant;
+import java.util.Optional;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
@@ -14,8 +16,8 @@ import skinemsya.vse.ru.groups.domain.GroupMember;
 import skinemsya.vse.ru.groups.domain.GroupMemberView;
 import skinemsya.vse.ru.groups.domain.GroupRole;
 import skinemsya.vse.ru.groups.domain.GroupType;
-import skinemsya.vse.ru.groups.domain.exception.GroupMemberAddFailedException;
 import skinemsya.vse.ru.groups.domain.exception.GroupMemberAccessRequiredException;
+import skinemsya.vse.ru.groups.domain.exception.GroupMemberAddFailedException;
 import skinemsya.vse.ru.groups.domain.exception.GroupNameRequiredException;
 import skinemsya.vse.ru.groups.domain.exception.GroupNameTooLongException;
 import skinemsya.vse.ru.groups.domain.exception.GroupNotFoundException;
@@ -30,9 +32,6 @@ import skinemsya.vse.ru.groups.infrastructure.persistence.GroupMemberEntity;
 import skinemsya.vse.ru.groups.infrastructure.persistence.GroupMemberRepository;
 import skinemsya.vse.ru.groups.infrastructure.persistence.GroupRepository;
 import skinemsya.vse.ru.users.application.UserService;
-
-import java.time.Instant;
-import java.util.Optional;
 
 @Service
 @Transactional
@@ -53,8 +52,7 @@ public class GroupServiceImpl implements GroupService {
             UserService userService,
             Optional<GroupDeletionGuard> groupDeletionGuard,
             ChatLinkedGroupBootstrapService chatLinkedGroupBootstrapService,
-            ApplicationEventPublisher eventPublisher
-    ) {
+            ApplicationEventPublisher eventPublisher) {
         this.groupRepository = groupRepository;
         this.groupMemberRepository = groupMemberRepository;
         this.groupMapper = groupMapper;
@@ -117,22 +115,26 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     public GroupMember addMemberByTelegramUserId(long groupId, long ownerUserId, long telegramUserId) {
-        var memberUserId = userService.findByTelegramUserId(telegramUserId)
+        var memberUserId = userService
+                .findByTelegramUserId(telegramUserId)
                 .orElseThrow(UserNotFoundByTelegramIdException::new)
                 .id();
         addMember(groupId, ownerUserId, memberUserId);
-        return groupMemberRepository.findByGroupIdAndUserId(groupId, memberUserId)
+        return groupMemberRepository
+                .findByGroupIdAndUserId(groupId, memberUserId)
                 .map(groupMapper::toDomain)
                 .orElseThrow(GroupMemberAddFailedException::new);
     }
 
     @Override
     public GroupMemberView addMemberByTelegramUsername(long groupId, long ownerUserId, String telegramUsername) {
-        var memberUserId = userService.findByTelegramUsername(telegramUsername)
+        var memberUserId = userService
+                .findByTelegramUsername(telegramUsername)
                 .orElseThrow(UserNotFoundByTelegramUsernameException::new)
                 .id();
         addMember(groupId, ownerUserId, memberUserId);
-        return toMemberView(groupMemberRepository.findByGroupIdAndUserId(groupId, memberUserId)
+        return toMemberView(groupMemberRepository
+                .findByGroupIdAndUserId(groupId, memberUserId)
                 .orElseThrow(GroupMemberAddFailedException::new));
     }
 
@@ -142,18 +144,13 @@ public class GroupServiceImpl implements GroupService {
         if (!groupMemberRepository.existsByGroupIdAndUserId(groupId, userId)) {
             throw new GroupMemberAccessRequiredException();
         }
-        var page = groupMemberRepository.findByGroupIdOrdered(
-                groupId,
-                GroupRole.OWNER,
-                toPageable(pageRequest)
-        );
+        var page = groupMemberRepository.findByGroupIdOrdered(groupId, GroupRole.OWNER, toPageable(pageRequest));
         var items = page.getContent().stream().map(this::toMemberView).toList();
         return PageResult.of(items, pageRequest, page.getTotalElements());
     }
 
     private GroupMemberView toMemberView(GroupMemberEntity member) {
-        var user = userService.findById(member.getUserId())
-                .orElseThrow(GroupUserNotFoundException::new);
+        var user = userService.findById(member.getUserId()).orElseThrow(GroupUserNotFoundException::new);
         return new GroupMemberView(
                 member.getId(),
                 member.getGroupId(),
@@ -162,8 +159,7 @@ public class GroupServiceImpl implements GroupService {
                 user.displayName(),
                 user.telegramUsername(),
                 user.telegramUserId(),
-                member.getJoinedAt()
-        );
+                member.getJoinedAt());
     }
 
     @Override
@@ -178,11 +174,7 @@ public class GroupServiceImpl implements GroupService {
         Page<GroupEntity> page = groupRepository.findAllByMemberUserId(
                 userId,
                 org.springframework.data.domain.PageRequest.of(
-                        pageRequest.page(),
-                        pageRequest.size(),
-                        Sort.by("name")
-                )
-        );
+                        pageRequest.page(), pageRequest.size(), Sort.by("name")));
         var items = page.getContent().stream().map(groupMapper::toDomain).toList();
         return PageResult.of(items, pageRequest, page.getTotalElements());
     }
@@ -211,12 +203,12 @@ public class GroupServiceImpl implements GroupService {
     }
 
     private GroupEntity getActiveGroup(long groupId) {
-        return groupRepository.findById(groupId)
-                .orElseThrow(GroupNotFoundException::new);
+        return groupRepository.findById(groupId).orElseThrow(GroupNotFoundException::new);
     }
 
     private void requireOwner(GroupEntity group, long userId) {
-        var member = groupMemberRepository.findByGroupIdAndUserId(group.getId(), userId)
+        var member = groupMemberRepository
+                .findByGroupIdAndUserId(group.getId(), userId)
                 .orElseThrow(GroupMemberAccessRequiredException::new);
         if (member.getRole() != GroupRole.OWNER) {
             throw new GroupOwnerAccessRequiredException();
@@ -247,8 +239,7 @@ public class GroupServiceImpl implements GroupService {
     }
 
     private void requireUserExists(long userId) {
-        userService.findById(userId)
-                .orElseThrow(GroupUserNotFoundException::new);
+        userService.findById(userId).orElseThrow(GroupUserNotFoundException::new);
     }
 
     private static void validateName(String name) {

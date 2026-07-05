@@ -174,9 +174,9 @@ ssh -i ~/.ssh/skinemsya_deploy deploy@<IP_СЕРВЕРА>
 
 ### 2.9. Секреты приложения (.env)
 
-**На сервере `.env` вручную не создаётся** — его кладёт job `deploy-staging` из GitHub Actions (см. часть 4).
+**На сервере `.env` вручную не создаётся** — его кладёт production deploy job из GitHub Actions (см. часть 4).
 
-Локально подготовь файл по шаблону `deploy/env.production.example` и добавь в GitHub Secrets.
+Локально подготовь файл по шаблону `deploy/env.production.example` и добавь в GitHub Environment **production** → secret `PRODUCTION_ENV`.
 
 ---
 
@@ -189,37 +189,32 @@ ssh -i ~/.ssh/skinemsya_deploy deploy@<IP_СЕРВЕРА>
 
 ---
 
-## Часть 4. GitHub Actions secrets
+## Часть 4. GitHub Actions secrets (production)
 
-Репозиторий backend → **Settings → Secrets and variables → Actions → New repository secret**.
+Репозиторий backend → **Settings → Environments → production → Environment secrets**.
 
-### 4.1. Секреты приложения (один из вариантов)
+Подробная схема CI/CD: [`docs/deployment/ci-cd.md`](ci-cd.md).
 
-**Вариант A (рекомендуется):** secret `STAGING_ENV` — вставь **весь** `.env` целиком (GitHub поддерживает multiline secrets).
+### 4.1. Секреты приложения
 
-```bash
-cp deploy/env.production.example ~/skinemsya-staging.env
-nano ~/skinemsya-staging.env
-# скопируй содержимое в secret STAGING_ENV
-```
-
-**Вариант B:** secret `STAGING_ENV_B64` — base64 всего файла:
+Secret `PRODUCTION_ENV` — вставь **весь** `.env` целиком (multiline):
 
 ```bash
-base64 < ~/skinemsya-staging.env | pbcopy   # macOS
-# или: base64 -w0 ~/skinemsya-staging.env   # Linux
+cp deploy/env.production.example ~/skinemsya-production.env
+nano ~/skinemsya-production.env
+# скопируй содержимое в secret PRODUCTION_ENV
 ```
 
-Pipeline допишет `APP_VERSION=<commit>` при деплое.
+Pipeline допишет `APP_VERSION` и `GHCR_OWNER` при деплое.
 
 ### 4.2. Переменные для SSH
 
 | Secret | Обязательный | Назначение |
 | --- | --- | --- |
 | `SSH_PRIVATE_KEY` | ✅ | приватный ключ `skinemsya_deploy` (весь файл, включая `-----BEGIN...`) |
-| `STAGING_HOST` | ✅ | IP или домен VPS (`skinemsya-vse.ru`) |
-| `STAGING_USER` | ✅ | `deploy` |
-| `STAGING_SSH_PORT` | ❌ | `22` (если нестандартный порт) |
+| `PRODUCTION_HOST` | ✅ | IP или домен VPS (`skinemsya-vse.ru`) |
+| `PRODUCTION_USER` | ✅ | `deploy` |
+| `PRODUCTION_SSH_PORT` | ❌ | `22` (если нестандартный порт) |
 | `SSH_KNOWN_HOSTS` | ❌ | `ssh-keyscan -p 22 skinemsya-vse.ru` (если не задан — workflow сгенерирует сам) |
 
 **Как правильно добавить `SSH_PRIVATE_KEY`:**
@@ -250,15 +245,23 @@ ssh -i ~/.ssh/skinemsya_deploy deploy@skinemsya-vse.ru
 ssh-keyscan -p 22 skinemsya-vse.ru
 ```
 
-### 4.3. Environment `staging` (опционально)
+### 4.3. GHCR pull на VPS (один раз)
 
-В **Settings → Environments** создай environment `staging` и включи **Required reviewers**, если нужно подтверждение деплоя перед запуском job.
+Backend-образ хранится в `ghcr.io/<owner>/skinemsya-backend`. На сервере:
 
-### 4.4. Репозиторий фронта (`skinemsya_ui`)
+```bash
+echo '<PAT read:packages>' | docker login ghcr.io -u <github-user> --password-stdin
+```
 
-Фронт деплоится **отдельным workflow** из репозитория UI. Задай там те же SSH-secrets (`SSH_PRIVATE_KEY`, `STAGING_HOST`, `STAGING_USER`, `STAGING_SSH_PORT`).
+### 4.4. Environment `production`
 
-`STAGING_ENV` фронту **не нужен** — секреты только у backend.
+В **Settings → Environments** создай environment `production` и включи **Required reviewers** для approval перед деплоем.
+
+### 4.5. Репозиторий фронта (`skinemsya_ui`)
+
+Фронт деплоится **отдельным workflow** при push в `master`. Задай те же SSH-secrets в environment **production** (`SSH_PRIVATE_KEY`, `PRODUCTION_HOST`, `PRODUCTION_USER`, `PRODUCTION_SSH_PORT`).
+
+`PRODUCTION_ENV` фронту **не нужен** — секреты только у backend.
 
 Полная инструкция по фронту: репозиторий `skinemsya_ui` → `docs/DEPLOYMENT.md`.
 
@@ -351,20 +354,20 @@ APP_VERSION=manual docker compose -f docker-compose.prod.yml up -d
 | --- | --- |
 | 502 / API недоступен | `docker compose logs backend`; `curl -X POST .../api/v1/auth/telegram` (не 405) |
 | Фронт открывается, в логах бека пусто | nginx: `location /api/` → `127.0.0.1:8080`; `ss -tlnp \| grep 8080` |
-| Кнопка в группе открывает чат с ботом | `TELEGRAM_WEB_APP_SHORT_NAME` в BotFather и `STAGING_ENV` |
+| Кнопка в группе открывает чат с ботом | `TELEGRAM_WEB_APP_SHORT_NAME` в BotFather и `PRODUCTION_ENV` |
 | Нет HTTPS | `sudo nginx -t`; `sudo certbot certificates`; DNS, порты 80/443 |
 | Mini App не авторизует | `TELEGRAM_BOT_TOKEN`, домен в BotFather |
 | OOM | `free -h`, swap, `docker stats` |
-| Deploy job падает на SSH | `SSH_PRIVATE_KEY`, `STAGING_HOST`, `authorized_keys` на сервере |
+| Deploy job падает на SSH | `SSH_PRIVATE_KEY`, `PRODUCTION_HOST`, `authorized_keys` на сервере |
 | `Permission denied (publickey)` | См. чеклист ниже |
-| Deploy job падает на .env | secret `STAGING_ENV` или `STAGING_ENV_B64` |
+| Deploy job падает на .env | secret `PRODUCTION_ENV` в environment production |
 
 ### `Permission denied (publickey)` — чеклист
 
 1. **GitHub secret `SSH_PRIVATE_KEY`** — это **приватный** ключ (`skinemsya_deploy`), не `.pub`
 2. Ключ вставлен **целиком** с `BEGIN`/`END` строками
 3. На сервере в `/home/deploy/.ssh/authorized_keys` лежит **соответствующий публичный** ключ
-4. `STAGING_USER=deploy`, `STAGING_HOST` — IP или домен сервера
+4. `PRODUCTION_USER=deploy`, `PRODUCTION_HOST` — IP или домен сервера
 5. Локально работает: `ssh -i ~/.ssh/skinemsya_deploy deploy@<HOST>`
 6. Secrets заданы в **том репозитории**, из которого запускаешь deploy (backend и frontend — отдельно)
 

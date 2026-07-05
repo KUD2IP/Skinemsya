@@ -1,5 +1,16 @@
 package skinemsya.vse.ru.app;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.authenticate;
+import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.escapeJson;
+import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.fetchUserId;
+import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.readJsonNumberField;
+
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -13,18 +24,6 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import skinemsya.vse.ru.app.testsupport.TelegramInitDataTestHelper;
-
-import java.time.Instant;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.authenticate;
-import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.escapeJson;
-import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.fetchUserId;
-import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.readJsonNumberField;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -78,8 +77,7 @@ class GroupsEventsFlowIntegrationTest {
         var token = authenticate(mockMvc, 200_002L, "Bob");
         var userId = fetchUserId(mockMvc, token);
         var initData = TelegramInitDataTestHelper.buildInitDataWithChat(
-                200_002L, "Bob", Instant.now(), -200_100L, "Trip", "supergroup"
-        );
+                200_002L, "Bob", Instant.now(), -200_100L, "Trip", "supergroup");
 
         var groupResponse = mockMvc.perform(post("/api/v1/groups/chat-linked")
                         .header("Authorization", "Bearer " + token)
@@ -169,8 +167,7 @@ class GroupsEventsFlowIntegrationTest {
                         .content("{\"name\":\"Snacks\",\"payerId\":" + userId + "}"))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(get("/api/v1/groups/" + groupId + "/events")
-                        .header("Authorization", "Bearer " + token))
+        mockMvc.perform(get("/api/v1/groups/" + groupId + "/events").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].name").value("Snacks"));
     }

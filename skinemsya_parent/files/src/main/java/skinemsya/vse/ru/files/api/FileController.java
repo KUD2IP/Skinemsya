@@ -34,17 +34,14 @@ public class FileController {
     public FileResponse upload(
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @RequestParam("file") MultipartFile file,
-            @RequestParam(defaultValue = "receipt") String purpose
-    ) {
+            @RequestParam(defaultValue = "receipt") String purpose) {
         long userId = requireUserId(authenticatedUser);
         return toResponse(fileService.upload(userId, file, FileUploadPurpose.from(purpose)));
     }
 
     @GetMapping("/{fileId}")
     public FileResponse getFile(
-            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
-            @PathVariable long fileId
-    ) {
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser, @PathVariable long fileId) {
         long userId = requireUserId(authenticatedUser);
         var stored = fileService.requireById(fileId);
         fileService.requireOwnerOrShared(fileId, userId, stored.ownerId() == userId);
@@ -55,8 +52,7 @@ public class FileController {
     public ResponseEntity<InputStreamResource> getContent(
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @PathVariable long fileId,
-            @RequestParam(defaultValue = "false") boolean sharedAccess
-    ) {
+            @RequestParam(defaultValue = "false") boolean sharedAccess) {
         long userId = requireUserId(authenticatedUser);
         var stored = fileService.requireById(fileId);
         var stream = fileService.getContent(fileId, userId, sharedAccess || stored.ownerId() == userId);
@@ -73,12 +69,6 @@ public class FileController {
     }
 
     private static FileResponse toResponse(StoredFile file) {
-        return new FileResponse(
-                file.id(),
-                file.originalName(),
-                file.mimeType(),
-                file.sizeBytes(),
-                file.createdAt()
-        );
+        return new FileResponse(file.id(), file.originalName(), file.mimeType(), file.sizeBytes(), file.createdAt());
     }
 }

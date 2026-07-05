@@ -8,6 +8,4 @@ public record User(
         String displayName,
         String telegramUsername,
         Instant createdAt,
-        Instant updatedAt
-) {
-}
+        Instant updatedAt) {}

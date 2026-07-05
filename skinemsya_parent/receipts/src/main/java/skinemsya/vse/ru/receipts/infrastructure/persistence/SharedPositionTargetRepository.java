@@ -1,8 +1,7 @@
 package skinemsya.vse.ru.receipts.infrastructure.persistence;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import java.util.List;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SharedPositionTargetRepository extends JpaRepository<SharedPositionTargetEntity, Long> {
 

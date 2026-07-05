@@ -1,5 +1,11 @@
 package skinemsya.vse.ru.app.api;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration;
@@ -16,20 +22,13 @@ import skinemsya.vse.ru.app.infrastructure.web.CorrelationIdFilter;
 import skinemsya.vse.ru.auth.application.JwtTokenService;
 import skinemsya.vse.ru.common.domain.CorrelationId;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 @WebMvcTest(
         controllers = ExceptionHandlerTestController.class,
         excludeAutoConfiguration = {
-                DataSourceAutoConfiguration.class,
-                HibernateJpaAutoConfiguration.class,
-                JpaRepositoriesAutoConfiguration.class
-        }
-)
+            DataSourceAutoConfiguration.class,
+            HibernateJpaAutoConfiguration.class,
+            JpaRepositoriesAutoConfiguration.class
+        })
 @Import({GlobalExceptionHandler.class, CorrelationIdFilter.class, WebMvcTestSecurityConfig.class})
 @ActiveProfiles({"test", "webmvc-test"})
 class GlobalExceptionHandlerTest {
@@ -69,8 +68,7 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void shouldPropagateProvidedCorrelationId() throws Exception {
-        mockMvc.perform(get("/unknown-endpoint")
-                        .header(CorrelationId.HEADER_NAME, "test-correlation-id"))
+        mockMvc.perform(get("/unknown-endpoint").header(CorrelationId.HEADER_NAME, "test-correlation-id"))
                 .andExpect(status().isNotFound())
                 .andExpect(header().string(CorrelationId.HEADER_NAME, "test-correlation-id"))
                 .andExpect(jsonPath("$.correlationId").value("test-correlation-id"));

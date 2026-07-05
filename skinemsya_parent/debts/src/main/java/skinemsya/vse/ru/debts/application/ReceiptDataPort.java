@@ -11,23 +11,9 @@ public interface ReceiptDataPort {
 
     List<SharedTargetData> getSharedTargets(long eventId);
 
-    record PositionData(
-            long id,
-            long totalPriceKopecks,
-            boolean shared
-    ) {
-    }
+    record PositionData(long id, long totalPriceKopecks, boolean shared) {}
 
-    record SelectionData(
-            long positionId,
-            long userId,
-            BigDecimal selectedQuantity
-    ) {
-    }
+    record SelectionData(long positionId, long userId, BigDecimal selectedQuantity) {}
 
-    record SharedTargetData(
-            long positionId,
-            long userId
-    ) {
-    }
+    record SharedTargetData(long positionId, long userId) {}
 }

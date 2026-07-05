@@ -8,10 +8,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.Instant;
 import org.hibernate.annotations.SQLRestriction;
 import skinemsya.vse.ru.groups.domain.GroupType;
-
-import java.time.Instant;
 
 @Entity
 @Table(name = "groups")

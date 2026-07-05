@@ -7,8 +7,7 @@ final class TelegramUsernameNormalizer {
 
     private static final Pattern USERNAME = Pattern.compile("^[a-zA-Z0-9_]{5,32}$");
 
-    private TelegramUsernameNormalizer() {
-    }
+    private TelegramUsernameNormalizer() {}
 
     static String normalize(String raw) {
         if (raw == null || raw.isBlank()) {

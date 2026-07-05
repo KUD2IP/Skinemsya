@@ -1,13 +1,12 @@
 package skinemsya.vse.ru.receipts.application;
 
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import skinemsya.vse.ru.debts.application.ReceiptDataPort;
 import skinemsya.vse.ru.receipts.infrastructure.persistence.PositionRepository;
 import skinemsya.vse.ru.receipts.infrastructure.persistence.PositionSelectionRepository;
 import skinemsya.vse.ru.receipts.infrastructure.persistence.SharedPositionTargetRepository;
-
-import java.util.List;
 
 @Service
 @Transactional(readOnly = true)
@@ -20,8 +19,7 @@ public class ReceiptDataPortImpl implements ReceiptDataPort {
     public ReceiptDataPortImpl(
             PositionRepository positionRepository,
             PositionSelectionRepository selectionRepository,
-            SharedPositionTargetRepository sharedTargetRepository
-    ) {
+            SharedPositionTargetRepository sharedTargetRepository) {
         this.positionRepository = positionRepository;
         this.selectionRepository = selectionRepository;
         this.sharedTargetRepository = sharedTargetRepository;

@@ -5,9 +5,4 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record AddGroupMemberRequest(
-        @NotBlank
-        @Size(min = 5, max = 32)
-        @Pattern(regexp = "^@?[a-zA-Z0-9_]{5,32}$")
-        String telegramUsername
-) {
-}
+        @NotBlank @Size(min = 5, max = 32) @Pattern(regexp = "^@?[a-zA-Z0-9_]{5,32}$") String telegramUsername) {}

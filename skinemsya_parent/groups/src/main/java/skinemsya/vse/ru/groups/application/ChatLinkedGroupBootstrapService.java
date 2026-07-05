@@ -1,5 +1,6 @@
 package skinemsya.vse.ru.groups.application;
 
+import java.time.Instant;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,8 +13,6 @@ import skinemsya.vse.ru.groups.infrastructure.persistence.GroupEntity;
 import skinemsya.vse.ru.groups.infrastructure.persistence.GroupMemberRepository;
 import skinemsya.vse.ru.groups.infrastructure.persistence.GroupRepository;
 import skinemsya.vse.ru.users.application.UserService;
-
-import java.time.Instant;
 
 @Service
 public class ChatLinkedGroupBootstrapService {
@@ -29,8 +28,7 @@ public class ChatLinkedGroupBootstrapService {
             GroupMemberRepository groupMemberRepository,
             GroupMapper groupMapper,
             UserService userService,
-            ApplicationEventPublisher eventPublisher
-    ) {
+            ApplicationEventPublisher eventPublisher) {
         this.groupRepository = groupRepository;
         this.groupMemberRepository = groupMemberRepository;
         this.groupMapper = groupMapper;
@@ -43,18 +41,12 @@ public class ChatLinkedGroupBootstrapService {
         requireUserExists(userId);
 
         var now = Instant.now();
-        groupRepository.insertChatLinkedGroupIfAbsent(
-                resolveChatTitle(chatTitle),
-                telegramChatId,
-                userId,
-                now,
-                now
-        );
+        groupRepository.insertChatLinkedGroupIfAbsent(resolveChatTitle(chatTitle), telegramChatId, userId, now, now);
 
-        var group = groupRepository.findByTelegramChatId(telegramChatId)
+        var group = groupRepository
+                .findByTelegramChatId(telegramChatId)
                 .orElseThrow(() -> new IllegalStateException(
-                        "Chat-linked group not found after upsert: chatId=" + telegramChatId
-                ));
+                        "Chat-linked group not found after upsert: chatId=" + telegramChatId));
 
         var role = resolveRole(group, userId);
         groupMemberRepository.insertIfAbsent(group.getId(), userId, role.name(), now);
@@ -69,8 +61,7 @@ public class ChatLinkedGroupBootstrapService {
     }
 
     private void requireUserExists(long userId) {
-        userService.findById(userId)
-                .orElseThrow(GroupUserNotFoundException::new);
+        userService.findById(userId).orElseThrow(GroupUserNotFoundException::new);
     }
 
     private static String resolveChatTitle(String chatTitle) {

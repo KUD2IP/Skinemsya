@@ -1,9 +1,8 @@
 package skinemsya.vse.ru.receipts.application;
 
-import skinemsya.vse.ru.receipts.domain.Position;
-
 import java.math.BigDecimal;
 import java.util.List;
+import skinemsya.vse.ru.receipts.domain.Position;
 
 public interface PositionService {
 

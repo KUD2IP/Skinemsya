@@ -1,9 +1,8 @@
 package skinemsya.vse.ru.payments.application;
 
+import java.util.List;
 import skinemsya.vse.ru.payments.domain.Payment;
 import skinemsya.vse.ru.payments.domain.PaymentDetailsView;
-
-import java.util.List;
 
 public interface PaymentService {
 

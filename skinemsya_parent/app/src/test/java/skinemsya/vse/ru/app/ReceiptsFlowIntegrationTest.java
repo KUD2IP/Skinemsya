@@ -1,5 +1,16 @@
 package skinemsya.vse.ru.app;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.authenticate;
+import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.fetchUserId;
+import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.readJsonNumberField;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -13,17 +24,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.authenticate;
-import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.fetchUserId;
-import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.readJsonNumberField;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -93,7 +93,7 @@ class ReceiptsFlowIntegrationTest {
                 .andExpect(jsonPath("$.name").value("Margherita"));
 
         var fileResponse = mockMvc.perform(multipart("/api/v1/files")
-                        .file(new MockMultipartFile("file", "receipt.png", "image/png", new byte[]{1, 2, 3}))
+                        .file(new MockMultipartFile("file", "receipt.png", "image/png", new byte[] {1, 2, 3}))
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andReturn()
@@ -159,8 +159,7 @@ class ReceiptsFlowIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Borscht"));
 
-        mockMvc.perform(delete("/api/v1/positions/" + positionId)
-                        .header("Authorization", "Bearer " + token))
+        mockMvc.perform(delete("/api/v1/positions/" + positionId).header("Authorization", "Bearer " + token))
                 .andExpect(status().isNoContent());
     }
 
@@ -190,7 +189,7 @@ class ReceiptsFlowIntegrationTest {
         long eventId = Long.parseLong(readJsonNumberField(eventResponse, "id"));
 
         var fileResponse = mockMvc.perform(multipart("/api/v1/files")
-                        .file(new MockMultipartFile("file", "receipt.png", "image/png", new byte[]{1, 2, 3}))
+                        .file(new MockMultipartFile("file", "receipt.png", "image/png", new byte[] {1, 2, 3}))
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andReturn()
@@ -204,8 +203,7 @@ class ReceiptsFlowIntegrationTest {
                         .content("{\"fileId\":" + fileId + "}"))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(get("/api/v1/events/" + eventId + "/receipts")
-                        .header("Authorization", "Bearer " + token))
+        mockMvc.perform(get("/api/v1/events/" + eventId + "/receipts").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].fileId").value(fileId));
     }
@@ -222,7 +220,7 @@ class ReceiptsFlowIntegrationTest {
                 .andExpect(jsonPath("$.message").value("File exceeds maximum size of 1 MB"));
 
         mockMvc.perform(multipart("/api/v1/files")
-                        .file(new MockMultipartFile("file", "receipt.pdf", "application/pdf", new byte[]{1, 2, 3}))
+                        .file(new MockMultipartFile("file", "receipt.pdf", "application/pdf", new byte[] {1, 2, 3}))
                         .param("purpose", "receipt")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isBadRequest())

@@ -7,6 +7,4 @@ public record UserResponse(
         String paymentDetails,
         String phone,
         String preferredBank,
-        String notificationSettings
-) {
-}
+        String notificationSettings) {}

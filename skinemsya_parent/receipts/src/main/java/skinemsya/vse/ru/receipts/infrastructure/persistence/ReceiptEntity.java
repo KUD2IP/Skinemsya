@@ -8,11 +8,10 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.Instant;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import skinemsya.vse.ru.receipts.domain.ReceiptStatus;
-
-import java.time.Instant;
 
 @Entity
 @Table(name = "receipts")

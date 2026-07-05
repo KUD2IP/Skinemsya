@@ -1,8 +1,7 @@
 package skinemsya.vse.ru.groups.api.dto;
 
-import skinemsya.vse.ru.groups.domain.GroupRole;
-
 import java.time.Instant;
+import skinemsya.vse.ru.groups.domain.GroupRole;
 
 public record GroupMemberViewResponse(
         long id,
@@ -12,6 +11,4 @@ public record GroupMemberViewResponse(
         String displayName,
         String telegramUsername,
         long telegramUserId,
-        Instant joinedAt
-) {
-}
+        Instant joinedAt) {}

@@ -8,9 +8,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import skinemsya.vse.ru.groups.domain.GroupRole;
-
 import java.time.Instant;
+import skinemsya.vse.ru.groups.domain.GroupRole;
 
 @Entity
 @Table(name = "group_members")

@@ -3,15 +3,14 @@ package skinemsya.vse.ru.auth.application;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Date;
+import javax.crypto.SecretKey;
 import org.springframework.stereotype.Service;
 import skinemsya.vse.ru.auth.infrastructure.config.JwtProperties;
 import skinemsya.vse.ru.common.domain.DomainException;
 import skinemsya.vse.ru.common.domain.ErrorCode;
-
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.Date;
 
 @Service
 public class JwtTokenService {

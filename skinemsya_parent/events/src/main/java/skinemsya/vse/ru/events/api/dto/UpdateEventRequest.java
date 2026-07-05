@@ -8,6 +8,4 @@ import jakarta.validation.constraints.Size;
 public record UpdateEventRequest(
         @NotBlank @Size(max = 255) String name,
         @Size(max = 5000) String description,
-        @NotNull @Positive Long payerId
-) {
-}
+        @NotNull @Positive Long payerId) {}

@@ -17,14 +17,15 @@ Swagger UI: http://localhost:8080/swagger-ui.html
 
 Подробнее: [docs/onboarding/getting-started.md](docs/onboarding/getting-started.md)
 
-## Деплой на staging (GitHub Actions)
+## Деплой (production, GitHub Actions)
 
-1. Подготовь VPS по инструкции: [docs/deployment/staging-server.md](docs/deployment/staging-server.md)
-2. Добавь secrets в GitHub → Settings → Secrets and variables → Actions
-3. Push в `main` → дождись сборки
-4. **Actions → Backend CI/CD → Run workflow** → включи **Deploy to staging**
+1. Подготовь сервер (см. `docs/deployment/staging-server.md`)
+2. Настрой environment **production** в GitHub (`PRODUCTION_ENV`, `SSH_PRIVATE_KEY`, `PRODUCTION_HOST`, `PRODUCTION_USER`)
+3. Git Flow: `release/*` → PR → `master` → автоматический deploy
 
-CI/CD workflow: [.github/workflows/backend.yml](.github/workflows/backend.yml)
+Подробнее: [docs/deployment/ci-cd.md](docs/deployment/ci-cd.md)
+
+Workflows: `backend-ci.yml`, `backend-release.yml`, `backend-production.yml`
 
 ## Структура репозитория
 

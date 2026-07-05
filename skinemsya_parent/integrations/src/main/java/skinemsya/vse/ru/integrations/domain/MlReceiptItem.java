@@ -7,6 +7,4 @@ public record MlReceiptItem(
         double quantity,
         @JsonProperty("unit_price") Double unitPrice,
         @JsonProperty("total_price") double totalPrice,
-        Double confidence
-) {
-}
+        Double confidence) {}

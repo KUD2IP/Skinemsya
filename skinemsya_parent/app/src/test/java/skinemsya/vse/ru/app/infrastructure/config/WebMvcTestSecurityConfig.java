@@ -14,8 +14,8 @@ public class WebMvcTestSecurityConfig {
 
     @Bean
     SecurityFilterChain webMvcTestSecurityFilterChain(HttpSecurity http) throws Exception {
-        return http
-                .csrf(AbstractHttpConfigurer::disable)
+        // Stateless test security stub; CSRF tokens are not sent in @WebMvcTest requests.
+        return http.csrf(AbstractHttpConfigurer::disable) // lgtm[java/spring-disabled-csrf-protection]
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
                 .build();

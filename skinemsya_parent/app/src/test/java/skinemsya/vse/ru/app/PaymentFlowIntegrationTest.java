@@ -1,5 +1,15 @@
 package skinemsya.vse.ru.app;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.authenticate;
+import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.fetchUserId;
+import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.readJsonNumberField;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -13,16 +23,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.authenticate;
-import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.fetchUserId;
-import static skinemsya.vse.ru.app.testsupport.IntegrationTestSupport.readJsonNumberField;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -108,14 +108,12 @@ class PaymentFlowIntegrationTest {
                         .header("Authorization", "Bearer " + debtorToken))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/v1/events/" + eventId + "/debts")
-                        .header("Authorization", "Bearer " + debtorToken))
+        mockMvc.perform(get("/api/v1/events/" + eventId + "/debts").header("Authorization", "Bearer " + debtorToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].debtorId").exists())
                 .andExpect(jsonPath("$[0].status").value("UNPAID"));
 
-        mockMvc.perform(get("/api/v1/events/" + eventId)
-                        .header("Authorization", "Bearer " + debtorToken))
+        mockMvc.perform(get("/api/v1/events/" + eventId).header("Authorization", "Bearer " + debtorToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("DISTRIBUTION"));
 
@@ -123,13 +121,12 @@ class PaymentFlowIntegrationTest {
                         .header("Authorization", "Bearer " + payerToken))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/v1/events/" + eventId)
-                        .header("Authorization", "Bearer " + payerToken))
+        mockMvc.perform(get("/api/v1/events/" + eventId).header("Authorization", "Bearer " + payerToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CALCULATED"));
 
-        var debtsResponse = mockMvc.perform(get("/api/v1/events/" + eventId + "/debts")
-                        .header("Authorization", "Bearer " + debtorToken))
+        var debtsResponse = mockMvc.perform(
+                        get("/api/v1/events/" + eventId + "/debts").header("Authorization", "Bearer " + debtorToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").exists())
                 .andReturn()
@@ -138,7 +135,7 @@ class PaymentFlowIntegrationTest {
         long debtId = Long.parseLong(readJsonNumberField(debtsResponse.substring(debtsResponse.indexOf('[')), "id"));
 
         var screenshotResponse = mockMvc.perform(multipart("/api/v1/files")
-                        .file(new MockMultipartFile("file", "pay.pdf", "application/pdf", new byte[]{9, 9, 9}))
+                        .file(new MockMultipartFile("file", "pay.pdf", "application/pdf", new byte[] {9, 9, 9}))
                         .param("purpose", "payment-proof")
                         .header("Authorization", "Bearer " + debtorToken))
                 .andExpect(status().isOk())
@@ -158,8 +155,7 @@ class PaymentFlowIntegrationTest {
                         .header("Authorization", "Bearer " + payerToken))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(get("/api/v1/events/" + eventId)
-                        .header("Authorization", "Bearer " + payerToken))
+        mockMvc.perform(get("/api/v1/events/" + eventId).header("Authorization", "Bearer " + payerToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("COMPLETED"));
     }

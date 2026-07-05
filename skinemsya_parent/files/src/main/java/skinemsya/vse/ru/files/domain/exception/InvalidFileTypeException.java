@@ -10,10 +10,11 @@ public class InvalidFileTypeException extends FilesDomainException {
     }
 
     public InvalidFileTypeException(FileUploadPurpose purpose) {
-        super(switch (purpose) {
-            case PAYMENT_PROOF -> "Only image or PDF files are allowed for payment proof";
-            case RECEIPT -> "Only image files are allowed for receipt upload";
-        });
+        super(
+                switch (purpose) {
+                    case PAYMENT_PROOF -> "Only image or PDF files are allowed for payment proof";
+                    case RECEIPT -> "Only image files are allowed for receipt upload";
+                });
     }
 
     @Override

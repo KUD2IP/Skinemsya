@@ -1,10 +1,9 @@
 package skinemsya.vse.ru.files.application;
 
-import org.springframework.web.multipart.MultipartFile;
-import skinemsya.vse.ru.files.domain.StoredFile;
-
 import java.io.InputStream;
 import java.util.Optional;
+import org.springframework.web.multipart.MultipartFile;
+import skinemsya.vse.ru.files.domain.StoredFile;
 
 public interface FileService {
 

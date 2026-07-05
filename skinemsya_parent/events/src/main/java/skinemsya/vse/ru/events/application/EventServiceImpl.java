@@ -1,5 +1,10 @@
 package skinemsya.vse.ru.events.application;
 
+import java.time.Instant;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,7 +18,6 @@ import skinemsya.vse.ru.events.domain.exception.EventDeleteAccessRequiredExcepti
 import skinemsya.vse.ru.events.domain.exception.EventDistributionAccessRequiredException;
 import skinemsya.vse.ru.events.domain.exception.EventNameRequiredException;
 import skinemsya.vse.ru.events.domain.exception.EventNameTooLongException;
-import skinemsya.vse.ru.events.domain.exception.EventNotCalculatedException;
 import skinemsya.vse.ru.events.domain.exception.EventNotDraftException;
 import skinemsya.vse.ru.events.domain.exception.EventNotFoundException;
 import skinemsya.vse.ru.events.domain.exception.EventNotInDistributionException;
@@ -32,12 +36,6 @@ import skinemsya.vse.ru.groups.domain.exception.GroupHasBlockingEventsException;
 import skinemsya.vse.ru.groups.domain.exception.GroupMemberAccessRequiredException;
 import skinemsya.vse.ru.groups.domain.exception.GroupOwnerAccessRequiredException;
 import skinemsya.vse.ru.users.application.UserService;
-
-import java.time.Instant;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
 @Service
 @Transactional
@@ -60,8 +58,7 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
             UserService userService,
             ApplicationEventPublisher eventPublisher,
             DistributionReadinessPort distributionReadinessPort,
-            EventParticipantSyncService eventParticipantSyncService
-    ) {
+            EventParticipantSyncService eventParticipantSyncService) {
         this.eventRepository = eventRepository;
         this.eventParticipantRepository = eventParticipantRepository;
         this.eventMapper = eventMapper;
@@ -123,9 +120,7 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
     public PageResult<Event> listByGroup(long groupId, long requesterId, PageRequest pageRequest) {
         groupAccessService.requireMember(groupId, requesterId);
         var page = eventRepository.findByGroupIdOrderByCreatedAtDesc(
-                groupId,
-                org.springframework.data.domain.PageRequest.of(pageRequest.page(), pageRequest.size())
-        );
+                groupId, org.springframework.data.domain.PageRequest.of(pageRequest.page(), pageRequest.size()));
         var items = page.getContent().stream().map(eventMapper::toDomain).toList();
         return PageResult.of(items, pageRequest, page.getTotalElements());
     }
@@ -215,7 +210,8 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
         eventParticipantSyncService.syncAllMembersBeforeDistribution(eventId, entity.getGroupId());
         distributionReadinessPort.assertReadyForDistribution(eventId);
         var paymentDetails = userService.getPaymentDetails(entity.getPayerId());
-        if (paymentDetails.paymentDetails() == null || paymentDetails.paymentDetails().isBlank()) {
+        if (paymentDetails.paymentDetails() == null
+                || paymentDetails.paymentDetails().isBlank()) {
             throw new PaymentDetailsMissingException();
         }
 
@@ -225,12 +221,7 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
 
         long totalKopecks = distributionReadinessPort.sumTotalKopecks(eventId);
         eventPublisher.publishEvent(new EventSentToDistribution(
-                eventId,
-                entity.getGroupId(),
-                entity.getPayerId(),
-                entity.getName(),
-                totalKopecks
-        ));
+                eventId, entity.getGroupId(), entity.getPayerId(), entity.getName(), totalKopecks));
         return eventMapper.toDomain(entity);
     }
 
@@ -255,7 +246,8 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
     @Override
     public void markSelectionCompleted(long eventId, long userId) {
         requireParticipant(eventId, userId);
-        var participant = eventParticipantRepository.findByEventIdAndUserId(eventId, userId)
+        var participant = eventParticipantRepository
+                .findByEventIdAndUserId(eventId, userId)
                 .orElseThrow(EventNotParticipantException::new);
         participant.setSelectionCompletedAt(Instant.now());
         eventParticipantRepository.save(participant);
@@ -300,8 +292,7 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
     }
 
     private EventEntity getActiveEvent(long eventId) {
-        return eventRepository.findById(eventId)
-                .orElseThrow(EventNotFoundException::new);
+        return eventRepository.findById(eventId).orElseThrow(EventNotFoundException::new);
     }
 
     private void requireDraft(EventEntity entity) {
@@ -338,8 +329,7 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
     }
 
     private void requireUserExists(long userId) {
-        userService.findById(userId)
-                .orElseThrow(EventUserNotFoundException::new);
+        userService.findById(userId).orElseThrow(EventUserNotFoundException::new);
     }
 
     private static void validateName(String name) {

@@ -1,21 +1,14 @@
 package skinemsya.vse.ru.app.infrastructure.config;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-
 import java.util.Arrays;
 import java.util.List;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "skinemsya.cors")
-public record CorsProperties(
-        List<String> allowedOriginPatterns
-) {
+public record CorsProperties(List<String> allowedOriginPatterns) {
     public CorsProperties {
         if (allowedOriginPatterns == null || allowedOriginPatterns.isEmpty()) {
-            allowedOriginPatterns = List.of(
-                    "http://localhost:*",
-                    "http://127.0.0.1:*",
-                    "https://web.telegram.org"
-            );
+            allowedOriginPatterns = List.of("http://localhost:*", "http://127.0.0.1:*", "https://web.telegram.org");
         }
     }
 

@@ -1,5 +1,16 @@
 package skinemsya.vse.ru.auth.application;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -11,18 +22,6 @@ import skinemsya.vse.ru.auth.infrastructure.persistence.RefreshTokenEntity;
 import skinemsya.vse.ru.auth.infrastructure.persistence.RefreshTokenRepository;
 import skinemsya.vse.ru.common.domain.DomainException;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 class RefreshTokenServiceTest {
 
@@ -33,10 +32,7 @@ class RefreshTokenServiceTest {
     private RefreshTokenService refreshTokenService;
 
     private final JwtProperties jwtProperties = new JwtProperties(
-            "test-jwt-secret-at-least-32-characters-long",
-            Duration.ofMinutes(15),
-            Duration.ofDays(7)
-    );
+            "test-jwt-secret-at-least-32-characters-long", Duration.ofMinutes(15), Duration.ofDays(7));
 
     @Test
     void shouldIssueRefreshToken() {
@@ -66,8 +62,7 @@ class RefreshTokenServiceTest {
         when(refreshTokenRepository.findByTokenHash(RefreshTokenService.hash(rawToken)))
                 .thenReturn(Optional.of(entity));
 
-        assertThatThrownBy(() -> refreshTokenService.rotate(rawToken))
-                .isInstanceOf(DomainException.class);
+        assertThatThrownBy(() -> refreshTokenService.rotate(rawToken)).isInstanceOf(DomainException.class);
     }
 
     @Test

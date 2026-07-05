@@ -27,7 +27,8 @@ public class UserController {
     @GetMapping("/me")
     public UserResponse getCurrentUser(@AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
         long userId = requireUserId(authenticatedUser);
-        var user = userService.findById(userId)
+        var user = userService
+                .findById(userId)
                 .orElseThrow(() -> new DomainException(ErrorCode.NOT_FOUND, "User not found"));
         var profile = userService.getProfile(userId);
         return new UserResponse(
@@ -37,25 +38,23 @@ public class UserController {
                 profile.paymentDetails(),
                 profile.phone(),
                 profile.preferredBank(),
-                profile.notificationSettings()
-        );
+                profile.notificationSettings());
     }
 
     @PutMapping("/me/profile")
     public UserResponse updateProfile(
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
-            @Valid @RequestBody UpdateProfileRequest request
-    ) {
+            @Valid @RequestBody UpdateProfileRequest request) {
         long userId = requireUserId(authenticatedUser);
-        var user = userService.findById(userId)
+        var user = userService
+                .findById(userId)
                 .orElseThrow(() -> new DomainException(ErrorCode.NOT_FOUND, "User not found"));
         var profile = userService.updateProfile(
                 userId,
                 request.paymentDetails(),
                 request.phone(),
                 request.preferredBank(),
-                request.notificationSettings()
-        );
+                request.notificationSettings());
         return new UserResponse(
                 user.id(),
                 user.telegramUserId(),
@@ -63,8 +62,7 @@ public class UserController {
                 profile.paymentDetails(),
                 profile.phone(),
                 profile.preferredBank(),
-                profile.notificationSettings()
-        );
+                profile.notificationSettings());
     }
 
     private static long requireUserId(AuthenticatedUser authenticatedUser) {

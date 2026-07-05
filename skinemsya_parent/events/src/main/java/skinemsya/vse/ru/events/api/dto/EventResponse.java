@@ -1,8 +1,7 @@
 package skinemsya.vse.ru.events.api.dto;
 
-import skinemsya.vse.ru.events.domain.EventStatus;
-
 import java.time.Instant;
+import skinemsya.vse.ru.events.domain.EventStatus;
 
 public record EventResponse(
         long id,
@@ -13,6 +12,4 @@ public record EventResponse(
         long createdBy,
         EventStatus status,
         Instant createdAt,
-        Instant updatedAt
-) {
-}
+        Instant updatedAt) {}

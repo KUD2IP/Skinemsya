@@ -1,29 +1,23 @@
 package skinemsya.vse.ru.app.testsupport;
 
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-
-import java.time.Instant;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Instant;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
 public final class IntegrationTestSupport {
 
-    private IntegrationTestSupport() {
-    }
+    private IntegrationTestSupport() {}
 
     public static String authenticate(MockMvc mockMvc, long telegramUserId, String firstName) throws Exception {
         return authenticate(mockMvc, telegramUserId, firstName, null);
     }
 
-    public static String authenticate(
-            MockMvc mockMvc,
-            long telegramUserId,
-            String firstName,
-            String username
-    ) throws Exception {
+    public static String authenticate(MockMvc mockMvc, long telegramUserId, String firstName, String username)
+            throws Exception {
         var initData = TelegramInitDataTestHelper.buildInitData(telegramUserId, firstName, Instant.now(), username);
         var response = mockMvc.perform(post("/api/v1/auth/telegram")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -36,8 +30,7 @@ public final class IntegrationTestSupport {
     }
 
     public static long fetchUserId(MockMvc mockMvc, String accessToken) throws Exception {
-        var response = mockMvc.perform(get("/api/v1/users/me")
-                        .header("Authorization", "Bearer " + accessToken))
+        var response = mockMvc.perform(get("/api/v1/users/me").header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()

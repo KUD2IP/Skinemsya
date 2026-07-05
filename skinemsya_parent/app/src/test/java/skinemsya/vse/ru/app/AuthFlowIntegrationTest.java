@@ -1,5 +1,12 @@
 package skinemsya.vse.ru.app;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -16,14 +23,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import skinemsya.vse.ru.app.testsupport.TelegramInitDataTestHelper;
 import skinemsya.vse.ru.auth.infrastructure.persistence.RefreshTokenRepository;
 import skinemsya.vse.ru.users.infrastructure.persistence.UserRepository;
-
-import java.time.Instant;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -89,8 +88,9 @@ class AuthFlowIntegrationTest {
                 .andExpect(jsonPath("$.refreshToken").isNotEmpty());
 
         assertThat(refreshTokenRepository.findByTokenHash(
-                skinemsya.vse.ru.auth.application.RefreshTokenService.hash(tokens.refreshToken())
-        )).get().satisfies(entity -> assertThat(entity.isRevoked()).isTrue());
+                        skinemsya.vse.ru.auth.application.RefreshTokenService.hash(tokens.refreshToken())))
+                .get()
+                .satisfies(entity -> assertThat(entity.isRevoked()).isTrue());
     }
 
     @Test
@@ -111,16 +111,14 @@ class AuthFlowIntegrationTest {
 
     @Test
     void shouldRejectUsersMeWithoutToken() throws Exception {
-        mockMvc.perform(get("/api/v1/users/me"))
-                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/users/me")).andExpect(status().isUnauthorized());
     }
 
     @Test
     void shouldReturnCurrentUserWithAccessToken() throws Exception {
         var tokens = authenticate();
 
-        mockMvc.perform(get("/api/v1/users/me")
-                        .header("Authorization", "Bearer " + tokens.accessToken()))
+        mockMvc.perform(get("/api/v1/users/me").header("Authorization", "Bearer " + tokens.accessToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.telegramUserId").value(100_001))
                 .andExpect(jsonPath("$.displayName").value("Alice"));
@@ -129,8 +127,7 @@ class AuthFlowIntegrationTest {
     @Test
     void shouldJoinChatLinkedGroupOnAuthWithoutNavigationBootstrap() throws Exception {
         var initData = TelegramInitDataTestHelper.buildInitDataWithChat(
-                100_010L, "ChatUser", Instant.now(), -100_777L, "Office lunch", "supergroup"
-        );
+                100_010L, "ChatUser", Instant.now(), -100_777L, "Office lunch", "supergroup");
 
         var authResponse = mockMvc.perform(post("/api/v1/auth/telegram")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -145,8 +142,7 @@ class AuthFlowIntegrationTest {
 
         var accessToken = readJsonField(authResponse.getResponse().getContentAsString(), "accessToken");
 
-        mockMvc.perform(get("/api/v1/groups")
-                        .header("Authorization", "Bearer " + accessToken))
+        mockMvc.perform(get("/api/v1/groups").header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].name").value("Office lunch"))
                 .andExpect(jsonPath("$.items[0].type").value("CHAT_LINKED"));
@@ -155,12 +151,7 @@ class AuthFlowIntegrationTest {
     @Test
     void shouldJoinChatLinkedGroupFromStartParamOnAuth() throws Exception {
         var initData = TelegramInitDataTestHelper.buildInitDataWithStartParam(
-                100_011L,
-                "DeepLinkUser",
-                Instant.now(),
-                "chat_-100778",
-                "supergroup"
-        );
+                100_011L, "DeepLinkUser", Instant.now(), "chat_-100778", "supergroup");
 
         var authResponse = mockMvc.perform(post("/api/v1/auth/telegram")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -173,8 +164,7 @@ class AuthFlowIntegrationTest {
 
         var accessToken = readJsonField(authResponse.getResponse().getContentAsString(), "accessToken");
 
-        mockMvc.perform(get("/api/v1/groups")
-                        .header("Authorization", "Bearer " + accessToken))
+        mockMvc.perform(get("/api/v1/groups").header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].type").value("CHAT_LINKED"))
                 .andExpect(jsonPath("$.items[0].telegramChatId").value(-100_778));
@@ -191,8 +181,9 @@ class AuthFlowIntegrationTest {
         var activeTokens = refreshTokenRepository.findByUserIdAndRevokedFalseAndExpiresAtAfter(userId, Instant.now());
         assertThat(activeTokens).hasSize(1);
         assertThat(refreshTokenRepository.findByTokenHash(
-                skinemsya.vse.ru.auth.application.RefreshTokenService.hash(firstTokens.refreshToken())
-        )).get().satisfies(entity -> assertThat(entity.isRevoked()).isTrue());
+                        skinemsya.vse.ru.auth.application.RefreshTokenService.hash(firstTokens.refreshToken())))
+                .get()
+                .satisfies(entity -> assertThat(entity.isRevoked()).isTrue());
 
         mockMvc.perform(post("/api/v1/auth/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -233,6 +224,5 @@ class AuthFlowIntegrationTest {
         return json.substring(start, end);
     }
 
-    private record TokenPair(String accessToken, String refreshToken) {
-    }
+    private record TokenPair(String accessToken, String refreshToken) {}
 }

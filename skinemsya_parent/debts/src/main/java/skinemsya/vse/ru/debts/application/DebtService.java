@@ -1,9 +1,8 @@
 package skinemsya.vse.ru.debts.application;
 
+import java.util.List;
 import skinemsya.vse.ru.debts.domain.Debt;
 import skinemsya.vse.ru.debts.domain.DebtSummary;
-
-import java.util.List;
 
 public interface DebtService {
 

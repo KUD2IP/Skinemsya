@@ -1,5 +1,6 @@
 package skinemsya.vse.ru.auth.application;
 
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -16,8 +17,6 @@ import skinemsya.vse.ru.integrations.application.TelegramInitDataValidator;
 import skinemsya.vse.ru.integrations.domain.TelegramInitData;
 import skinemsya.vse.ru.users.application.UserService;
 import skinemsya.vse.ru.users.domain.TelegramUserData;
-
-import java.util.Optional;
 
 @Service
 public class AuthService {
@@ -41,8 +40,7 @@ public class AuthService {
             GroupService groupService,
             TelegramBotClient telegramBotClient,
             EventService eventService,
-            EventDeepLinkAccessService eventDeepLinkAccessService
-    ) {
+            EventDeepLinkAccessService eventDeepLinkAccessService) {
         this.telegramInitDataValidator = telegramInitDataValidator;
         this.userService = userService;
         this.jwtTokenService = jwtTokenService;
@@ -65,8 +63,7 @@ public class AuthService {
                         "Chat-linked group bootstrap failed for telegramChatId={}, userId={}",
                         chat.chatId(),
                         session.userId(),
-                        ex
-                );
+                        ex);
             }
         });
         validatedInitData.eventId().ifPresent(eventId -> {
@@ -77,8 +74,7 @@ public class AuthService {
                         "Event deep link access bootstrap failed for eventId={}, userId={}",
                         eventId,
                         session.userId(),
-                        ex
-                );
+                        ex);
             }
         });
         return new AuthResult(session.tokens(), buildBootstrap(validatedInitData, session.userId()));
@@ -94,20 +90,13 @@ public class AuthService {
                         group != null ? group.name() : null,
                         group != null ? group.type() : null,
                         ChatSuggestedAction.OPEN_APP,
-                        eventId
-                );
+                        eventId);
             });
         }
-        return validatedInitData.chat().flatMap(chat ->
-                groupService.findByTelegramChatId(chat.chatId())
-                        .map(group -> new ChatBootstrap(
-                                group.id(),
-                                group.name(),
-                                group.type(),
-                                ChatSuggestedAction.OPEN_APP,
-                                null
-                        ))
-        );
+        return validatedInitData.chat().flatMap(chat -> groupService
+                .findByTelegramChatId(chat.chatId())
+                .map(group ->
+                        new ChatBootstrap(group.id(), group.name(), group.type(), ChatSuggestedAction.OPEN_APP, null)));
     }
 
     private String resolveChatTitle(long chatId, String titleFromInitData) {
@@ -127,15 +116,13 @@ public class AuthService {
         var user = userService.upsertFromTelegram(new TelegramUserData(
                 validatedInitData.identity().telegramUserId(),
                 validatedInitData.identity().displayName(),
-                validatedInitData.identity().telegramUsername()
-        ));
+                validatedInitData.identity().telegramUsername()));
         refreshTokenService.revokeAllActiveForUser(user.id());
         var tokens = issueTokenPair(user.id());
         return new AuthSession(user.id(), tokens);
     }
 
-    private record AuthSession(long userId, TokenPair tokens) {
-    }
+    private record AuthSession(long userId, TokenPair tokens) {}
 
     public TokenPair refresh(String refreshToken) {
         var rotated = refreshTokenService.rotate(refreshToken);

@@ -22,10 +22,7 @@ public class NotificationController {
 
     @PostMapping("/api/v1/events/{eventId}/remind")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void remind(
-            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
-            @PathVariable long eventId
-    ) {
+    public void remind(@AuthenticationPrincipal AuthenticatedUser authenticatedUser, @PathVariable long eventId) {
         notificationService.remindIncompleteSelections(eventId, requireUserId(authenticatedUser));
     }
 

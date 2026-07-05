@@ -30,17 +30,14 @@ public class ReceiptController {
     public ReceiptResponse processReceipt(
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @PathVariable long eventId,
-            @Valid @RequestBody ProcessReceiptRequest request
-    ) {
+            @Valid @RequestBody ProcessReceiptRequest request) {
         long userId = requireUserId(authenticatedUser);
         return ReceiptResponse.from(receiptService.processReceipt(eventId, request.fileId(), userId));
     }
 
     @GetMapping("/api/v1/events/{eventId}/receipts")
     public java.util.List<ReceiptResponse> listReceipts(
-            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
-            @PathVariable long eventId
-    ) {
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser, @PathVariable long eventId) {
         long userId = requireUserId(authenticatedUser);
         return receiptService.listByEvent(eventId, userId).stream()
                 .map(ReceiptResponse::from)
@@ -51,8 +48,7 @@ public class ReceiptController {
     public ReceiptResponse splitTips(
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @PathVariable long eventId,
-            @PathVariable long id
-    ) {
+            @PathVariable long id) {
         long userId = requireUserId(authenticatedUser);
         return ReceiptResponse.from(receiptService.splitTips(eventId, id, userId));
     }

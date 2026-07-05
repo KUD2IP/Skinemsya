@@ -46,8 +46,7 @@ public class GroupController {
             GroupService groupService,
             GroupAccessService groupAccessService,
             TelegramInitDataValidator telegramInitDataValidator,
-            UserService userService
-    ) {
+            UserService userService) {
         this.groupService = groupService;
         this.groupAccessService = groupAccessService;
         this.telegramInitDataValidator = telegramInitDataValidator;
@@ -58,8 +57,7 @@ public class GroupController {
     @ResponseStatus(HttpStatus.CREATED)
     public GroupResponse createStandalone(
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
-            @Valid @RequestBody CreateStandaloneGroupRequest request
-    ) {
+            @Valid @RequestBody CreateStandaloneGroupRequest request) {
         long userId = requireUserId(authenticatedUser);
         return toResponse(groupService.createStandalone(request.name(), userId));
     }
@@ -67,21 +65,19 @@ public class GroupController {
     @PostMapping("/chat-linked")
     public GroupResponse createChatLinked(
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
-            @Valid @RequestBody ChatLinkedGroupRequest request
-    ) {
+            @Valid @RequestBody ChatLinkedGroupRequest request) {
         long userId = requireUserId(authenticatedUser);
         var initData = telegramInitDataValidator.validateWithChat(request.initData());
         requireSameTelegramIdentity(userId, initData);
         var chat = initData.chat()
                 .orElseThrow(() -> new DomainException(
-                        ErrorCode.DOMAIN_RULE_VIOLATION,
-                        "Telegram chat context is missing in init data"
-                ));
+                        ErrorCode.DOMAIN_RULE_VIOLATION, "Telegram chat context is missing in init data"));
         return toResponse(groupService.createFromChat(chat.chatId(), chat.title(), userId));
     }
 
     private void requireSameTelegramIdentity(long userId, TelegramInitData initData) {
-        var user = userService.findById(userId)
+        var user = userService
+                .findById(userId)
                 .orElseThrow(() -> new DomainException(ErrorCode.AUTHENTICATION_ERROR, "User is not authenticated"));
         if (user.telegramUserId() != initData.identity().telegramUserId()) {
             throw new DomainException(ErrorCode.AUTHORIZATION_ERROR, "Telegram init data belongs to another user");
@@ -92,8 +88,7 @@ public class GroupController {
     public PageResult<GroupResponse> listGroups(
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer size
-    ) {
+            @RequestParam(required = false) Integer size) {
         long userId = requireUserId(authenticatedUser);
         var result = groupService.listForUser(userId, resolvePageRequest(page, size));
         return mapPage(result, GroupController::toResponse);
@@ -101,13 +96,10 @@ public class GroupController {
 
     @GetMapping("/{groupId}")
     public GroupResponse getGroup(
-            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
-            @PathVariable long groupId
-    ) {
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser, @PathVariable long groupId) {
         long userId = requireUserId(authenticatedUser);
         groupAccessService.requireMember(groupId, userId);
-        var group = groupService.findById(groupId)
-                .orElseThrow(GroupNotFoundException::new);
+        var group = groupService.findById(groupId).orElseThrow(GroupNotFoundException::new);
         return toResponse(group);
     }
 
@@ -115,8 +107,7 @@ public class GroupController {
     public GroupResponse updateGroup(
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @PathVariable long groupId,
-            @Valid @RequestBody UpdateGroupRequest request
-    ) {
+            @Valid @RequestBody UpdateGroupRequest request) {
         long userId = requireUserId(authenticatedUser);
         return toResponse(groupService.updateName(groupId, userId, request.name()));
     }
@@ -126,8 +117,7 @@ public class GroupController {
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @PathVariable long groupId,
             @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer size
-    ) {
+            @RequestParam(required = false) Integer size) {
         long userId = requireUserId(authenticatedUser);
         var result = groupService.listMembers(groupId, userId, resolvePageRequest(page, size));
         return mapPage(result, GroupController::toResponse);
@@ -138,8 +128,7 @@ public class GroupController {
     public GroupMemberViewResponse addMember(
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @PathVariable long groupId,
-            @Valid @RequestBody AddGroupMemberRequest request
-    ) {
+            @Valid @RequestBody AddGroupMemberRequest request) {
         long userId = requireUserId(authenticatedUser);
         var member = groupService.addMemberByTelegramUsername(groupId, userId, request.telegramUsername());
         return toResponse(member);
@@ -147,10 +136,7 @@ public class GroupController {
 
     @DeleteMapping("/{groupId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteGroup(
-            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
-            @PathVariable long groupId
-    ) {
+    public void deleteGroup(@AuthenticationPrincipal AuthenticatedUser authenticatedUser, @PathVariable long groupId) {
         long userId = requireUserId(authenticatedUser);
         groupService.delete(groupId, userId);
     }
@@ -170,8 +156,7 @@ public class GroupController {
                 group.telegramChatId(),
                 group.ownerId(),
                 group.createdAt(),
-                group.updatedAt()
-        );
+                group.updatedAt());
     }
 
     private static GroupMemberViewResponse toResponse(GroupMemberView member) {
@@ -183,23 +168,19 @@ public class GroupController {
                 member.displayName(),
                 member.telegramUsername(),
                 member.telegramUserId(),
-                member.joinedAt()
-        );
+                member.joinedAt());
     }
 
     private static PageRequest resolvePageRequest(Integer page, Integer size) {
         if (page == null && size == null) {
             return PageRequest.defaults();
         }
-        return PageRequest.of(page == null ? 0 : page, size == null ? PageRequest.defaults().size() : size);
+        return PageRequest.of(
+                page == null ? 0 : page, size == null ? PageRequest.defaults().size() : size);
     }
 
     private static <T, R> PageResult<R> mapPage(PageResult<T> source, java.util.function.Function<T, R> mapper) {
         return new PageResult<>(
-                source.items().stream().map(mapper).toList(),
-                source.page(),
-                source.size(),
-                source.totalElements()
-        );
+                source.items().stream().map(mapper).toList(), source.page(), source.size(), source.totalElements());
     }
 }

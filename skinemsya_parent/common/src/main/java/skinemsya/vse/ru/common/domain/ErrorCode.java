@@ -4,7 +4,6 @@ package skinemsya.vse.ru.common.domain;
  * Stable machine-readable error codes for API, logs and tests.
  */
 public enum ErrorCode {
-
     VALIDATION_ERROR("VALIDATION_ERROR", 400, ErrorSeverity.LOW, "Invalid request data"),
     AUTHENTICATION_ERROR("AUTHENTICATION_ERROR", 401, ErrorSeverity.LOW, "Authentication failed"),
     AUTHORIZATION_ERROR("AUTHORIZATION_ERROR", 403, ErrorSeverity.NONE, "Access denied"),

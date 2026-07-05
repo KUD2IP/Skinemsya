@@ -1,12 +1,11 @@
 package skinemsya.vse.ru.receipts.application;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import skinemsya.vse.ru.receipts.infrastructure.persistence.PositionEntity;
 import skinemsya.vse.ru.receipts.infrastructure.persistence.PositionSelectionRepository;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 @Service
 @Transactional(readOnly = true)
@@ -25,7 +24,8 @@ public class PositionAvailabilityService {
         }
 
         int totalUnits = toIntUnits(position.getQuantity());
-        int mySelected = selectionRepository.findByPositionIdAndUserId(position.getId(), userId)
+        int mySelected = selectionRepository
+                .findByPositionIdAndUserId(position.getId(), userId)
                 .map(selection -> toIntUnits(selection.getSelectedQuantity()))
                 .orElse(0);
         int selectedByOthers = toIntUnits(selectionRepository.sumSelectedByOthers(position.getId(), userId));
@@ -54,13 +54,13 @@ public class PositionAvailabilityService {
     }
 
     public record PositionAvailability(
-            int totalQuantity,
-            int remainingQuantity,
-            int mySelectedQuantity,
-            boolean soldOut
-    ) {
+            int totalQuantity, int remainingQuantity, int mySelectedQuantity, boolean soldOut) {
         public PositionAvailability(int totalQuantity, int remainingQuantity, int mySelectedQuantity) {
-            this(totalQuantity, remainingQuantity, mySelectedQuantity, remainingQuantity <= 0 && mySelectedQuantity <= 0);
+            this(
+                    totalQuantity,
+                    remainingQuantity,
+                    mySelectedQuantity,
+                    remainingQuantity <= 0 && mySelectedQuantity <= 0);
         }
     }
 }

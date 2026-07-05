@@ -1,5 +1,6 @@
 package skinemsya.vse.ru.debts.api;
 
+import java.util.List;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,8 +15,6 @@ import skinemsya.vse.ru.debts.application.DebtService;
 import skinemsya.vse.ru.events.application.EventAccessPort;
 import skinemsya.vse.ru.events.infrastructure.persistence.EventParticipantRepository;
 
-import java.util.List;
-
 @RestController
 public class DebtController {
 
@@ -26,8 +25,7 @@ public class DebtController {
     public DebtController(
             DebtService debtService,
             EventAccessPort eventAccessPort,
-            EventParticipantRepository eventParticipantRepository
-    ) {
+            EventParticipantRepository eventParticipantRepository) {
         this.debtService = debtService;
         this.eventAccessPort = eventAccessPort;
         this.eventParticipantRepository = eventParticipantRepository;
@@ -35,9 +33,7 @@ public class DebtController {
 
     @GetMapping("/api/v1/events/{eventId}/debts")
     public List<DebtResponse> listDebts(
-            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
-            @PathVariable long eventId
-    ) {
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser, @PathVariable long eventId) {
         long userId = requireUserId(authenticatedUser);
         eventAccessPort.requireParticipant(eventId, userId);
         return debtService.findByEvent(eventId).stream().map(DebtResponse::from).toList();
@@ -50,9 +46,7 @@ public class DebtController {
 
     @GetMapping("/api/v1/events/{eventId}/participants-status")
     public ParticipantsStatusResponse getParticipantsStatus(
-            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
-            @PathVariable long eventId
-    ) {
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser, @PathVariable long eventId) {
         long userId = requireUserId(authenticatedUser);
         eventAccessPort.requireParticipant(eventId, userId);
 
@@ -68,10 +62,7 @@ public class DebtController {
                             .map(d -> d.status().name())
                             .orElse("NONE");
                     return new ParticipantsStatusResponse.ParticipantStatusItem(
-                            p.getUserId(),
-                            p.getSelectionCompletedAt() != null,
-                            status
-                    );
+                            p.getUserId(), p.getSelectionCompletedAt() != null, status);
                 })
                 .toList();
 

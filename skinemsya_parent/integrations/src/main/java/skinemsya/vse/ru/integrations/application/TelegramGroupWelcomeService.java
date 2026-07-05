@@ -1,12 +1,11 @@
 package skinemsya.vse.ru.integrations.application;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class TelegramGroupWelcomeService {
@@ -55,7 +54,9 @@ public class TelegramGroupWelcomeService {
 
     private void sendWelcome(long chatId, String chatTitle, String chatType, String addedBy) {
         try {
-            botClient.sendHtmlMessage(chatId, """
+            botClient.sendHtmlMessage(
+                    chatId,
+                    """
                     👋 <b>Добро пожаловать в Skinemsya!</b>
 
                     Делите расходы в группе «<b>%s</b>» — просто и удобно.
@@ -63,7 +64,8 @@ public class TelegramGroupWelcomeService {
                     📊 <b>Добавил(а) бота:</b>
                     • %s
 
-                    ⚠️ <b>Важно:</b> админы чата добавляются сразу (если уже заходили в Skinemsya), остальные — когда откроют приложение или напишут в чат. Полный список участников Telegram боту недоступен.""".formatted(chatTitle, addedBy));
+                    ⚠️ <b>Важно:</b> админы чата добавляются сразу (если уже заходили в Skinemsya), остальные — когда откроют приложение или напишут в чат. Полный список участников Telegram боту недоступен."""
+                            .formatted(chatTitle, addedBy));
         } catch (RuntimeException ex) {
             log.error("Failed to send welcome HTML message in chat {}", chatId, ex);
         }
@@ -84,14 +86,16 @@ public class TelegramGroupWelcomeService {
 
         long messageId;
         try {
-            var pinnedMessage = botClient.sendMessageWithOpenAppButton(
-                    chatId, PINNED_MESSAGE, BUTTON_LABEL, chatType);
+            var pinnedMessage = botClient.sendMessageWithOpenAppButton(chatId, PINNED_MESSAGE, BUTTON_LABEL, chatType);
             messageId = pinnedMessage.messageId();
             openAppMessageIdsByChat.put(chatId, messageId);
         } catch (RuntimeException ex) {
-            log.warn("Could not send welcome button in chat {}: {}. "
-                    + "Make the bot an administrator with pin permission and configure "
-                    + "TELEGRAM_BOT_USERNAME or TELEGRAM_WEB_APP_SHORT_NAME.", chatId, ex.getMessage());
+            log.warn(
+                    "Could not send welcome button in chat {}: {}. "
+                            + "Make the bot an administrator with pin permission and configure "
+                            + "TELEGRAM_BOT_USERNAME or TELEGRAM_WEB_APP_SHORT_NAME.",
+                    chatId,
+                    ex.getMessage());
             return;
         }
 
@@ -104,8 +108,11 @@ public class TelegramGroupWelcomeService {
             pinnedOpenAppChats.add(chatId);
             log.info("Pinned welcome message in chat: chatId={}", chatId);
         } catch (RuntimeException ex) {
-            log.warn("Could not pin welcome button in chat {}: {}. "
-                    + "Make the bot an administrator with pin permission.", chatId, ex.getMessage());
+            log.warn(
+                    "Could not pin welcome button in chat {}: {}. "
+                            + "Make the bot an administrator with pin permission.",
+                    chatId,
+                    ex.getMessage());
         }
     }
 
