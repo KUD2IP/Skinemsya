@@ -78,6 +78,9 @@ runs:
       with:
         image-ref: ${{ steps.tags.outputs.primary }}
         format: table
+        scanners: vuln
+        # OS layer only — blocks on base image CVEs. Jar deps are gated in PR via Dependency Review.
+        vuln-type: os
         exit-code: '1'
         severity: CRITICAL,HIGH
         ignore-unfixed: true
