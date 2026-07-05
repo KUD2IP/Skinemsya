@@ -14,19 +14,27 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Compile
-      shell: bash
-      env:
-        MAVEN_CLI_OPTS: >-
-          --batch-mode --errors --fail-at-end --show-version --no-transfer-progress
-      run: mvn $MAVEN_CLI_OPTS -T 1C -pl skinemsya_parent/app -am compile
-
     - name: Spotless check
       shell: bash
       env:
         MAVEN_CLI_OPTS: >-
           --batch-mode --errors --fail-at-end --show-version --no-transfer-progress
       run: mvn $MAVEN_CLI_OPTS spotless:check
+
+    - name: Install reactor modules
+      shell: bash
+      env:
+        MAVEN_CLI_OPTS: >-
+          --batch-mode --errors --fail-at-end --show-version --no-transfer-progress
+        MAVEN_OPTS: >-
+          -Dhttps.protocols=TLSv1.2
+          -Dorg.slf4j.simpleLogger.showDateTime=true
+          -Djava.awt.headless=true
+      run: >
+        mvn $MAVEN_CLI_OPTS -T 1C -pl skinemsya_parent/app -am install
+        -DskipTests
+        -Dcheckstyle.skip=true
+        -Dspotbugs.skip=true
 
     - name: Checkstyle
       shell: bash
@@ -73,13 +81,6 @@ runs:
         -Dtest='*IntegrationTest,SkinemsyaApplicationTest,LiquibaseMigrationTest'
         -Dsurefire.failIfNoSpecifiedTests=false
         test
-
-    - name: Package
-      shell: bash
-      env:
-        MAVEN_CLI_OPTS: >-
-          --batch-mode --errors --fail-at-end --show-version --no-transfer-progress
-      run: mvn $MAVEN_CLI_OPTS -pl skinemsya_parent/app -am package -DskipTests
 
     - name: Upload JAR artifact
       if: inputs.upload_jar == 'true'

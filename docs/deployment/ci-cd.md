@@ -77,6 +77,24 @@ docker compose -f docker-compose.prod.yml up -d --no-deps backend
 5. При fail — rollback на `.previous-version`
 6. `docker image prune -f`
 
+## GitHub repository settings (один раз)
+
+Перед первым PR включи анализ зависимостей, иначе `dependency-review.yml` падает с:
+
+`Dependency review is not supported on this repository`
+
+**Settings → Code security and analysis** (или прямая ссылка:  
+`https://github.com/KUD2IP/Skinemsya/settings/security_analysis`)
+
+Включи:
+
+- **Dependency graph** — обязательно
+- **Dependabot alerts** — рекомендуется
+
+После включения перезапусти failed workflow (**Re-run jobs**).
+
+Предупреждение `Node 20 is being deprecated` — информационное, на результат не влияет.
+
 ## GitHub Environment
 
 | Environment | Назначение | Approval |
