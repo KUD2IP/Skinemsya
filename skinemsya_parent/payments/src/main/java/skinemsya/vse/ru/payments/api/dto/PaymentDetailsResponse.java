@@ -12,8 +12,7 @@ public record PaymentDetailsResponse(
         String paymentDetails,
         String phone,
         String preferredBank,
-        PaymentStatus status
-) {
+        PaymentStatus status) {
     public static PaymentDetailsResponse from(PaymentDetailsView view) {
         return new PaymentDetailsResponse(
                 view.debtId(),
@@ -24,7 +23,6 @@ public record PaymentDetailsResponse(
                 view.paymentDetails(),
                 view.phone(),
                 view.preferredBank(),
-                view.status()
-        );
+                view.status());
     }
 }

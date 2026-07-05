@@ -1,5 +1,6 @@
 package skinemsya.vse.ru.notifications.application;
 
+import java.time.Instant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import skinemsya.vse.ru.events.application.EventAccessPort;
@@ -13,8 +14,6 @@ import skinemsya.vse.ru.notifications.domain.NotificationType;
 import skinemsya.vse.ru.notifications.infrastructure.persistence.NotificationEntity;
 import skinemsya.vse.ru.notifications.infrastructure.persistence.NotificationRepository;
 import skinemsya.vse.ru.users.application.UserService;
-
-import java.time.Instant;
 
 @Service
 @Transactional
@@ -33,8 +32,7 @@ public class NotificationServiceImpl implements NotificationService {
             EventAccessPort eventAccessPort,
             EventParticipantRepository eventParticipantRepository,
             GroupService groupService,
-            UserService userService
-    ) {
+            UserService userService) {
         this.notificationRepository = notificationRepository;
         this.telegramBotClient = telegramBotClient;
         this.eventAccessPort = eventAccessPort;
@@ -75,12 +73,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public void sendToGroupChat(long telegramChatId, NotificationType type, String message, long eventId) {
         telegramBotClient.sendMessageWithOpenAppButton(
-                telegramChatId,
-                message,
-                "Скинуть",
-                "supergroup",
-                TelegramStartParam.forEvent(eventId)
-        );
+                telegramChatId, message, "Скинуть", "supergroup", TelegramStartParam.forEvent(eventId));
     }
 
     @Override
@@ -109,10 +102,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     private static String toJsonPayload(String message) {
-        var escaped = message
-                .replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n");
+        var escaped = message.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n");
         return "{\"message\":\"" + escaped + "\"}";
     }
 
@@ -124,8 +114,7 @@ public class NotificationServiceImpl implements NotificationService {
                 entity.getPayload(),
                 entity.getStatus(),
                 entity.getSentAt(),
-                entity.getCreatedAt()
-        );
+                entity.getCreatedAt());
     }
 
     static String formatRubles(long kopecks) {

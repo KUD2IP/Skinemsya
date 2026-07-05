@@ -1,0 +1,90 @@
+name: Maven verify
+description: Compile, quality checks, unit and integration tests, package
+
+inputs:
+  run_integration:
+    description: Run integration tests
+    required: false
+    default: 'true'
+  upload_jar:
+    description: Upload app JAR artifact
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: Compile
+      shell: bash
+      env:
+        MAVEN_CLI_OPTS: >-
+          --batch-mode --errors --fail-at-end --show-version --no-transfer-progress
+      run: mvn $MAVEN_CLI_OPTS -T 1C -pl skinemsya_parent/app -am compile
+
+    - name: Spotless check
+      shell: bash
+      env:
+        MAVEN_CLI_OPTS: >-
+          --batch-mode --errors --fail-at-end --show-version --no-transfer-progress
+      run: mvn $MAVEN_CLI_OPTS spotless:check
+
+    - name: Checkstyle
+      shell: bash
+      env:
+        MAVEN_CLI_OPTS: >-
+          --batch-mode --errors --fail-at-end --show-version --no-transfer-progress
+      run: mvn $MAVEN_CLI_OPTS -pl skinemsya_parent/app -am checkstyle:check
+
+    - name: SpotBugs
+      shell: bash
+      env:
+        MAVEN_CLI_OPTS: >-
+          --batch-mode --errors --fail-at-end --show-version --no-transfer-progress
+      run: mvn $MAVEN_CLI_OPTS -pl skinemsya_parent/app -am com.github.spotbugs:spotbugs-maven-plugin:check
+
+    - name: Unit tests
+      shell: bash
+      env:
+        MAVEN_CLI_OPTS: >-
+          --batch-mode --errors --fail-at-end --show-version --no-transfer-progress
+        MAVEN_OPTS: >-
+          -Dhttps.protocols=TLSv1.2
+          -Dorg.slf4j.simpleLogger.showDateTime=true
+          -Djava.awt.headless=true
+      run: >
+        mvn $MAVEN_CLI_OPTS -pl skinemsya_parent/app -am
+        -Dtest='!*IntegrationTest,!SkinemsyaApplicationTest,!LiquibaseMigrationTest'
+        -Dsurefire.failIfNoSpecifiedTests=false
+        -DfailIfNoTests=false
+        test
+
+    - name: Integration tests
+      if: inputs.run_integration == 'true'
+      shell: bash
+      env:
+        MAVEN_CLI_OPTS: >-
+          --batch-mode --errors --fail-at-end --show-version --no-transfer-progress
+        MAVEN_OPTS: >-
+          -Dhttps.protocols=TLSv1.2
+          -Dorg.slf4j.simpleLogger.showDateTime=true
+          -Djava.awt.headless=true
+      run: >
+        mvn $MAVEN_CLI_OPTS -pl skinemsya_parent/app -am
+        -Dtest='*IntegrationTest,SkinemsyaApplicationTest,LiquibaseMigrationTest'
+        -Dsurefire.failIfNoSpecifiedTests=false
+        test
+
+    - name: Package
+      shell: bash
+      env:
+        MAVEN_CLI_OPTS: >-
+          --batch-mode --errors --fail-at-end --show-version --no-transfer-progress
+      run: mvn $MAVEN_CLI_OPTS -pl skinemsya_parent/app -am package -DskipTests
+
+    - name: Upload JAR artifact
+      if: inputs.upload_jar == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: skinemsya-backend-jar
+        path: skinemsya_parent/app/target/app-*.jar
+        retention-days: 7

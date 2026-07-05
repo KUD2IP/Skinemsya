@@ -2,17 +2,6 @@ package skinemsya.vse.ru.integrations.infrastructure.telegram;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.stereotype.Component;
-import skinemsya.vse.ru.common.domain.DomainException;
-import skinemsya.vse.ru.common.domain.ErrorCode;
-import skinemsya.vse.ru.integrations.application.TelegramInitDataValidator;
-import skinemsya.vse.ru.integrations.domain.TelegramChatContext;
-import skinemsya.vse.ru.integrations.domain.TelegramIdentity;
-import skinemsya.vse.ru.integrations.domain.TelegramInitData;
-import skinemsya.vse.ru.integrations.infrastructure.config.TelegramIntegrationProperties;
-
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -25,6 +14,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import org.springframework.stereotype.Component;
+import skinemsya.vse.ru.common.domain.DomainException;
+import skinemsya.vse.ru.common.domain.ErrorCode;
+import skinemsya.vse.ru.integrations.application.TelegramInitDataValidator;
+import skinemsya.vse.ru.integrations.domain.TelegramChatContext;
+import skinemsya.vse.ru.integrations.domain.TelegramIdentity;
+import skinemsya.vse.ru.integrations.domain.TelegramInitData;
+import skinemsya.vse.ru.integrations.infrastructure.config.TelegramIntegrationProperties;
 
 @Component
 public class TelegramInitDataValidatorImpl implements TelegramInitDataValidator {
@@ -60,11 +59,7 @@ public class TelegramInitDataValidatorImpl implements TelegramInitDataValidator 
             return chatFromJson;
         }
         return TelegramStartParam.parseChatId(params.get("start_param"))
-                .map(chatId -> new TelegramChatContext(
-                        chatId,
-                        "",
-                        resolveChatType(params.get("chat_type"))
-                ));
+                .map(chatId -> new TelegramChatContext(chatId, "", resolveChatType(params.get("chat_type"))));
     }
 
     private static String resolveChatType(String chatType) {
@@ -78,8 +73,7 @@ public class TelegramInitDataValidatorImpl implements TelegramInitDataValidator 
         if (initData == null || initData.isBlank()) {
             throw new DomainException(
                     ErrorCode.AUTHENTICATION_ERROR,
-                    "Telegram init data is missing. Open the Mini App through the bot, not in a regular browser"
-            );
+                    "Telegram init data is missing. Open the Mini App through the bot, not in a regular browser");
         }
         if (properties.botToken() == null || properties.botToken().isBlank()) {
             throw new DomainException(ErrorCode.INTERNAL_ERROR, "Telegram bot token is not configured");
@@ -93,8 +87,7 @@ public class TelegramInitDataValidatorImpl implements TelegramInitDataValidator 
         if (receivedHash == null || receivedHash.isBlank()) {
             throw new DomainException(
                     ErrorCode.AUTHENTICATION_ERROR,
-                    "Telegram init data hash is missing. Send the raw Telegram.WebApp.initData string unchanged, not initDataUnsafe"
-            );
+                    "Telegram init data hash is missing. Send the raw Telegram.WebApp.initData string unchanged, not initDataUnsafe");
         }
 
         var dataCheckString = buildDataCheckString(params);
@@ -187,8 +180,7 @@ public class TelegramInitDataValidatorImpl implements TelegramInitDataValidator 
         if (initData.startsWith("{") || initData.startsWith("[")) {
             throw new DomainException(
                     ErrorCode.AUTHENTICATION_ERROR,
-                    "Invalid init data format. Use Telegram.WebApp.initData query string, not initDataUnsafe JSON"
-            );
+                    "Invalid init data format. Use Telegram.WebApp.initData query string, not initDataUnsafe JSON");
         }
     }
 
@@ -209,9 +201,7 @@ public class TelegramInitDataValidatorImpl implements TelegramInitDataValidator 
     static String buildDataCheckString(Map<String, String> params) {
         List<String> keys = new ArrayList<>(params.keySet());
         Collections.sort(keys);
-        return keys.stream()
-                .map(key -> key + "=" + params.get(key))
-                .collect(Collectors.joining("\n"));
+        return keys.stream().map(key -> key + "=" + params.get(key)).collect(Collectors.joining("\n"));
     }
 
     public static String calculateHash(String botToken, String dataCheckString) {

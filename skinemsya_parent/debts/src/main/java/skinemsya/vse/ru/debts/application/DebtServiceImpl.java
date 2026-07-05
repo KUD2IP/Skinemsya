@@ -1,5 +1,14 @@
 package skinemsya.vse.ru.debts.application;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,24 +24,12 @@ import skinemsya.vse.ru.events.application.EventAccessPort;
 import skinemsya.vse.ru.events.domain.EventStatus;
 import skinemsya.vse.ru.events.domain.exception.EventNotInDistributionException;
 
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 @Service
 @Transactional
 public class DebtServiceImpl implements DebtService {
 
-    private static final List<DebtStatus> NON_UNPAID_STATUSES = List.of(
-            DebtStatus.PENDING_CONFIRMATION,
-            DebtStatus.PAID
-    );
+    private static final List<DebtStatus> NON_UNPAID_STATUSES =
+            List.of(DebtStatus.PENDING_CONFIRMATION, DebtStatus.PAID);
 
     private final DebtRepository debtRepository;
     private final ReceiptDataPort receiptDataPort;
@@ -43,8 +40,7 @@ public class DebtServiceImpl implements DebtService {
             DebtRepository debtRepository,
             ReceiptDataPort receiptDataPort,
             EventAccessPort eventAccessPort,
-            ApplicationEventPublisher eventPublisher
-    ) {
+            ApplicationEventPublisher eventPublisher) {
         this.debtRepository = debtRepository;
         this.receiptDataPort = receiptDataPort;
         this.eventAccessPort = eventAccessPort;
@@ -159,7 +155,9 @@ public class DebtServiceImpl implements DebtService {
     @Override
     @Transactional(readOnly = true)
     public List<Debt> findByEvent(long eventId) {
-        return debtRepository.findByEventId(eventId).stream().map(this::toDomain).toList();
+        return debtRepository.findByEventId(eventId).stream()
+                .map(this::toDomain)
+                .toList();
     }
 
     @Override
@@ -212,10 +210,10 @@ public class DebtServiceImpl implements DebtService {
         var selections = receiptDataPort.getSelections(eventId);
         var sharedTargets = receiptDataPort.getSharedTargets(eventId);
 
-        var selectionsByPosition = selections.stream()
-                .collect(Collectors.groupingBy(ReceiptDataPort.SelectionData::positionId));
-        var sharedTargetsByPosition = sharedTargets.stream()
-                .collect(Collectors.groupingBy(ReceiptDataPort.SharedTargetData::positionId));
+        var selectionsByPosition =
+                selections.stream().collect(Collectors.groupingBy(ReceiptDataPort.SelectionData::positionId));
+        var sharedTargetsByPosition =
+                sharedTargets.stream().collect(Collectors.groupingBy(ReceiptDataPort.SharedTargetData::positionId));
 
         Map<Long, Long> aggregated = new HashMap<>();
 
@@ -224,8 +222,7 @@ public class DebtServiceImpl implements DebtService {
                     position,
                     participants,
                     selectionsByPosition.getOrDefault(position.id(), List.of()),
-                    sharedTargetsByPosition.getOrDefault(position.id(), List.of())
-            );
+                    sharedTargetsByPosition.getOrDefault(position.id(), List.of()));
             if (weights.isEmpty()) {
                 throw new PositionHasNoTargetsException();
             }
@@ -254,10 +251,10 @@ public class DebtServiceImpl implements DebtService {
         var selections = receiptDataPort.getSelections(eventId);
         var sharedTargets = receiptDataPort.getSharedTargets(eventId);
 
-        var selectionsByPosition = selections.stream()
-                .collect(Collectors.groupingBy(ReceiptDataPort.SelectionData::positionId));
-        var sharedTargetsByPosition = sharedTargets.stream()
-                .collect(Collectors.groupingBy(ReceiptDataPort.SharedTargetData::positionId));
+        var selectionsByPosition =
+                selections.stream().collect(Collectors.groupingBy(ReceiptDataPort.SelectionData::positionId));
+        var sharedTargetsByPosition =
+                sharedTargets.stream().collect(Collectors.groupingBy(ReceiptDataPort.SharedTargetData::positionId));
 
         long total = 0;
         for (var position : positions) {
@@ -265,8 +262,7 @@ public class DebtServiceImpl implements DebtService {
                     position,
                     participants,
                     selectionsByPosition.getOrDefault(position.id(), List.of()),
-                    sharedTargetsByPosition.getOrDefault(position.id(), List.of())
-            );
+                    sharedTargetsByPosition.getOrDefault(position.id(), List.of()));
             if (weights.isEmpty()) {
                 continue;
             }
@@ -277,7 +273,8 @@ public class DebtServiceImpl implements DebtService {
     }
 
     private boolean isDebtLocked(long eventId, long debtorId) {
-        return debtRepository.findByEventIdAndDebtorId(eventId, debtorId)
+        return debtRepository
+                .findByEventIdAndDebtorId(eventId, debtorId)
                 .map(debt -> debt.getStatus() != DebtStatus.UNPAID)
                 .orElse(false);
     }
@@ -292,8 +289,7 @@ public class DebtServiceImpl implements DebtService {
             ReceiptDataPort.PositionData position,
             List<Long> participants,
             List<ReceiptDataPort.SelectionData> selections,
-            List<ReceiptDataPort.SharedTargetData> targets
-    ) {
+            List<ReceiptDataPort.SharedTargetData> targets) {
         Map<Long, BigDecimal> weights = new LinkedHashMap<>();
         if (position.shared()) {
             if (targets.isEmpty()) {
@@ -326,7 +322,9 @@ public class DebtServiceImpl implements DebtService {
 
         for (long userId : userIds) {
             BigDecimal weight = weights.get(userId);
-            BigDecimal exact = BigDecimal.valueOf(amountKopecks).multiply(weight).divide(totalWeight, 10, java.math.RoundingMode.DOWN);
+            BigDecimal exact = BigDecimal.valueOf(amountKopecks)
+                    .multiply(weight)
+                    .divide(totalWeight, 10, java.math.RoundingMode.DOWN);
             long floor = exact.longValue();
             shares.put(userId, floor);
             allocated += floor;
@@ -334,9 +332,8 @@ public class DebtServiceImpl implements DebtService {
         }
 
         long remainder = amountKopecks - allocated;
-        remainders.sort(Comparator
-                .comparing(RemainderEntry::fractional).reversed()
-                .thenComparing(RemainderEntry::userId));
+        remainders.sort(
+                Comparator.comparing(RemainderEntry::fractional).reversed().thenComparing(RemainderEntry::userId));
 
         for (int i = 0; i < remainder && i < remainders.size(); i++) {
             long userId = remainders.get(i).userId();
@@ -354,10 +351,8 @@ public class DebtServiceImpl implements DebtService {
                 entity.getAmountKopecks(),
                 entity.getStatus(),
                 entity.getCreatedAt(),
-                entity.getUpdatedAt()
-        );
+                entity.getUpdatedAt());
     }
 
-    private record RemainderEntry(long userId, BigDecimal fractional) {
-    }
+    private record RemainderEntry(long userId, BigDecimal fractional) {}
 }

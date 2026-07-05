@@ -1,14 +1,15 @@
 package skinemsya.vse.ru.receipts.application;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.context.ApplicationEventPublisher;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import skinemsya.vse.ru.common.event.SelectionsCompleted;
 import skinemsya.vse.ru.events.application.EventAccessPort;
-import skinemsya.vse.ru.events.application.EventServiceImpl;
 import skinemsya.vse.ru.events.domain.EventStatus;
-import skinemsya.vse.ru.events.domain.exception.EventNotInDistributionException;
 import skinemsya.vse.ru.files.application.FileService;
 import skinemsya.vse.ru.integrations.application.MlServiceClient;
 import skinemsya.vse.ru.integrations.domain.MlReceiptItem;
@@ -21,12 +22,6 @@ import skinemsya.vse.ru.receipts.infrastructure.persistence.PositionEntity;
 import skinemsya.vse.ru.receipts.infrastructure.persistence.PositionRepository;
 import skinemsya.vse.ru.receipts.infrastructure.persistence.ReceiptEntity;
 import skinemsya.vse.ru.receipts.infrastructure.persistence.ReceiptRepository;
-
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.Instant;
-import java.util.List;
 
 @Service
 @Transactional
@@ -47,8 +42,7 @@ public class ReceiptServiceImpl implements ReceiptService {
             FileService fileService,
             MlServiceClient mlServiceClient,
             EventAccessPort eventAccessPort,
-            ObjectMapper objectMapper
-    ) {
+            ObjectMapper objectMapper) {
         this.receiptRepository = receiptRepository;
         this.positionRepository = positionRepository;
         this.fileService = fileService;
@@ -127,8 +121,8 @@ public class ReceiptServiceImpl implements ReceiptService {
     public Receipt splitTips(long eventId, long receiptId, long userId) {
         requireDraft(eventId);
         eventAccessPort.requireParticipant(eventId, userId);
-        var receipt = receiptRepository.findByIdAndEventId(receiptId, eventId)
-                .orElseThrow(ReceiptNotFoundException::new);
+        var receipt =
+                receiptRepository.findByIdAndEventId(receiptId, eventId).orElseThrow(ReceiptNotFoundException::new);
 
         var tipsPositions = positionRepository.findByEventIdOrderByCreatedAtAsc(eventId).stream()
                 .filter(PositionEntity::isTips)
@@ -164,6 +158,7 @@ public class ReceiptServiceImpl implements ReceiptService {
     }
 
     private static Receipt toDomain(ReceiptEntity entity) {
-        return new Receipt(entity.getId(), entity.getEventId(), entity.getFileId(), entity.getStatus(), entity.getCreatedAt());
+        return new Receipt(
+                entity.getId(), entity.getEventId(), entity.getFileId(), entity.getStatus(), entity.getCreatedAt());
     }
 }

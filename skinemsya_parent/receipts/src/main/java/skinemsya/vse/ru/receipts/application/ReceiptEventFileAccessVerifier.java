@@ -11,10 +11,7 @@ public class ReceiptEventFileAccessVerifier implements FileSharedAccessVerifier 
     private final ReceiptRepository receiptRepository;
     private final EventAccessPort eventAccessPort;
 
-    public ReceiptEventFileAccessVerifier(
-            ReceiptRepository receiptRepository,
-            EventAccessPort eventAccessPort
-    ) {
+    public ReceiptEventFileAccessVerifier(ReceiptRepository receiptRepository, EventAccessPort eventAccessPort) {
         this.receiptRepository = receiptRepository;
         this.eventAccessPort = eventAccessPort;
     }

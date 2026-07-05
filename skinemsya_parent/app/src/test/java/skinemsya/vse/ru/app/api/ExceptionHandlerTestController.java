@@ -15,14 +15,12 @@ import skinemsya.vse.ru.common.domain.ErrorCode;
 class ExceptionHandlerTestController {
 
     @PostMapping("/test/validate")
-    void validate(@Valid @RequestBody ValidationRequest request) {
-    }
+    void validate(@Valid @RequestBody ValidationRequest request) {}
 
     @GetMapping("/test/domain-error")
     void domainError() {
         throw new DomainException(ErrorCode.NOT_FOUND, "Entity missing");
     }
 
-    record ValidationRequest(@NotBlank String name) {
-    }
+    record ValidationRequest(@NotBlank String name) {}
 }

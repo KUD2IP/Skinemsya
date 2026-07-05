@@ -22,8 +22,7 @@ public class EventDeepLinkAccessService {
             EventRepository eventRepository,
             GroupService groupService,
             GroupAccessService groupAccessService,
-            EventParticipantSyncService eventParticipantSyncService
-    ) {
+            EventParticipantSyncService eventParticipantSyncService) {
         this.eventRepository = eventRepository;
         this.groupService = groupService;
         this.groupAccessService = groupAccessService;
@@ -31,10 +30,8 @@ public class EventDeepLinkAccessService {
     }
 
     public void ensureAccess(long eventId, long userId) {
-        var event = eventRepository.findById(eventId)
-                .orElseThrow(EventNotFoundException::new);
-        var group = groupService.findById(event.getGroupId())
-                .orElseThrow(GroupNotFoundException::new);
+        var event = eventRepository.findById(eventId).orElseThrow(EventNotFoundException::new);
+        var group = groupService.findById(event.getGroupId()).orElseThrow(GroupNotFoundException::new);
 
         if (!groupAccessService.isMember(group.id(), userId)) {
             if (group.type() == GroupType.CHAT_LINKED) {

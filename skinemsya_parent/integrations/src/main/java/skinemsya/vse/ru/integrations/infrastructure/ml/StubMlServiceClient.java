@@ -1,13 +1,12 @@
 package skinemsya.vse.ru.integrations.infrastructure.ml;
 
+import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import skinemsya.vse.ru.integrations.application.MlServiceClient;
 import skinemsya.vse.ru.integrations.domain.MlReceiptItem;
 import skinemsya.vse.ru.integrations.domain.MlReceiptResponse;
-
-import java.util.List;
 
 @Component
 @Primary
@@ -23,10 +22,8 @@ public class StubMlServiceClient implements MlServiceClient {
                 "RUB",
                 List.of(
                         new MlReceiptItem("Салат Цезарь", 1.0, 450.0, 450.0, 0.92),
-                        new MlReceiptItem("Капучино", 2.0, 200.0, 400.0, 0.88)
-                ),
+                        new MlReceiptItem("Капучино", 2.0, 200.0, 400.0, 0.88)),
                 0.90,
-                List.of()
-        );
+                List.of());
     }
 }

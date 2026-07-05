@@ -2,6 +2,10 @@ package skinemsya.vse.ru.app.application;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.annotation.PreDestroy;
+import java.net.SocketTimeoutException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -11,18 +15,12 @@ import org.springframework.stereotype.Component;
 import skinemsya.vse.ru.integrations.application.TelegramBotClient;
 import skinemsya.vse.ru.integrations.infrastructure.config.TelegramIntegrationProperties;
 
-import java.net.SocketTimeoutException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 @Component
 @ConditionalOnProperty(
         prefix = "skinemsya.telegram",
         name = "bot-polling-enabled",
         havingValue = "true",
-        matchIfMissing = true
-)
+        matchIfMissing = true)
 public class TelegramBotPollingService {
 
     private static final Logger log = LoggerFactory.getLogger(TelegramBotPollingService.class);
@@ -44,8 +42,7 @@ public class TelegramBotPollingService {
     public TelegramBotPollingService(
             TelegramIntegrationProperties properties,
             TelegramBotClient telegramBotClient,
-            TelegramBotUpdateService updateService
-    ) {
+            TelegramBotUpdateService updateService) {
         this.properties = properties;
         this.telegramBotClient = telegramBotClient;
         this.updateService = updateService;

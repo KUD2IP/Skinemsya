@@ -5,5 +5,4 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @EnableConfigurationProperties(MlServiceProperties.class)
-public class MlServiceConfiguration {
-}
+public class MlServiceConfiguration {}

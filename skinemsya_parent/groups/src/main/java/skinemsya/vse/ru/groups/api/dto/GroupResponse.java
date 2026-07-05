@@ -1,8 +1,7 @@
 package skinemsya.vse.ru.groups.api.dto;
 
-import skinemsya.vse.ru.groups.domain.GroupType;
-
 import java.time.Instant;
+import skinemsya.vse.ru.groups.domain.GroupType;
 
 public record GroupResponse(
         long id,
@@ -11,6 +10,4 @@ public record GroupResponse(
         Long telegramChatId,
         long ownerId,
         Instant createdAt,
-        Instant updatedAt
-) {
-}
+        Instant updatedAt) {}

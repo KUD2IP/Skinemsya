@@ -1,10 +1,9 @@
 package skinemsya.vse.ru.debts.infrastructure.persistence;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import skinemsya.vse.ru.debts.domain.DebtStatus;
-
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import skinemsya.vse.ru.debts.domain.DebtStatus;
 
 public interface DebtRepository extends JpaRepository<DebtEntity, Long> {
 

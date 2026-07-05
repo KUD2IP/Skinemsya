@@ -1,5 +1,8 @@
 package skinemsya.vse.ru.events.application;
 
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,19 +14,12 @@ import skinemsya.vse.ru.events.infrastructure.persistence.EventParticipantReposi
 import skinemsya.vse.ru.events.infrastructure.persistence.EventRepository;
 import skinemsya.vse.ru.groups.application.GroupAccessService;
 
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Set;
-
 @Service
 @Transactional
 public class EventParticipantSyncService {
 
-    private static final Set<EventStatus> ACTIVE_STATUSES = EnumSet.of(
-            EventStatus.DRAFT,
-            EventStatus.DISTRIBUTION,
-            EventStatus.CALCULATED
-    );
+    private static final Set<EventStatus> ACTIVE_STATUSES =
+            EnumSet.of(EventStatus.DRAFT, EventStatus.DISTRIBUTION, EventStatus.CALCULATED);
 
     private final EventRepository eventRepository;
     private final EventParticipantRepository eventParticipantRepository;
@@ -34,8 +30,7 @@ public class EventParticipantSyncService {
             EventRepository eventRepository,
             EventParticipantRepository eventParticipantRepository,
             GroupAccessService groupAccessService,
-            ApplicationEventPublisher eventPublisher
-    ) {
+            ApplicationEventPublisher eventPublisher) {
         this.eventRepository = eventRepository;
         this.eventParticipantRepository = eventParticipantRepository;
         this.groupAccessService = groupAccessService;

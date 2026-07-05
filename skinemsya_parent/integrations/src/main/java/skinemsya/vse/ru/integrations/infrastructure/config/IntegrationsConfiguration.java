@@ -5,5 +5,4 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @EnableConfigurationProperties(TelegramIntegrationProperties.class)
-public class IntegrationsConfiguration {
-}
+public class IntegrationsConfiguration {}

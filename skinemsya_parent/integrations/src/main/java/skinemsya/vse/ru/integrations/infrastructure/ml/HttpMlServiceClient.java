@@ -47,7 +47,8 @@ public class HttpMlServiceClient implements MlServiceClient {
         url = url + "api/v1/recognize";
 
         try {
-            return restClient.post()
+            return restClient
+                    .post()
                     .uri(url)
                     .contentType(MediaType.MULTIPART_FORM_DATA)
                     .body(body)
@@ -57,7 +58,10 @@ public class HttpMlServiceClient implements MlServiceClient {
             if (ex.getStatusCode().is5xxServerError()) {
                 return retryOnce(url, body);
             }
-            throw new DomainException(ErrorCode.INTEGRATION_ERROR, "ML service HTTP error: " + ex.getStatusCode().value(), ex);
+            throw new DomainException(
+                    ErrorCode.INTEGRATION_ERROR,
+                    "ML service HTTP error: " + ex.getStatusCode().value(),
+                    ex);
         } catch (Exception ex) {
             throw new DomainException(ErrorCode.INTEGRATION_ERROR, "ML service call failed", ex);
         }
@@ -65,7 +69,8 @@ public class HttpMlServiceClient implements MlServiceClient {
 
     private MlReceiptResponse retryOnce(String url, MultiValueMap<String, Object> body) {
         try {
-            return restClient.post()
+            return restClient
+                    .post()
                     .uri(url)
                     .contentType(MediaType.MULTIPART_FORM_DATA)
                     .body(body)

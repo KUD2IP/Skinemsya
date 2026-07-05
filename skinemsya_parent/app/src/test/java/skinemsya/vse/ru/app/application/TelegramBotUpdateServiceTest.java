@@ -1,6 +1,14 @@
 package skinemsya.vse.ru.app.application;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -15,15 +23,6 @@ import skinemsya.vse.ru.integrations.domain.TelegramSentMessage;
 import skinemsya.vse.ru.users.application.UserService;
 import skinemsya.vse.ru.users.domain.TelegramUserData;
 import skinemsya.vse.ru.users.domain.User;
-
-import java.time.Instant;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class TelegramBotUpdateServiceTest {
@@ -47,7 +46,8 @@ class TelegramBotUpdateServiceTest {
 
     @Test
     void shouldDelegateWelcomeAndBootstrapGroupOnBotAdded() throws Exception {
-        var update = objectMapper.readTree("""
+        var update = objectMapper.readTree(
+                """
                 {
                   "my_chat_member": {
                     "chat": { "id": -100500, "title": "Weekend", "type": "supergroup" },
@@ -60,8 +60,7 @@ class TelegramBotUpdateServiceTest {
 
         when(userService.upsertFromTelegram(new TelegramUserData(700_001L, "Alice", "")))
                 .thenReturn(user(1L));
-        when(groupService.createFromChat(-100_500L, "Weekend", 1L))
-                .thenReturn(group(10L, "Weekend"));
+        when(groupService.createFromChat(-100_500L, "Weekend", 1L)).thenReturn(group(10L, "Weekend"));
 
         updateService.handleUpdate(update);
 
@@ -71,7 +70,8 @@ class TelegramBotUpdateServiceTest {
 
     @Test
     void shouldJoinGroupOnStartCommandInGroupChat() throws Exception {
-        var update = objectMapper.readTree("""
+        var update = objectMapper.readTree(
+                """
                 {
                   "message": {
                     "chat": { "id": -100501, "title": "Trip", "type": "group" },
@@ -83,21 +83,20 @@ class TelegramBotUpdateServiceTest {
 
         when(userService.upsertFromTelegram(any(TelegramUserData.class))).thenReturn(user(2L));
         when(groupService.createFromChat(eq(-100_501L), eq("Trip"), eq(2L))).thenReturn(group(11L, "Trip"));
-        when(telegramBotClient.sendMessageWithOpenAppButton(
-                eq(-100_501L), any(), eq("Открыть Skinemsya"), eq("group")
-        )).thenReturn(new TelegramSentMessage(1L));
+        when(telegramBotClient.sendMessageWithOpenAppButton(eq(-100_501L), any(), eq("Открыть Skinemsya"), eq("group")))
+                .thenReturn(new TelegramSentMessage(1L));
 
         updateService.handleUpdate(update);
 
         verify(groupService).createFromChat(-100_501L, "Trip", 2L);
-        verify(telegramBotClient).sendMessageWithOpenAppButton(
-                eq(-100_501L), any(), eq("Открыть Skinemsya"), eq("group")
-        );
+        verify(telegramBotClient)
+                .sendMessageWithOpenAppButton(eq(-100_501L), any(), eq("Открыть Skinemsya"), eq("group"));
     }
 
     @Test
     void shouldNotBootstrapGroupWhenBotLeavesChat() throws Exception {
-        var update = objectMapper.readTree("""
+        var update = objectMapper.readTree(
+                """
                 {
                   "my_chat_member": {
                     "chat": { "id": -100502, "title": "Trip", "type": "supergroup" },

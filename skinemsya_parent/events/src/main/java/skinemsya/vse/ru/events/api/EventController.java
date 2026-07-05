@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,10 +34,7 @@ public class EventController {
     private final GroupAccessService groupAccessService;
 
     public EventController(
-            EventService eventService,
-            EventAccessPort eventAccessPort,
-            GroupAccessService groupAccessService
-    ) {
+            EventService eventService, EventAccessPort eventAccessPort, GroupAccessService groupAccessService) {
         this.eventService = eventService;
         this.eventAccessPort = eventAccessPort;
         this.groupAccessService = groupAccessService;
@@ -49,16 +45,10 @@ public class EventController {
     public EventResponse createEvent(
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @PathVariable long groupId,
-            @Valid @RequestBody CreateEventRequest request
-    ) {
+            @Valid @RequestBody CreateEventRequest request) {
         long userId = requireUserId(authenticatedUser);
-        return toResponse(eventService.create(
-                groupId,
-                request.name(),
-                request.description(),
-                request.payerId(),
-                userId
-        ));
+        return toResponse(
+                eventService.create(groupId, request.name(), request.description(), request.payerId(), userId));
     }
 
     @GetMapping("/api/v1/groups/{groupId}/events")
@@ -66,8 +56,7 @@ public class EventController {
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @PathVariable long groupId,
             @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer size
-    ) {
+            @RequestParam(required = false) Integer size) {
         long userId = requireUserId(authenticatedUser);
         var result = eventService.listByGroup(groupId, userId, resolvePageRequest(page, size));
         return mapPage(result, EventController::toResponse);
@@ -75,12 +64,9 @@ public class EventController {
 
     @GetMapping("/api/v1/events/{eventId}")
     public EventResponse getEvent(
-            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
-            @PathVariable long eventId
-    ) {
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser, @PathVariable long eventId) {
         long userId = requireUserId(authenticatedUser);
-        var event = eventService.findById(eventId)
-                .orElseThrow(EventNotFoundException::new);
+        var event = eventService.findById(eventId).orElseThrow(EventNotFoundException::new);
         groupAccessService.requireMember(event.groupId(), userId);
         return toResponse(event);
     }
@@ -89,33 +75,22 @@ public class EventController {
     public EventResponse updateEvent(
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @PathVariable long eventId,
-            @Valid @RequestBody UpdateEventRequest request
-    ) {
+            @Valid @RequestBody UpdateEventRequest request) {
         long userId = requireUserId(authenticatedUser);
-        return toResponse(eventService.update(
-                eventId,
-                userId,
-                request.name(),
-                request.description(),
-                request.payerId()
-        ));
+        return toResponse(
+                eventService.update(eventId, userId, request.name(), request.description(), request.payerId()));
     }
 
     @DeleteMapping("/api/v1/events/{eventId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteEvent(
-            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
-            @PathVariable long eventId
-    ) {
+    public void deleteEvent(@AuthenticationPrincipal AuthenticatedUser authenticatedUser, @PathVariable long eventId) {
         long userId = requireUserId(authenticatedUser);
         eventService.delete(eventId, userId);
     }
 
     @PostMapping("/api/v1/events/{eventId}/send-to-distribution")
     public EventResponse sendToDistribution(
-            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
-            @PathVariable long eventId
-    ) {
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser, @PathVariable long eventId) {
         long userId = requireUserId(authenticatedUser);
         return toResponse(eventAccessPort.sendToDistribution(eventId, userId));
     }
@@ -137,23 +112,19 @@ public class EventController {
                 event.createdBy(),
                 event.status(),
                 event.createdAt(),
-                event.updatedAt()
-        );
+                event.updatedAt());
     }
 
     private static PageRequest resolvePageRequest(Integer page, Integer size) {
         if (page == null && size == null) {
             return PageRequest.defaults();
         }
-        return PageRequest.of(page == null ? 0 : page, size == null ? PageRequest.defaults().size() : size);
+        return PageRequest.of(
+                page == null ? 0 : page, size == null ? PageRequest.defaults().size() : size);
     }
 
     private static <T, R> PageResult<R> mapPage(PageResult<T> source, java.util.function.Function<T, R> mapper) {
         return new PageResult<>(
-                source.items().stream().map(mapper).toList(),
-                source.page(),
-                source.size(),
-                source.totalElements()
-        );
+                source.items().stream().map(mapper).toList(), source.page(), source.size(), source.totalElements());
     }
 }

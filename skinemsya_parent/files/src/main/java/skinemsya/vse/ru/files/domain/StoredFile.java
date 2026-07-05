@@ -9,6 +9,4 @@ public record StoredFile(
         String mimeType,
         long sizeBytes,
         String storagePath,
-        Instant createdAt
-) {
-}
+        Instant createdAt) {}

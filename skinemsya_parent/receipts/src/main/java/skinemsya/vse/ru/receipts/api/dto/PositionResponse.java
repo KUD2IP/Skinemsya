@@ -1,11 +1,10 @@
 package skinemsya.vse.ru.receipts.api.dto;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import skinemsya.vse.ru.receipts.application.PositionAvailabilityService;
 import skinemsya.vse.ru.receipts.domain.Position;
 import skinemsya.vse.ru.receipts.domain.PositionSource;
-
-import java.math.BigDecimal;
-import java.time.Instant;
 
 public record PositionResponse(
         long id,
@@ -21,8 +20,7 @@ public record PositionResponse(
         Instant createdAt,
         Integer remainingQuantity,
         Integer mySelectedQuantity,
-        Boolean soldOut
-) {
+        Boolean soldOut) {
     public static PositionResponse from(Position position) {
         return new PositionResponse(
                 position.id(),
@@ -38,11 +36,11 @@ public record PositionResponse(
                 position.createdAt(),
                 null,
                 null,
-                null
-        );
+                null);
     }
 
-    public static PositionResponse from(Position position, PositionAvailabilityService.PositionAvailability availability) {
+    public static PositionResponse from(
+            Position position, PositionAvailabilityService.PositionAvailability availability) {
         return new PositionResponse(
                 position.id(),
                 position.eventId(),
@@ -57,7 +55,6 @@ public record PositionResponse(
                 position.createdAt(),
                 availability.remainingQuantity(),
                 availability.mySelectedQuantity(),
-                availability.soldOut()
-        );
+                availability.soldOut());
     }
 }

@@ -1,5 +1,6 @@
 package skinemsya.vse.ru.payments.application;
 
+import java.time.Instant;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -9,8 +10,6 @@ import skinemsya.vse.ru.debts.infrastructure.persistence.DebtRepository;
 import skinemsya.vse.ru.payments.infrastructure.persistence.PayerReminderJobRepository;
 import skinemsya.vse.ru.payments.infrastructure.persistence.PaymentRepository;
 import skinemsya.vse.ru.users.application.UserService;
-
-import java.time.Instant;
 
 @Component
 public class PayerReminderJobScheduler {
@@ -26,8 +25,7 @@ public class PayerReminderJobScheduler {
             PaymentRepository paymentRepository,
             DebtRepository debtRepository,
             UserService userService,
-            ApplicationEventPublisher eventPublisher
-    ) {
+            ApplicationEventPublisher eventPublisher) {
         this.reminderJobRepository = reminderJobRepository;
         this.paymentRepository = paymentRepository;
         this.debtRepository = debtRepository;
@@ -50,8 +48,7 @@ public class PayerReminderJobScheduler {
                                 debt.getDebtorId(),
                                 debt.getCreditorId(),
                                 debt.getAmountKopecks(),
-                                debtor.displayName()
-                        ));
+                                debtor.displayName()));
                     }
                 });
             });

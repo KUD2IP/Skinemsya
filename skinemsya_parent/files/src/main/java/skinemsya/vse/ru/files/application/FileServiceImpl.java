@@ -1,5 +1,11 @@
 package skinemsya.vse.ru.files.application;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -12,13 +18,6 @@ import skinemsya.vse.ru.files.infrastructure.config.FileStorageProperties;
 import skinemsya.vse.ru.files.infrastructure.persistence.FileEntity;
 import skinemsya.vse.ru.files.infrastructure.persistence.FileRepository;
 import skinemsya.vse.ru.files.infrastructure.storage.FileStorage;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
 @Service
 @Transactional
@@ -36,8 +35,7 @@ public class FileServiceImpl implements FileService {
             FileRepository fileRepository,
             FileStorage fileStorage,
             List<FileSharedAccessVerifier> sharedAccessVerifiers,
-            FileStorageProperties fileStorageProperties
-    ) {
+            FileStorageProperties fileStorageProperties) {
         this.fileRepository = fileRepository;
         this.fileStorage = fileStorage;
         this.sharedAccessVerifiers = sharedAccessVerifiers;
@@ -141,7 +139,6 @@ public class FileServiceImpl implements FileService {
                 entity.getMimeType(),
                 entity.getSizeBytes(),
                 entity.getStoragePath(),
-                entity.getCreatedAt()
-        );
+                entity.getCreatedAt());
     }
 }

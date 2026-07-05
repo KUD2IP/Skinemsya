@@ -1,9 +1,8 @@
 package skinemsya.vse.ru.events.application;
 
+import java.util.List;
 import skinemsya.vse.ru.events.domain.Event;
 import skinemsya.vse.ru.events.domain.EventStatus;
-
-import java.util.List;
 
 public interface EventAccessPort {
 

@@ -9,6 +9,4 @@ public record Group(
         Long telegramChatId,
         long ownerId,
         Instant createdAt,
-        Instant updatedAt
-) {
-}
+        Instant updatedAt) {}

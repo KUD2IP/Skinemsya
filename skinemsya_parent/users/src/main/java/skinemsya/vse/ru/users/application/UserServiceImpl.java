@@ -1,5 +1,7 @@
 package skinemsya.vse.ru.users.application;
 
+import java.time.Instant;
+import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import skinemsya.vse.ru.common.domain.DomainException;
@@ -13,9 +15,6 @@ import skinemsya.vse.ru.users.infrastructure.persistence.UserEntity;
 import skinemsya.vse.ru.users.infrastructure.persistence.UserProfileRepository;
 import skinemsya.vse.ru.users.infrastructure.persistence.UserRepository;
 
-import java.time.Instant;
-import java.util.Optional;
-
 @Service
 @Transactional
 public class UserServiceImpl implements UserService {
@@ -25,10 +24,7 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
 
     public UserServiceImpl(
-            UserRepository userRepository,
-            UserProfileRepository userProfileRepository,
-            UserMapper userMapper
-    ) {
+            UserRepository userRepository, UserProfileRepository userProfileRepository, UserMapper userMapper) {
         this.userRepository = userRepository;
         this.userProfileRepository = userProfileRepository;
         this.userMapper = userMapper;
@@ -63,10 +59,7 @@ public class UserServiceImpl implements UserService {
         var normalizedUsername = TelegramUsernameNormalizer.normalize(telegramUserData.telegramUsername());
         if (normalizedUsername != null) {
             userRepository.clearTelegramUsernameForOtherUsers(
-                    normalizedUsername,
-                    telegramUserData.telegramUserId(),
-                    now
-            );
+                    normalizedUsername, telegramUserData.telegramUserId(), now);
         }
 
         UserEntity entity;
@@ -75,13 +68,9 @@ public class UserServiceImpl implements UserService {
             updateTelegramUser(entity, telegramUserData.displayName(), normalizedUsername, now);
         } else {
             userRepository.insertTelegramUserIfAbsent(
-                    telegramUserData.telegramUserId(),
-                    telegramUserData.displayName(),
-                    null,
-                    now,
-                    now
-            );
-            entity = userRepository.findByTelegramUserId(telegramUserData.telegramUserId())
+                    telegramUserData.telegramUserId(), telegramUserData.displayName(), null, now, now);
+            entity = userRepository
+                    .findByTelegramUserId(telegramUserData.telegramUserId())
                     .orElseThrow(() -> new DomainException(ErrorCode.INTERNAL_ERROR, "Telegram user was not created"));
             updateTelegramUser(entity, telegramUserData.displayName(), normalizedUsername, now);
         }
@@ -92,11 +81,7 @@ public class UserServiceImpl implements UserService {
     }
 
     private static void updateTelegramUser(
-            UserEntity entity,
-            String displayName,
-            String normalizedUsername,
-            Instant updatedAt
-    ) {
+            UserEntity entity, String displayName, String normalizedUsername, Instant updatedAt) {
         entity.setDisplayName(displayName);
         if (normalizedUsername != null) {
             entity.setTelegramUsername(normalizedUsername);
@@ -106,13 +91,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserProfile updateProfile(
-            long userId,
-            String paymentDetails,
-            String phone,
-            String preferredBank,
-            String notificationSettings
-    ) {
-        var profile = userProfileRepository.findByUserId(userId)
+            long userId, String paymentDetails, String phone, String preferredBank, String notificationSettings) {
+        var profile = userProfileRepository
+                .findByUserId(userId)
                 .orElseThrow(() -> new DomainException(ErrorCode.NOT_FOUND, "User profile not found"));
 
         profile.setPaymentDetails(paymentDetails);
@@ -125,19 +106,17 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public PaymentDetails getPaymentDetails(long userId) {
-        var profile = userProfileRepository.findByUserId(userId)
+        var profile = userProfileRepository
+                .findByUserId(userId)
                 .orElseThrow(() -> new DomainException(ErrorCode.NOT_FOUND, "User profile not found"));
-        return new PaymentDetails(
-                profile.getPaymentDetails(),
-                profile.getPhone(),
-                profile.getPreferredBank()
-        );
+        return new PaymentDetails(profile.getPaymentDetails(), profile.getPhone(), profile.getPreferredBank());
     }
 
     @Override
     @Transactional(readOnly = true)
     public UserProfile getProfile(long userId) {
-        return userProfileRepository.findByUserId(userId)
+        return userProfileRepository
+                .findByUserId(userId)
                 .map(userMapper::toDomain)
                 .orElseThrow(() -> new DomainException(ErrorCode.NOT_FOUND, "User profile not found"));
     }

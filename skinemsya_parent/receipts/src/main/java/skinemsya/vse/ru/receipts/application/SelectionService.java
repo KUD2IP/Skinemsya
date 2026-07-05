@@ -9,6 +9,5 @@ public interface SelectionService {
 
     void completeSelection(long eventId, long userId);
 
-    record SelectionUpdate(long positionId, BigDecimal quantity) {
-    }
+    record SelectionUpdate(long positionId, BigDecimal quantity) {}
 }

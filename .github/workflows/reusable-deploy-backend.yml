@@ -1,0 +1,134 @@
+name: Reusable deploy backend
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: Semver version to deploy
+        required: true
+        type: string
+      health_url:
+        description: Public health check URL
+        required: false
+        type: string
+        default: https://skinemsya-vse.ru/actuator/health
+    secrets:
+      PRODUCTION_ENV:
+        required: true
+      SSH_PRIVATE_KEY:
+        required: true
+      PRODUCTION_HOST:
+        required: true
+      PRODUCTION_USER:
+        required: true
+      PRODUCTION_SSH_PORT:
+        required: false
+      SSH_KNOWN_HOSTS:
+        required: false
+  DEPLOY_PATH: /opt/skinemsya
+
+jobs:
+  deploy:
+    name: Deploy to production VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: https://skinemsya-vse.ru
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare deploy .env
+        uses: ./.github/actions/prepare-deploy-env
+        with:
+          env_secret: ${{ secrets.PRODUCTION_ENV }}
+          app_version: ${{ inputs.version }}
+          ghcr_owner: ${{ github.repository_owner }}
+
+      - name: Setup SSH
+        id: ssh
+        uses: ./.github/actions/setup-ssh
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          user: ${{ secrets.PRODUCTION_USER }}
+          port: ${{ secrets.PRODUCTION_SSH_PORT || '22' }}
+          private_key: ${{ secrets.SSH_PRIVATE_KEY }}
+          known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+
+      - name: Sync deploy files
+        env:
+          PRODUCTION_HOST: ${{ secrets.PRODUCTION_HOST }}
+          PRODUCTION_USER: ${{ secrets.PRODUCTION_USER }}
+          SSH_OPTS: ${{ steps.ssh.outputs.ssh_opts }}
+        run: |
+          set -euo pipefail
+          ssh $SSH_OPTS "${PRODUCTION_USER}@${PRODUCTION_HOST}" "mkdir -p ${DEPLOY_PATH}/deploy"
+          rsync -avz -e "ssh $SSH_OPTS" deploy/ "${PRODUCTION_USER}@${PRODUCTION_HOST}:${DEPLOY_PATH}/deploy/"
+
+      - name: Deploy with health check and rollback
+        env:
+          PRODUCTION_HOST: ${{ secrets.PRODUCTION_HOST }}
+          PRODUCTION_USER: ${{ secrets.PRODUCTION_USER }}
+          SSH_OPTS: ${{ steps.ssh.outputs.ssh_opts }}
+          APP_VERSION: ${{ inputs.version }}
+          HEALTH_URL: ${{ inputs.health_url }}
+        run: |
+          set -euo pipefail
+          ssh $SSH_OPTS "${PRODUCTION_USER}@${PRODUCTION_HOST}" \
+            "APP_VERSION=${APP_VERSION} HEALTH_URL=${HEALTH_URL}" bash -s <<'EOSSH'
+          set -euo pipefail
+          DEPLOY_PATH="/opt/skinemsya"
+          ENV_FILE="${DEPLOY_PATH}/deploy/.env"
+          PREVIOUS_FILE="${DEPLOY_PATH}/deploy/.previous-version"
+
+          chmod 600 "${ENV_FILE}"
+
+          current_version=""
+          if [ -f "${ENV_FILE}" ]; then
+            current_version="$(grep -E '^APP_VERSION=' "${ENV_FILE}" | tail -1 | cut -d= -f2- || true)"
+          fi
+          if [ -n "${current_version}" ] && [ "${current_version}" != "${APP_VERSION}" ]; then
+            printf '%s\n' "${current_version}" > "${PREVIOUS_FILE}"
+            chmod 600 "${PREVIOUS_FILE}"
+          fi
+
+          cd "${DEPLOY_PATH}/deploy"
+          APP_VERSION="${APP_VERSION}" docker compose -f docker-compose.prod.yml pull backend
+          APP_VERSION="${APP_VERSION}" docker compose -f docker-compose.prod.yml up -d --no-deps backend
+
+          rollback() {
+            if [ ! -f "${PREVIOUS_FILE}" ]; then
+              echo "No previous version to rollback." >&2
+              return 1
+            fi
+            prev="$(cat "${PREVIOUS_FILE}")"
+            echo "Rolling back to ${prev}..."
+            if grep -q '^APP_VERSION=' "${ENV_FILE}"; then
+              sed -i "s/^APP_VERSION=.*/APP_VERSION=${prev}/" "${ENV_FILE}"
+            else
+              echo "APP_VERSION=${prev}" >> "${ENV_FILE}"
+            fi
+            cd "${DEPLOY_PATH}/deploy"
+            APP_VERSION="${prev}" docker compose -f docker-compose.prod.yml pull backend
+            APP_VERSION="${prev}" docker compose -f docker-compose.prod.yml up -d --no-deps backend
+          }
+
+          ok=0
+          for i in $(seq 1 30); do
+            if curl -fsS "${HEALTH_URL}" >/dev/null 2>&1; then
+              ok=1
+              break
+            fi
+            echo "Health check attempt ${i}/30..."
+            sleep 10
+          done
+
+          if [ "${ok}" -ne 1 ]; then
+            echo "Health check failed for version ${APP_VERSION}" >&2
+            rollback || true
+            exit 1
+          fi
+
+          docker image prune -f
+          echo "Deployed version ${APP_VERSION} successfully."
+          EOSSH

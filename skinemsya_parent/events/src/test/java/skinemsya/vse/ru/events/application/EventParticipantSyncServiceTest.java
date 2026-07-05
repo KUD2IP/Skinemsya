@@ -1,5 +1,14 @@
 package skinemsya.vse.ru.events.application;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -13,16 +22,6 @@ import skinemsya.vse.ru.events.infrastructure.persistence.EventParticipantEntity
 import skinemsya.vse.ru.events.infrastructure.persistence.EventParticipantRepository;
 import skinemsya.vse.ru.events.infrastructure.persistence.EventRepository;
 import skinemsya.vse.ru.groups.application.GroupAccessService;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class EventParticipantSyncServiceTest {

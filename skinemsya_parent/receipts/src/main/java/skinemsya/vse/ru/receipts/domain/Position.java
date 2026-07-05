@@ -14,6 +14,4 @@ public record Position(
         boolean tips,
         boolean lowConfidence,
         PositionSource source,
-        Instant createdAt
-) {
-}
+        Instant createdAt) {}

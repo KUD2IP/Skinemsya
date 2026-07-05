@@ -1,5 +1,13 @@
 package skinemsya.vse.ru.groups.application;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.Instant;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,15 +22,6 @@ import skinemsya.vse.ru.groups.infrastructure.persistence.GroupMemberRepository;
 import skinemsya.vse.ru.groups.infrastructure.persistence.GroupRepository;
 import skinemsya.vse.ru.users.application.UserService;
 import skinemsya.vse.ru.users.domain.User;
-
-import java.time.Instant;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ChatLinkedGroupBootstrapServiceTest {
@@ -51,15 +50,9 @@ class ChatLinkedGroupBootstrapServiceTest {
     @BeforeEach
     void setUp() {
         bootstrapService = new ChatLinkedGroupBootstrapService(
-                groupRepository,
-                groupMemberRepository,
-                groupMapper,
-                userService,
-                eventPublisher
-        );
-        when(userService.findById(USER_ID)).thenReturn(Optional.of(
-                new User(USER_ID, 100_001L, "User", null, Instant.now(), Instant.now())
-        ));
+                groupRepository, groupMemberRepository, groupMapper, userService, eventPublisher);
+        when(userService.findById(USER_ID))
+                .thenReturn(Optional.of(new User(USER_ID, 100_001L, "User", null, Instant.now(), Instant.now())));
     }
 
     @Test
@@ -68,19 +61,16 @@ class ChatLinkedGroupBootstrapServiceTest {
         var domainGroup = domainGroup(5L);
 
         when(groupRepository.insertChatLinkedGroupIfAbsent(
-                eq("Team chat"),
-                eq(CHAT_ID),
-                eq(USER_ID),
-                any(Instant.class),
-                any(Instant.class)
-        )).thenReturn(1);
+                        eq("Team chat"), eq(CHAT_ID), eq(USER_ID), any(Instant.class), any(Instant.class)))
+                .thenReturn(1);
         when(groupRepository.findByTelegramChatId(CHAT_ID)).thenReturn(Optional.of(group));
         when(groupMapper.toDomain(group)).thenReturn(domainGroup);
 
         var result = bootstrapService.joinOrCreateFromChat(CHAT_ID, "Team chat", USER_ID);
 
         assertThat(result.id()).isEqualTo(5L);
-        verify(groupMemberRepository).insertIfAbsent(eq(5L), eq(USER_ID), eq(GroupRole.OWNER.name()), any(Instant.class));
+        verify(groupMemberRepository)
+                .insertIfAbsent(eq(5L), eq(USER_ID), eq(GroupRole.OWNER.name()), any(Instant.class));
     }
 
     @Test
@@ -89,19 +79,16 @@ class ChatLinkedGroupBootstrapServiceTest {
         var domainGroup = domainGroup(22L);
 
         when(groupRepository.insertChatLinkedGroupIfAbsent(
-                eq("Team chat"),
-                eq(CHAT_ID),
-                eq(USER_ID),
-                any(Instant.class),
-                any(Instant.class)
-        )).thenReturn(0);
+                        eq("Team chat"), eq(CHAT_ID), eq(USER_ID), any(Instant.class), any(Instant.class)))
+                .thenReturn(0);
         when(groupRepository.findByTelegramChatId(CHAT_ID)).thenReturn(Optional.of(group));
         when(groupMapper.toDomain(group)).thenReturn(domainGroup);
 
         var result = bootstrapService.joinOrCreateFromChat(CHAT_ID, "Team chat", USER_ID);
 
         assertThat(result.id()).isEqualTo(22L);
-        verify(groupMemberRepository).insertIfAbsent(eq(22L), eq(USER_ID), eq(GroupRole.MEMBER.name()), any(Instant.class));
+        verify(groupMemberRepository)
+                .insertIfAbsent(eq(22L), eq(USER_ID), eq(GroupRole.MEMBER.name()), any(Instant.class));
     }
 
     @Test
@@ -110,18 +97,15 @@ class ChatLinkedGroupBootstrapServiceTest {
         var domainGroup = domainGroup(23L);
 
         when(groupRepository.insertChatLinkedGroupIfAbsent(
-                eq("Team chat"),
-                eq(CHAT_ID),
-                eq(USER_ID),
-                any(Instant.class),
-                any(Instant.class)
-        )).thenReturn(0);
+                        eq("Team chat"), eq(CHAT_ID), eq(USER_ID), any(Instant.class), any(Instant.class)))
+                .thenReturn(0);
         when(groupRepository.findByTelegramChatId(CHAT_ID)).thenReturn(Optional.of(group));
         when(groupMapper.toDomain(group)).thenReturn(domainGroup);
 
         bootstrapService.joinOrCreateFromChat(CHAT_ID, "Team chat", USER_ID);
 
-        verify(groupMemberRepository).insertIfAbsent(eq(23L), eq(USER_ID), eq(GroupRole.OWNER.name()), any(Instant.class));
+        verify(groupMemberRepository)
+                .insertIfAbsent(eq(23L), eq(USER_ID), eq(GroupRole.OWNER.name()), any(Instant.class));
     }
 
     private static GroupEntity chatLinkedGroupEntity(long id) {

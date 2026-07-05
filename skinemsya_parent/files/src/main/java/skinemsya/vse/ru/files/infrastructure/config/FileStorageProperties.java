@@ -3,12 +3,7 @@ package skinemsya.vse.ru.files.infrastructure.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "skinemsya.file-storage")
-public record FileStorageProperties(
-        String type,
-        String path,
-        Long maxUploadSizeBytes,
-        S3 s3
-) {
+public record FileStorageProperties(String type, String path, Long maxUploadSizeBytes, S3 s3) {
 
     public FileStorageProperties {
         if (type == null || type.isBlank()) {
@@ -19,13 +14,7 @@ public record FileStorageProperties(
         }
     }
 
-    public record S3(
-            String endpoint,
-            String region,
-            String bucket,
-            String accessKey,
-            String secretKey
-    ) {
+    public record S3(String endpoint, String region, String bucket, String accessKey, String secretKey) {
         public S3 {
             if (region == null || region.isBlank()) {
                 region = "us-east-1";

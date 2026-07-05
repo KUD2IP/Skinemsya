@@ -1,5 +1,5 @@
-# Production/staging stack for a small VPS.
-# Файл deploy/.env создаётся job deploy-staging из GitHub Actions secrets.
+# Production stack for a small VPS.
+# deploy/.env создаётся GitHub Actions из environment secret PRODUCTION_ENV.
 # HTTPS и статика фронта — nginx на хосте (конфиг вручную на сервере, не в репо).
 
 name: skinemsya
@@ -40,10 +40,8 @@ services:
           memory: 192M
 
   backend:
-    image: skinemsya-backend:${APP_VERSION:-latest}
-    build:
-      context: ..
-      dockerfile: Dockerfile
+    image: ghcr.io/${GHCR_OWNER}/skinemsya-backend:${APP_VERSION:?set APP_VERSION}
+    pull_policy: always
     restart: unless-stopped
     env_file:
       - .env
@@ -63,6 +61,12 @@ services:
       TELEGRAM_BOT_POLLING_ENABLED: ${TELEGRAM_BOT_POLLING_ENABLED:-true}
     ports:
       - '127.0.0.1:8080:8080'
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://127.0.0.1:8080/actuator/health']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
     depends_on:
       postgres:
         condition: service_healthy

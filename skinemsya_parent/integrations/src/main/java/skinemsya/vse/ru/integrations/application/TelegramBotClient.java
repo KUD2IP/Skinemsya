@@ -1,9 +1,8 @@
 package skinemsya.vse.ru.integrations.application;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import skinemsya.vse.ru.integrations.domain.TelegramSentMessage;
-
 import java.util.Optional;
+import skinemsya.vse.ru.integrations.domain.TelegramSentMessage;
 
 public interface TelegramBotClient {
 
@@ -14,21 +13,12 @@ public interface TelegramBotClient {
     void sendHtmlMessage(long chatId, String text);
 
     default TelegramSentMessage sendMessageWithOpenAppButton(
-            long chatId,
-            String text,
-            String buttonText,
-            String chatType
-    ) {
+            long chatId, String text, String buttonText, String chatType) {
         return sendMessageWithOpenAppButton(chatId, text, buttonText, chatType, null);
     }
 
     TelegramSentMessage sendMessageWithOpenAppButton(
-            long chatId,
-            String text,
-            String buttonText,
-            String chatType,
-            String startParam
-    );
+            long chatId, String text, String buttonText, String chatType, String startParam);
 
     void pinMessage(long chatId, long messageId);
 

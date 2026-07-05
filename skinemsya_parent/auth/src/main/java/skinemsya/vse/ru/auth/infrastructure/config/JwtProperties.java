@@ -1,15 +1,10 @@
 package skinemsya.vse.ru.auth.infrastructure.config;
 
+import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-import java.time.Duration;
-
 @ConfigurationProperties(prefix = "skinemsya.jwt")
-public record JwtProperties(
-        String secret,
-        Duration accessTtl,
-        Duration refreshTtl
-) {
+public record JwtProperties(String secret, Duration accessTtl, Duration refreshTtl) {
     public JwtProperties {
         if (accessTtl == null) {
             accessTtl = Duration.ofMinutes(15);
