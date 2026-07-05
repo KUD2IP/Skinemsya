@@ -91,6 +91,7 @@ runs:
         fi
 
         cd "${DEPLOY_PATH}/deploy"
+        docker compose -f docker-compose.prod.yml up -d postgres minio
         APP_VERSION="${APP_VERSION}" docker compose -f docker-compose.prod.yml pull backend
         APP_VERSION="${APP_VERSION}" docker compose -f docker-compose.prod.yml up -d --no-deps backend
 
