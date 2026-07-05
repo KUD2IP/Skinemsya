@@ -1,0 +1,6 @@
+name: Skinemsya CodeQL
+
+# JWT/stateless API intentionally disables Spring CSRF — see SecurityConfig.java.
+query-filters:
+  - exclude:
+      id: java/spring-disabled-csrf-protection

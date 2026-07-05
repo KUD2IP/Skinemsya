@@ -26,8 +26,9 @@ public class SecurityConfig {
             JwtAuthenticationFilter jwtAuthenticationFilter,
             TelegramWebhookSecretFilter telegramWebhookSecretFilter)
             throws Exception {
+        // Stateless JWT API — cookie-based CSRF is not applicable.
         return http.cors(Customizer.withDefaults())
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(AbstractHttpConfigurer::disable) // lgtm[java/spring-disabled-csrf-protection]
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .authorizeHttpRequests(auth -> auth.requestMatchers(
