@@ -25,17 +25,15 @@ hotfix/*  ──PR──► master + develop
 | `frontend-release.yml` | Skinemsya_ui | push `release/*` | RC artifact |
 | `frontend-production.yml` | Skinemsya_ui | push `master` | rsync static + smoke check |
 
-Reusable workflows:
-
-- `reusable-maven-ci.yml`
-- `reusable-docker-build.yml`
-- `reusable-deploy-backend.yml`
-
 Composite actions:
 
 - `.github/actions/setup-ssh`
 - `.github/actions/prepare-deploy-env`
 - `.github/actions/maven-verify`
+- `.github/actions/docker-build-push`
+- `.github/actions/deploy-backend`
+
+> **Нет отдельных `reusable-*.yml`** — они давали ложные Failure при push в feature-ветку, когда менялись workflow-файлы.
 
 ## Docker images (GHCR)
 
