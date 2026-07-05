@@ -130,6 +130,7 @@ jobs:
           tag_name: v${{ needs.resolve-version.outputs.version }}
           name: v${{ needs.resolve-version.outputs.version }}
           generate_release_notes: true
+          make_latest: true
           body: |
             Production release **v${{ needs.resolve-version.outputs.version }}**.
 
