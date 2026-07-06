@@ -159,8 +159,7 @@ class PaymentFlowIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CALCULATED"));
 
-        mockMvc.perform(post("/api/v1/events/" + eventId + "/close")
-                        .header("Authorization", "Bearer " + payerToken))
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/close").header("Authorization", "Bearer " + payerToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("COMPLETED"));
     }
@@ -256,7 +255,8 @@ class PaymentFlowIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].status").value("PAYER_CONFIRMED"));
 
-        mockMvc.perform(get("/api/v1/events/" + context.eventId()).header("Authorization", "Bearer " + context.payerToken()))
+        mockMvc.perform(get("/api/v1/events/" + context.eventId())
+                        .header("Authorization", "Bearer " + context.payerToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CALCULATED"));
 

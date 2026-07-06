@@ -27,7 +27,6 @@ public class PaymentReadPortImpl implements PaymentReadPort {
         return paymentRepository.findByDebtIdIn(debtIds.stream().toList()).stream()
                 .collect(Collectors.toMap(
                         payment -> payment.getDebtId(),
-                        payment -> new PaymentInfo(
-                                payment.getStatus().name(), payment.getScreenshotFileId())));
+                        payment -> new PaymentInfo(payment.getStatus().name(), payment.getScreenshotFileId())));
     }
 }

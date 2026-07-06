@@ -51,10 +51,7 @@ public class DomainEventNotificationListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onDebtsCalculated(DebtsCalculated event) {
         long payerId = eventAccessPort.getPayerId(event.eventId());
-        notificationService.send(
-                payerId,
-                NotificationType.DEBTS_CALCULATED,
-                "Все выбрали блюда — проверь переводы");
+        notificationService.send(payerId, NotificationType.DEBTS_CALCULATED, "Все выбрали блюда — проверь переводы");
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

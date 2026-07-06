@@ -99,9 +99,7 @@ public class UserServiceImpl implements UserService {
         profile.setPaymentDetails(paymentDetails != null ? paymentDetails : profile.getPaymentDetails());
         profile.setPhone(phone != null ? phone : profile.getPhone());
         profile.setPreferredBank(
-                preferredBank != null
-                        ? (preferredBank.isBlank() ? null : preferredBank)
-                        : profile.getPreferredBank());
+                preferredBank != null ? (preferredBank.isBlank() ? null : preferredBank) : profile.getPreferredBank());
         profile.setNotificationSettings(
                 notificationSettings != null ? notificationSettings : profile.getNotificationSettings());
         return userMapper.toDomain(userProfileRepository.save(profile));

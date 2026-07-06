@@ -18,7 +18,6 @@ import skinemsya.vse.ru.files.application.FileService;
 import skinemsya.vse.ru.payments.domain.Payment;
 import skinemsya.vse.ru.payments.domain.PaymentDetailsView;
 import skinemsya.vse.ru.payments.domain.PaymentStatus;
-import skinemsya.vse.ru.users.domain.PayoutRequisites;
 import skinemsya.vse.ru.payments.domain.exception.PayerPaymentDetailsMissingException;
 import skinemsya.vse.ru.payments.domain.exception.PaymentAccessDeniedException;
 import skinemsya.vse.ru.payments.domain.exception.PaymentInvalidStateException;
@@ -28,6 +27,7 @@ import skinemsya.vse.ru.payments.infrastructure.persistence.PayerReminderJobRepo
 import skinemsya.vse.ru.payments.infrastructure.persistence.PaymentEntity;
 import skinemsya.vse.ru.payments.infrastructure.persistence.PaymentRepository;
 import skinemsya.vse.ru.users.application.UserService;
+import skinemsya.vse.ru.users.domain.PayoutRequisites;
 
 @Service
 @Transactional
@@ -181,8 +181,7 @@ public class PaymentServiceImpl implements PaymentService {
         if (payment.getStatus() == PaymentStatus.PAYER_CONFIRMED) {
             return toDomain(payment);
         }
-        if (payment.getStatus() != PaymentStatus.DEBTOR_CONFIRMED
-                && payment.getStatus() != PaymentStatus.DISPUTED) {
+        if (payment.getStatus() != PaymentStatus.DEBTOR_CONFIRMED && payment.getStatus() != PaymentStatus.DISPUTED) {
             throw new PaymentInvalidStateException();
         }
 
