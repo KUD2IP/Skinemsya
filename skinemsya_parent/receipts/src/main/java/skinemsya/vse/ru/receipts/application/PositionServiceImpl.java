@@ -105,6 +105,17 @@ public class PositionServiceImpl implements PositionService {
     }
 
     @Override
+    public Position unmarkShared(long positionId, long userId) {
+        var entity = getPosition(positionId);
+        requireDraft(entity.getEventId());
+        eventAccessPort.requireParticipant(entity.getEventId(), userId);
+
+        entity.setShared(false);
+        sharedTargetRepository.deleteByPositionId(positionId);
+        return toDomain(positionRepository.save(entity));
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public long countByEvent(long eventId) {
         return positionRepository.countByEventId(eventId);

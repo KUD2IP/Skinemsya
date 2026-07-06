@@ -157,6 +157,231 @@ class PaymentFlowIntegrationTest {
 
         mockMvc.perform(get("/api/v1/events/" + eventId).header("Authorization", "Bearer " + payerToken))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CALCULATED"));
+
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/close").header("Authorization", "Bearer " + payerToken))
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("COMPLETED"));
     }
+
+    @Test
+    void shouldAllowPayerToConfirmImmediatelyAfterDispute() throws Exception {
+        var context = prepareDebtorConfirmedPayment(mockMvc, 401_001L, 401_002L, "payer401", "debtor401");
+
+        mockMvc.perform(post("/api/v1/debts/" + context.debtId() + "/payment/dispute")
+                        .header("Authorization", "Bearer " + context.payerToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DISPUTED"));
+
+        mockMvc.perform(get("/api/v1/events/" + context.eventId() + "/debts")
+                        .header("Authorization", "Bearer " + context.payerToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].paymentStatus").value("DISPUTED"));
+
+        mockMvc.perform(post("/api/v1/debts/" + context.debtId() + "/payment/confirm-payer")
+                        .header("Authorization", "Bearer " + context.payerToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PAYER_CONFIRMED"));
+
+        mockMvc.perform(get("/api/v1/events/" + context.eventId() + "/debts")
+                        .header("Authorization", "Bearer " + context.payerToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].status").value("PAID"));
+    }
+
+    @Test
+    void shouldExposeDisputedStatusInPaymentDetailsForDebtor() throws Exception {
+        var context = prepareDebtorConfirmedPayment(mockMvc, 403_001L, 403_002L, "payer403", "debtor403");
+
+        mockMvc.perform(post("/api/v1/debts/" + context.debtId() + "/payment/dispute")
+                        .header("Authorization", "Bearer " + context.payerToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DISPUTED"));
+
+        mockMvc.perform(get("/api/v1/debts/" + context.debtId() + "/payment-details")
+                        .header("Authorization", "Bearer " + context.debtorToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DISPUTED"));
+    }
+
+    @Test
+    void shouldAllowDebtorConfirmWithoutScreenshot() throws Exception {
+        var context = prepareDebtorConfirmedPayment(mockMvc, 404_001L, 404_002L, "payer404", "debtor404", false);
+
+        mockMvc.perform(get("/api/v1/debts/" + context.debtId() + "/payment-details")
+                        .header("Authorization", "Bearer " + context.debtorToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DEBTOR_CONFIRMED"));
+    }
+
+    @Test
+    void shouldExposeScreenshotFileIdAndAllowPayerToDownloadProof() throws Exception {
+        var context = prepareDebtorConfirmedPayment(mockMvc, 405_001L, 405_002L, "payer405", "debtor405");
+
+        var debtsResponse = mockMvc.perform(get("/api/v1/events/" + context.eventId() + "/debts")
+                        .header("Authorization", "Bearer " + context.payerToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].paymentStatus").value("DEBTOR_CONFIRMED"))
+                .andExpect(jsonPath("$[0].screenshotFileId").exists())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        long screenshotId = Long.parseLong(
+                readJsonNumberField(debtsResponse.substring(debtsResponse.indexOf('[')), "screenshotFileId"));
+
+        mockMvc.perform(get("/api/v1/files/" + screenshotId)
+                        .param("sharedAccess", "true")
+                        .header("Authorization", "Bearer " + context.payerToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mimeType").exists());
+
+        mockMvc.perform(get("/api/v1/files/" + screenshotId + "/content")
+                        .param("sharedAccess", "true")
+                        .header("Authorization", "Bearer " + context.payerToken()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void shouldAllowBulkConfirmAfterDispute() throws Exception {
+        var context = prepareDebtorConfirmedPayment(mockMvc, 402_001L, 402_002L, "payer402", "debtor402");
+
+        mockMvc.perform(post("/api/v1/debts/" + context.debtId() + "/payment/dispute")
+                        .header("Authorization", "Bearer " + context.payerToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DISPUTED"));
+
+        mockMvc.perform(post("/api/v1/events/" + context.eventId() + "/payments/confirm-all")
+                        .header("Authorization", "Bearer " + context.payerToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].status").value("PAYER_CONFIRMED"));
+
+        mockMvc.perform(get("/api/v1/events/" + context.eventId())
+                        .header("Authorization", "Bearer " + context.payerToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CALCULATED"));
+
+        mockMvc.perform(post("/api/v1/events/" + context.eventId() + "/close")
+                        .header("Authorization", "Bearer " + context.payerToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("COMPLETED"));
+    }
+
+    private static PreparedPaymentContext prepareDebtorConfirmedPayment(
+            MockMvc mockMvc, long payerTelegramId, long debtorTelegramId, String payerUsername, String debtorUsername)
+            throws Exception {
+        return prepareDebtorConfirmedPayment(
+                mockMvc, payerTelegramId, debtorTelegramId, payerUsername, debtorUsername, true);
+    }
+
+    private static PreparedPaymentContext prepareDebtorConfirmedPayment(
+            MockMvc mockMvc,
+            long payerTelegramId,
+            long debtorTelegramId,
+            String payerUsername,
+            String debtorUsername,
+            boolean withScreenshot)
+            throws Exception {
+        var payerToken = authenticate(mockMvc, payerTelegramId, "Payer", payerUsername);
+        var payerId = fetchUserId(mockMvc, payerToken);
+
+        mockMvc.perform(put("/api/v1/users/me/profile")
+                        .header("Authorization", "Bearer " + payerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentDetails\":\"Card 4242\"}"))
+                .andExpect(status().isOk());
+
+        var groupResponse = mockMvc.perform(post("/api/v1/groups/standalone")
+                        .header("Authorization", "Bearer " + payerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Bar\"}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        long groupId = Long.parseLong(readJsonNumberField(groupResponse, "id"));
+
+        var debtorToken = authenticate(mockMvc, debtorTelegramId, "Debtor", debtorUsername);
+        mockMvc.perform(post("/api/v1/groups/" + groupId + "/members")
+                        .header("Authorization", "Bearer " + payerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"telegramUsername\":\"" + debtorUsername + "\"}"))
+                .andExpect(status().isCreated());
+
+        var eventResponse = mockMvc.perform(post("/api/v1/groups/" + groupId + "/events")
+                        .header("Authorization", "Bearer " + payerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Drinks\",\"payerId\":" + payerId + "}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        long eventId = Long.parseLong(readJsonNumberField(eventResponse, "id"));
+
+        var positionResponse = mockMvc.perform(post("/api/v1/events/" + eventId + "/positions")
+                        .header("Authorization", "Bearer " + payerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Beer\",\"quantity\":2,\"totalPriceKopecks\":60000}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        long positionId = Long.parseLong(readJsonNumberField(positionResponse, "id"));
+
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/send-to-distribution")
+                        .header("Authorization", "Bearer " + payerToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(put("/api/v1/events/" + eventId + "/selections")
+                        .header("Authorization", "Bearer " + debtorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"selections\":[{\"positionId\":" + positionId + ",\"quantity\":1}]}"))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/complete-selection")
+                        .header("Authorization", "Bearer " + debtorToken))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/complete-selection")
+                        .header("Authorization", "Bearer " + payerToken))
+                .andExpect(status().isNoContent());
+
+        var debtsResponse = mockMvc.perform(
+                        get("/api/v1/events/" + eventId + "/debts").header("Authorization", "Bearer " + debtorToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").exists())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        long debtId = Long.parseLong(readJsonNumberField(debtsResponse.substring(debtsResponse.indexOf('[')), "id"));
+
+        if (withScreenshot) {
+            var screenshotResponse = mockMvc.perform(multipart("/api/v1/files")
+                            .file(new MockMultipartFile("file", "pay.pdf", "application/pdf", new byte[] {9, 9, 9}))
+                            .param("purpose", "payment-proof")
+                            .header("Authorization", "Bearer " + debtorToken))
+                    .andExpect(status().isOk())
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+            long screenshotId = Long.parseLong(readJsonNumberField(screenshotResponse, "id"));
+
+            mockMvc.perform(post("/api/v1/debts/" + debtId + "/payment/confirm-debtor")
+                            .header("Authorization", "Bearer " + debtorToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"screenshotFileId\":" + screenshotId + "}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("DEBTOR_CONFIRMED"));
+        } else {
+            mockMvc.perform(post("/api/v1/debts/" + debtId + "/payment/confirm-debtor")
+                            .header("Authorization", "Bearer " + debtorToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"screenshotFileId\":null}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("DEBTOR_CONFIRMED"));
+        }
+
+        return new PreparedPaymentContext(eventId, debtId, payerToken, debtorToken);
+    }
+
+    private record PreparedPaymentContext(long eventId, long debtId, String payerToken, String debtorToken) {}
 }

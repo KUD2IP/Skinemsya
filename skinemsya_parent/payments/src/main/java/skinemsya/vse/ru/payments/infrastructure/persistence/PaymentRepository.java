@@ -11,5 +11,7 @@ public interface PaymentRepository extends JpaRepository<PaymentEntity, Long> {
 
     List<PaymentEntity> findByDebtIdIn(List<Long> debtIds);
 
+    Optional<PaymentEntity> findByScreenshotFileId(long screenshotFileId);
+
     List<PaymentEntity> findByStatus(PaymentStatus status);
 }

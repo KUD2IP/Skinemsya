@@ -63,8 +63,10 @@ public class TelegramBotPollingService {
             telegramBotClient.initialize();
             telegramBotClient.deleteWebhook();
             telegramBotClient.setMyCommands();
-            log.info("Telegram bot commands registered");
-        } catch (Exception ex) {
+            telegramBotClient.setMyDescription();
+            telegramBotClient.setMyShortDescription();
+            log.info("Telegram bot commands and description registered");
+        } catch (Throwable ex) {
             log.error("Failed to initialize Telegram bot polling", ex);
         }
 

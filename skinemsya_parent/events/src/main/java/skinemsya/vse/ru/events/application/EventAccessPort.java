@@ -20,7 +20,7 @@ public interface EventAccessPort {
 
     void markCalculated(long eventId);
 
-    boolean tryMarkCompleted(long eventId);
+    Event closeByPayer(long eventId, long payerId);
 
     void markSelectionCompleted(long eventId, long userId);
 

@@ -11,5 +11,6 @@ public record EventResponse(
         long payerId,
         long createdBy,
         EventStatus status,
+        boolean payerRequisitesReady,
         Instant createdAt,
         Instant updatedAt) {}

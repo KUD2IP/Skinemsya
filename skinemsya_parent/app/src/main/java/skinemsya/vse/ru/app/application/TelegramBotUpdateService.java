@@ -20,6 +20,15 @@ public class TelegramBotUpdateService {
             Откройте приложение — вы уже в группе этого чата.
 
             Дальше: создайте мероприятие → укажите плательщика → добавьте позиции или чек.""";
+    private static final String PRIVATE_START_HINT =
+            """
+            Привет! Это Skinemsya.
+
+            Теперь вы будете получать личные уведомления о переводах:
+            • проверка перевода — плательщику
+            • спор по переводу — должнику
+
+            Откройте приложение, чтобы делить расходы в группах.""";
     private static final String OPEN_BUTTON = "Открыть Skinemsya";
     private static final java.util.Set<String> JOINED_STATUSES = java.util.Set.of("member", "administrator", "creator");
     private static final java.util.Set<String> LEFT_STATUSES = java.util.Set.of("left", "kicked");
@@ -69,21 +78,36 @@ public class TelegramBotUpdateService {
     @Transactional
     void handleMessage(JsonNode message) {
         var chat = message.path("chat");
-        if (!isGroupChat(chat)) {
-            return;
-        }
         if (!isStartCommand(message.path("text").asText(""))) {
             return;
         }
 
-        long chatId = chat.path("id").asLong();
         String chatType = chat.path("type").asText("");
+        long chatId = chat.path("id").asLong();
+
+        if ("private".equals(chatType)) {
+            handlePrivateStart(chatId);
+            return;
+        }
+
+        if (!isGroupChat(chat)) {
+            return;
+        }
+
         ensureChatLinkedGroup(chatId, chatTitle(chat), message.path("from"));
 
         try {
             telegramBotClient.sendMessageWithOpenAppButton(chatId, START_HINT, OPEN_BUTTON, chatType);
         } catch (RuntimeException ex) {
             log.error("Failed to send /start hint in chat {}", chatId, ex);
+        }
+    }
+
+    private void handlePrivateStart(long chatId) {
+        try {
+            telegramBotClient.sendMessageWithOpenAppButton(chatId, PRIVATE_START_HINT, OPEN_BUTTON, "private");
+        } catch (RuntimeException ex) {
+            log.error("Failed to send private /start hint in chat {}", chatId, ex);
         }
     }
 

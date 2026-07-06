@@ -55,6 +55,9 @@ class EventServiceTest {
     @Mock
     private DistributionReadinessPort distributionReadinessPort;
 
+    @Mock
+    private EventCloseReadinessPort eventCloseReadinessPort;
+
     @InjectMocks
     private EventServiceImpl eventService;
 

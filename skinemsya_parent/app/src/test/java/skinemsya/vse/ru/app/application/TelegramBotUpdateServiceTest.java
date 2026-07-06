@@ -94,6 +94,30 @@ class TelegramBotUpdateServiceTest {
     }
 
     @Test
+    void shouldSendPrivateStartHintWithoutBootstrappingGroup() throws Exception {
+        var update = objectMapper.readTree(
+                """
+                {
+                  "message": {
+                    "chat": { "id": 700010, "type": "private" },
+                    "from": { "id": 700010, "first_name": "Dana" },
+                    "text": "/start"
+                  }
+                }
+                """);
+
+        when(telegramBotClient.sendMessageWithOpenAppButton(
+                        eq(700_010L), any(), eq("Открыть Skinemsya"), eq("private")))
+                .thenReturn(new TelegramSentMessage(2L));
+
+        updateService.handleUpdate(update);
+
+        verify(groupService, never()).createFromChat(anyLong(), any(), anyLong());
+        verify(telegramBotClient)
+                .sendMessageWithOpenAppButton(eq(700_010L), any(), eq("Открыть Skinemsya"), eq("private"));
+    }
+
+    @Test
     void shouldNotBootstrapGroupWhenBotLeavesChat() throws Exception {
         var update = objectMapper.readTree(
                 """

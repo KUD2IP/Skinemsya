@@ -132,6 +132,20 @@ public class TelegramBotClientImpl implements TelegramBotClient {
         callApi("setMyCommands", Map.of("commands", commands));
     }
 
+    @Override
+    public void setMyDescription() {
+        callApi(
+                "setMyDescription",
+                Map.of(
+                        "description",
+                        "Делите расходы в группах Telegram. Личные уведомления о переводах приходят только после /start в этом чате."));
+    }
+
+    @Override
+    public void setMyShortDescription() {
+        callApi("setMyShortDescription", Map.of("short_description", "Скинемся вместе — делим чек в группе"));
+    }
+
     private String buildMiniAppDeepLink(String startParam) {
         String username = resolveBotUsername();
         String shortName = properties.webAppShortName();

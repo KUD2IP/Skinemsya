@@ -8,7 +8,7 @@ public interface PaymentService {
 
     PaymentDetailsView getPaymentDetails(long debtId, long requesterId);
 
-    Payment confirmByDebtor(long debtId, long debtorId, long screenshotFileId);
+    Payment confirmByDebtor(long debtId, long debtorId, Long screenshotFileId);
 
     List<Payment> confirmAllForEvent(long eventId, long payerId);
 

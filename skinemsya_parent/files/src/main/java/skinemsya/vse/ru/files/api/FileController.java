@@ -41,10 +41,12 @@ public class FileController {
 
     @GetMapping("/{fileId}")
     public FileResponse getFile(
-            @AuthenticationPrincipal AuthenticatedUser authenticatedUser, @PathVariable long fileId) {
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+            @PathVariable long fileId,
+            @RequestParam(defaultValue = "false") boolean sharedAccess) {
         long userId = requireUserId(authenticatedUser);
         var stored = fileService.requireById(fileId);
-        fileService.requireOwnerOrShared(fileId, userId, stored.ownerId() == userId);
+        fileService.requireOwnerOrShared(fileId, userId, sharedAccess || stored.ownerId() == userId);
         return toResponse(stored);
     }
 
