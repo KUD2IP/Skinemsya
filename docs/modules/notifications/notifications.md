@@ -77,6 +77,18 @@
 
 Backend парсит `start_param` в `TelegramInitDataValidator` / `TelegramStartParam` и направляет Mini App на соответствующий экран.
 
+## Требование активации бота в личном чате
+
+Telegram доставляет **личные сообщения** (`PRIVATE_DM`) только пользователям, которые открыли чат с ботом и нажали **Start** (`/start`).
+
+| Канал | Тип | Нужен /start в личке? |
+| --- | --- | --- |
+| Групповой чат | `DISTRIBUTION_STARTED`, `DEBTS_CALCULATED`, `PAYMENT_PENDING` (сообщение в группе), `EVENT_COMPLETED`, `REMINDER` | Нет |
+| Личные сообщения | `PAYMENT_PENDING` («Проверь перевод от …») | **Да** |
+| Личные сообщения | `PAYMENT_DISPUTED` («… не видит твой перевод …») | **Да** |
+
+При старте приложения бот выставляет описание через `setMyDescription` / `setMyShortDescription`. В групповом welcome-сообщении и в ответе на `/start` в личке пользователю напоминают про активацию.
+
 ## Future Extensions
 
 - Push через Telegram inline buttons.

@@ -12,6 +12,7 @@ import skinemsya.vse.ru.debts.api.dto.DebtResponse;
 import skinemsya.vse.ru.debts.api.dto.DebtSummaryResponse;
 import skinemsya.vse.ru.debts.api.dto.ParticipantsStatusResponse;
 import skinemsya.vse.ru.debts.application.DebtService;
+import skinemsya.vse.ru.debts.application.PaymentReadPort;
 import skinemsya.vse.ru.events.application.EventAccessPort;
 import skinemsya.vse.ru.events.infrastructure.persistence.EventParticipantRepository;
 
@@ -21,14 +22,17 @@ public class DebtController {
     private final DebtService debtService;
     private final EventAccessPort eventAccessPort;
     private final EventParticipantRepository eventParticipantRepository;
+    private final PaymentReadPort paymentReadPort;
 
     public DebtController(
             DebtService debtService,
             EventAccessPort eventAccessPort,
-            EventParticipantRepository eventParticipantRepository) {
+            EventParticipantRepository eventParticipantRepository,
+            PaymentReadPort paymentReadPort) {
         this.debtService = debtService;
         this.eventAccessPort = eventAccessPort;
         this.eventParticipantRepository = eventParticipantRepository;
+        this.paymentReadPort = paymentReadPort;
     }
 
     @GetMapping("/api/v1/events/{eventId}/debts")
@@ -36,7 +40,12 @@ public class DebtController {
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser, @PathVariable long eventId) {
         long userId = requireUserId(authenticatedUser);
         eventAccessPort.requireParticipant(eventId, userId);
-        return debtService.findByEvent(eventId).stream().map(DebtResponse::from).toList();
+        var debts = debtService.findByEvent(eventId);
+        var paymentInfoByDebtId = paymentReadPort.findPaymentInfoByDebtIds(
+                debts.stream().map(d -> d.id()).toList());
+        return debts.stream()
+                .map(d -> DebtResponse.from(d, paymentInfoByDebtId.get(d.id())))
+                .toList();
     }
 
     @GetMapping("/api/v1/debts/summary")

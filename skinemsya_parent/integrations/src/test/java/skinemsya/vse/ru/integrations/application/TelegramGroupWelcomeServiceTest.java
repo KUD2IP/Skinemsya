@@ -131,5 +131,11 @@ class TelegramGroupWelcomeServiceTest {
 
         @Override
         public void setMyCommands() {}
+
+        @Override
+        public void setMyDescription() {}
+
+        @Override
+        public void setMyShortDescription() {}
     }
 }

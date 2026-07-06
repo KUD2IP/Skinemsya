@@ -16,9 +16,11 @@ import skinemsya.vse.ru.common.domain.CorrelationId;
 import skinemsya.vse.ru.common.domain.DomainException;
 import skinemsya.vse.ru.common.domain.ErrorCode;
 import skinemsya.vse.ru.common.domain.TypedDomainException;
+import skinemsya.vse.ru.debts.domain.exception.DebtsDomainException;
 import skinemsya.vse.ru.events.domain.exception.EventsDomainException;
 import skinemsya.vse.ru.files.domain.exception.FilesDomainException;
 import skinemsya.vse.ru.groups.domain.exception.GroupsDomainException;
+import skinemsya.vse.ru.payments.domain.exception.PaymentsDomainException;
 import skinemsya.vse.ru.receipts.domain.exception.ReceiptsDomainException;
 
 @RestControllerAdvice
@@ -30,7 +32,9 @@ public class GlobalExceptionHandler {
         GroupsDomainException.class,
         EventsDomainException.class,
         FilesDomainException.class,
-        ReceiptsDomainException.class
+        ReceiptsDomainException.class,
+        PaymentsDomainException.class,
+        DebtsDomainException.class
     })
     public ResponseEntity<ApiErrorResponse> handleModuleDomainException(
             TypedDomainException ex, HttpServletRequest request) {

@@ -18,6 +18,7 @@ import skinemsya.vse.ru.files.application.FileService;
 import skinemsya.vse.ru.payments.domain.Payment;
 import skinemsya.vse.ru.payments.domain.PaymentDetailsView;
 import skinemsya.vse.ru.payments.domain.PaymentStatus;
+import skinemsya.vse.ru.users.domain.PayoutRequisites;
 import skinemsya.vse.ru.payments.domain.exception.PayerPaymentDetailsMissingException;
 import skinemsya.vse.ru.payments.domain.exception.PaymentAccessDeniedException;
 import skinemsya.vse.ru.payments.domain.exception.PaymentInvalidStateException;
@@ -73,8 +74,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         var creditor = userService.findById(debt.getCreditorId()).orElseThrow(DebtNotFoundException::new);
         var paymentDetails = userService.getPaymentDetails(debt.getCreditorId());
-        if (paymentDetails.paymentDetails() == null
-                || paymentDetails.paymentDetails().isBlank()) {
+        if (!PayoutRequisites.hasAny(paymentDetails)) {
             throw new PayerPaymentDetailsMissingException();
         }
 
@@ -92,7 +92,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public Payment confirmByDebtor(long debtId, long debtorId, long screenshotFileId) {
+    public Payment confirmByDebtor(long debtId, long debtorId, Long screenshotFileId) {
         var debt = debtRepository.findById(debtId).orElseThrow(DebtNotFoundException::new);
         if (debt.getDebtorId() != debtorId) {
             throw new PaymentAccessDeniedException();
@@ -101,7 +101,9 @@ public class PaymentServiceImpl implements PaymentService {
             throw new PaymentInvalidStateException();
         }
 
-        fileService.requireOwnerOrShared(screenshotFileId, debtorId, true);
+        if (screenshotFileId != null) {
+            fileService.requireOwnerOrShared(screenshotFileId, debtorId, true);
+        }
 
         var payment = paymentRepository.findByDebtId(debtId).orElseGet(() -> createPayment(debtId));
         if (payment.getStatus() == PaymentStatus.PAYER_CONFIRMED) {
@@ -115,7 +117,9 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         var now = Instant.now();
-        payment.setScreenshotFileId(screenshotFileId);
+        if (screenshotFileId != null) {
+            payment.setScreenshotFileId(screenshotFileId);
+        }
         payment.setStatus(PaymentStatus.DEBTOR_CONFIRMED);
         payment.setDebtorConfirmedAt(now);
         payment.setUpdatedAt(now);
@@ -148,12 +152,12 @@ public class PaymentServiceImpl implements PaymentService {
                 continue;
             }
             paymentRepository.findByDebtId(debt.getId()).ifPresent(payment -> {
-                if (payment.getStatus() == PaymentStatus.DEBTOR_CONFIRMED) {
+                if (payment.getStatus() == PaymentStatus.DEBTOR_CONFIRMED
+                        || payment.getStatus() == PaymentStatus.DISPUTED) {
                     confirmed.add(confirmPaymentInternal(payment, debt.getId(), eventId));
                 }
             });
         }
-        maybeCompleteEvent(eventId);
         return confirmed;
     }
 
@@ -177,12 +181,12 @@ public class PaymentServiceImpl implements PaymentService {
         if (payment.getStatus() == PaymentStatus.PAYER_CONFIRMED) {
             return toDomain(payment);
         }
-        if (payment.getStatus() != PaymentStatus.DEBTOR_CONFIRMED) {
+        if (payment.getStatus() != PaymentStatus.DEBTOR_CONFIRMED
+                && payment.getStatus() != PaymentStatus.DISPUTED) {
             throw new PaymentInvalidStateException();
         }
 
         var confirmed = confirmPaymentInternal(payment, debt.getId(), debt.getEventId());
-        maybeCompleteEvent(debt.getEventId());
         return confirmed;
     }
 
@@ -227,12 +231,6 @@ public class PaymentServiceImpl implements PaymentService {
         payment = paymentRepository.save(payment);
         debtService.close(debtId);
         return toDomain(payment);
-    }
-
-    private void maybeCompleteEvent(long eventId) {
-        if (debtService.allPaidForEvent(eventId)) {
-            eventAccessPort.tryMarkCompleted(eventId);
-        }
     }
 
     private PaymentEntity createPayment(long debtId) {

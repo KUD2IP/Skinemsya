@@ -16,5 +16,7 @@ public interface PositionService {
 
     Position markShared(long positionId, long userId, boolean forAll, List<Long> targetUserIds);
 
+    Position unmarkShared(long positionId, long userId);
+
     long countByEvent(long eventId);
 }

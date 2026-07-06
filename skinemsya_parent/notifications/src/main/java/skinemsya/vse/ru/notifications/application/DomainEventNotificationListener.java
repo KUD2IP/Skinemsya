@@ -51,17 +51,10 @@ public class DomainEventNotificationListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onDebtsCalculated(DebtsCalculated event) {
         long payerId = eventAccessPort.getPayerId(event.eventId());
-        var payer = userService.findById(payerId).orElse(null);
-        String payerName = payer != null ? payer.displayName() : "Плательщик";
-        long groupId = eventAccessPort.getEventGroupId(event.eventId());
-        String message = "Все выбрали блюда. " + payerName + ", проверь переводы";
-
-        groupService.findById(groupId).ifPresent(group -> {
-            if (group.telegramChatId() != null) {
-                notificationService.sendToGroupChat(
-                        group.telegramChatId(), NotificationType.DEBTS_CALCULATED, message, event.eventId());
-            }
-        });
+        notificationService.send(
+                payerId,
+                NotificationType.DEBTS_CALCULATED,
+                "Все выбрали блюда — проверь переводы");
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -71,17 +64,6 @@ public class DomainEventNotificationListener {
                 event.creditorId(),
                 NotificationType.PAYMENT_PENDING,
                 "Проверь перевод от " + event.debtorName() + " (" + amount + " ₽)");
-
-        long groupId = eventAccessPort.getEventGroupId(event.eventId());
-        groupService.findById(groupId).ifPresent(group -> {
-            if (group.telegramChatId() != null) {
-                notificationService.sendToGroupChat(
-                        group.telegramChatId(),
-                        NotificationType.PAYMENT_PENDING,
-                        event.debtorName() + " скинула " + amount + " ₽",
-                        event.eventId());
-            }
-        });
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
