@@ -97,6 +97,13 @@ public class PositionController {
         return PositionResponse.from(positionService.markShared(id, userId, request.forAll(), List.of()));
     }
 
+    @PostMapping("/api/v1/positions/{id}/unmark-shared")
+    public PositionResponse unmarkShared(
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser, @PathVariable long id) {
+        long userId = requireUserId(authenticatedUser);
+        return PositionResponse.from(positionService.unmarkShared(id, userId));
+    }
+
     private static long requireUserId(AuthenticatedUser authenticatedUser) {
         if (authenticatedUser == null) {
             throw new DomainException(ErrorCode.AUTHENTICATION_ERROR, "User is not authenticated");

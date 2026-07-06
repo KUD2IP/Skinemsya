@@ -32,4 +32,8 @@ public interface TelegramBotClient {
     void deleteWebhook();
 
     void setMyCommands();
+
+    void setMyDescription();
+
+    void setMyShortDescription();
 }

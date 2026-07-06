@@ -25,6 +25,8 @@ import skinemsya.vse.ru.events.application.EventService;
 import skinemsya.vse.ru.events.domain.Event;
 import skinemsya.vse.ru.events.domain.exception.EventNotFoundException;
 import skinemsya.vse.ru.groups.application.GroupAccessService;
+import skinemsya.vse.ru.users.application.UserService;
+import skinemsya.vse.ru.users.domain.PayoutRequisites;
 
 @RestController
 public class EventController {
@@ -32,12 +34,17 @@ public class EventController {
     private final EventService eventService;
     private final EventAccessPort eventAccessPort;
     private final GroupAccessService groupAccessService;
+    private final UserService userService;
 
     public EventController(
-            EventService eventService, EventAccessPort eventAccessPort, GroupAccessService groupAccessService) {
+            EventService eventService,
+            EventAccessPort eventAccessPort,
+            GroupAccessService groupAccessService,
+            UserService userService) {
         this.eventService = eventService;
         this.eventAccessPort = eventAccessPort;
         this.groupAccessService = groupAccessService;
+        this.userService = userService;
     }
 
     @PostMapping("/api/v1/groups/{groupId}/events")
@@ -59,7 +66,7 @@ public class EventController {
             @RequestParam(required = false) Integer size) {
         long userId = requireUserId(authenticatedUser);
         var result = eventService.listByGroup(groupId, userId, resolvePageRequest(page, size));
-        return mapPage(result, EventController::toResponse);
+        return mapPage(result, this::toResponse);
     }
 
     @GetMapping("/api/v1/events/{eventId}")
@@ -95,6 +102,13 @@ public class EventController {
         return toResponse(eventAccessPort.sendToDistribution(eventId, userId));
     }
 
+    @PostMapping("/api/v1/events/{eventId}/close")
+    public EventResponse closeEvent(
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser, @PathVariable long eventId) {
+        long userId = requireUserId(authenticatedUser);
+        return toResponse(eventAccessPort.closeByPayer(eventId, userId));
+    }
+
     private static long requireUserId(AuthenticatedUser authenticatedUser) {
         if (authenticatedUser == null) {
             throw new DomainException(ErrorCode.AUTHENTICATION_ERROR, "User is not authenticated");
@@ -102,7 +116,7 @@ public class EventController {
         return authenticatedUser.getUserId();
     }
 
-    private static EventResponse toResponse(Event event) {
+    private EventResponse toResponse(Event event) {
         return new EventResponse(
                 event.id(),
                 event.groupId(),
@@ -111,6 +125,7 @@ public class EventController {
                 event.payerId(),
                 event.createdBy(),
                 event.status(),
+                PayoutRequisites.hasAny(userService.getPaymentDetails(event.payerId())),
                 event.createdAt(),
                 event.updatedAt());
     }

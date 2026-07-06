@@ -43,7 +43,7 @@
 11. Альтернатива: плательщик нажимает **Не пришло** → платеж переходит в `disputed`; бот уведомляет должника.
 12. `payments` переводит платежную операцию в статус `payer_confirmed` (или остаётся `disputed`).
 13. `debts` закрывает долг; статус долга — `оплачено` (UI: **Подтверждено**).
-14. Когда все долги сбора подтверждены, `events` переводит сбор в `COMPLETED` (UI: **Закрыт**).
+14. Когда все долги сбора подтверждены, плательщик вручную закрывает сбор (`POST /events/{id}/close`) → `events` переводит сбор в `COMPLETED` (UI: **Закрыт**).
 
 Маппинг статусов долга, платежа и UI:
 
@@ -72,6 +72,7 @@ stateDiagram-v2
   DebtorConfirmed --> PayerConfirmed: payer clicks vsyo_na_meste or confirm
   DebtorConfirmed --> Disputed: payer clicks ne_prishlo
   Disputed --> DebtorConfirmed: debtor resubmits with new screenshot
+  Disputed --> PayerConfirmed: payer clicks vsyo_na_meste or confirm after accidental dispute
   Created --> Cancelled: payment cancelled before debtor confirmation
   PayerConfirmed --> [*]
 ```
@@ -107,8 +108,8 @@ stateDiagram-v2
 | Create payment for debt | Повторный вызов возвращает существующий active payment | Debt not found, requester not participant, debt already paid |
 | View details (`перевести`) | Read-only, всегда idempotent | Плательщик не указал реквизиты |
 | Debtor confirm (`перевел` / «Отправил») | Повторный confirm тем же должником возвращает current state | Requester is not debtor, payment already paid/cancelled, screenshot missing |
-| Payer bulk confirm («Всё на месте») | Подтверждает все `debtor_confirmed` для сбора; idempotent | Requester is not payer, no pending payments |
-| Payer confirm (`получил` / «Подтвердить») | Повторный confirm плательщиком возвращает paid state | Requester is not payer, debtor did not confirm |
+| Payer confirm (`получил` / «Подтвердить») | Повторный confirm плательщиком возвращает paid state | Requester is not payer, payment not in `debtor_confirmed` or `disputed` |
+| Payer bulk confirm («Всё на месте») | Подтверждает все `debtor_confirmed` и `disputed` для сбора; idempotent | Requester is not payer, no pending payments |
 | Dispute («Не пришло») | Переводит в `disputed`; повторный dispute idempotent | Requester is not payer, payment not in `debtor_confirmed` |
 | Cancel | Допустим только до debtor confirm | Payment already confirmed or disputed |
 

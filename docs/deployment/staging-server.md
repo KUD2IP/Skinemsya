@@ -184,7 +184,8 @@ ssh -i ~/.ssh/skinemsya_deploy deploy@<IP_СЕРВЕРА>
 
 1. В @BotFather → **Bot Settings → Domain** → добавь `skinemsya-vse.ru`.
 2. **Menu Button / Web App** → URL: `https://skinemsya-vse.ru`.
-3. Если используешь short name (`t.me/bot/app`) — пропиши `TELEGRAM_WEB_APP_SHORT_NAME` в `.env`.
+3. **Описание бота** (About): можно задать вручную в BotFather или оставить на автоматическую установку при старте backend (`setMyDescription`, `setMyShortDescription`).
+4. Если используешь short name (`t.me/bot/app`) — пропиши `TELEGRAM_WEB_APP_SHORT_NAME` в `.env`.
    **Обязательно для кнопки в групповом чате**, иначе ссылка откроет личку с ботом вместо Mini App.
 
 ---

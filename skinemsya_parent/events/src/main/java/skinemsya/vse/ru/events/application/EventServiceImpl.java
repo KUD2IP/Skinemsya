@@ -14,10 +14,12 @@ import skinemsya.vse.ru.common.event.EventCompleted;
 import skinemsya.vse.ru.common.event.EventSentToDistribution;
 import skinemsya.vse.ru.events.domain.Event;
 import skinemsya.vse.ru.events.domain.EventStatus;
+import skinemsya.vse.ru.events.domain.exception.EventCloseAccessRequiredException;
 import skinemsya.vse.ru.events.domain.exception.EventDeleteAccessRequiredException;
 import skinemsya.vse.ru.events.domain.exception.EventDistributionAccessRequiredException;
 import skinemsya.vse.ru.events.domain.exception.EventNameRequiredException;
 import skinemsya.vse.ru.events.domain.exception.EventNameTooLongException;
+import skinemsya.vse.ru.events.domain.exception.EventNotCalculatedException;
 import skinemsya.vse.ru.events.domain.exception.EventNotDraftException;
 import skinemsya.vse.ru.events.domain.exception.EventNotFoundException;
 import skinemsya.vse.ru.events.domain.exception.EventNotInDistributionException;
@@ -36,6 +38,7 @@ import skinemsya.vse.ru.groups.domain.exception.GroupHasBlockingEventsException;
 import skinemsya.vse.ru.groups.domain.exception.GroupMemberAccessRequiredException;
 import skinemsya.vse.ru.groups.domain.exception.GroupOwnerAccessRequiredException;
 import skinemsya.vse.ru.users.application.UserService;
+import skinemsya.vse.ru.users.domain.PayoutRequisites;
 
 @Service
 @Transactional
@@ -49,6 +52,7 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
     private final ApplicationEventPublisher eventPublisher;
     private final DistributionReadinessPort distributionReadinessPort;
     private final EventParticipantSyncService eventParticipantSyncService;
+    private final EventCloseReadinessPort eventCloseReadinessPort;
 
     public EventServiceImpl(
             EventRepository eventRepository,
@@ -58,7 +62,8 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
             UserService userService,
             ApplicationEventPublisher eventPublisher,
             DistributionReadinessPort distributionReadinessPort,
-            EventParticipantSyncService eventParticipantSyncService) {
+            EventParticipantSyncService eventParticipantSyncService,
+            EventCloseReadinessPort eventCloseReadinessPort) {
         this.eventRepository = eventRepository;
         this.eventParticipantRepository = eventParticipantRepository;
         this.eventMapper = eventMapper;
@@ -67,6 +72,7 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
         this.eventPublisher = eventPublisher;
         this.distributionReadinessPort = distributionReadinessPort;
         this.eventParticipantSyncService = eventParticipantSyncService;
+        this.eventCloseReadinessPort = eventCloseReadinessPort;
     }
 
     @Override
@@ -188,16 +194,23 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
     }
 
     @Override
-    public boolean tryMarkCompleted(long eventId) {
+    public Event closeByPayer(long eventId, long payerId) {
         var entity = getActiveEvent(eventId);
-        if (entity.getStatus() != EventStatus.CALCULATED) {
-            return false;
+        if (entity.getPayerId() != payerId) {
+            throw new EventCloseAccessRequiredException();
         }
+        if (entity.getStatus() == EventStatus.COMPLETED) {
+            return eventMapper.toDomain(entity);
+        }
+        if (entity.getStatus() != EventStatus.CALCULATED) {
+            throw new EventNotCalculatedException();
+        }
+        eventCloseReadinessPort.assertReadyToClose(eventId);
         entity.setStatus(EventStatus.COMPLETED);
         entity.setUpdatedAt(Instant.now());
-        eventRepository.save(entity);
+        entity = eventRepository.save(entity);
         eventPublisher.publishEvent(new EventCompleted(eventId, entity.getGroupId(), entity.getName()));
-        return true;
+        return eventMapper.toDomain(entity);
     }
 
     @Override
@@ -210,8 +223,7 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
         eventParticipantSyncService.syncAllMembersBeforeDistribution(eventId, entity.getGroupId());
         distributionReadinessPort.assertReadyForDistribution(eventId);
         var paymentDetails = userService.getPaymentDetails(entity.getPayerId());
-        if (paymentDetails.paymentDetails() == null
-                || paymentDetails.paymentDetails().isBlank()) {
+        if (!PayoutRequisites.hasAny(paymentDetails)) {
             throw new PaymentDetailsMissingException();
         }
 
