@@ -1,6 +1,6 @@
 package skinemsya.vse.ru.integrations.infrastructure.ml;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -16,7 +16,7 @@ import skinemsya.vse.ru.integrations.domain.MlReceiptResponse;
 import skinemsya.vse.ru.integrations.infrastructure.config.MlServiceProperties;
 
 @Component
-@ConditionalOnProperty(prefix = "skinemsya.ml-service", name = "url")
+@ConditionalOnExpression("!'${skinemsya.ml-service.url:}'.isEmpty()")
 public class HttpMlServiceClient implements MlServiceClient {
 
     private final MlServiceProperties properties;

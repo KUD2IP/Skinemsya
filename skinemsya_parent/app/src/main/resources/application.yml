@@ -18,6 +18,13 @@ spring:
     hibernate:
       ddl-auto: validate
     open-in-view: false
+  servlet:
+    multipart:
+      # Согласовано с skinemsya.file-storage.max-upload-size-bytes (20 МБ);
+      # без этого действует дефолт Spring в 1 МБ и загрузка фото чека падает.
+      max-file-size: ${FILE_MAX_UPLOAD_SIZE_BYTES:20971520}
+      # Чуть больше max-file-size: запас на multipart-оверхед (boundary, заголовки).
+      max-request-size: 25MB
   autoconfigure:
     exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
 
@@ -58,7 +65,7 @@ skinemsya:
       - http://127.0.0.1:*
       - https://web.telegram.org
   ml-service:
-    url: ${ML_SERVICE_URL:}
+    url: ${ML_SERVICE_URL:http://localhost:8000}
     timeout: ${ML_SERVICE_TIMEOUT:30s}
   file-storage:
     type: ${FILE_STORAGE_TYPE:local}
