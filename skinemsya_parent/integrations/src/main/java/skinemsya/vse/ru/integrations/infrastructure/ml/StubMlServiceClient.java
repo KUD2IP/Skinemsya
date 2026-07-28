@@ -1,16 +1,17 @@
 package skinemsya.vse.ru.integrations.infrastructure.ml;
 
 import java.util.List;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Primary;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 import skinemsya.vse.ru.integrations.application.MlServiceClient;
 import skinemsya.vse.ru.integrations.domain.MlReceiptItem;
 import skinemsya.vse.ru.integrations.domain.MlReceiptResponse;
 
+// @ConditionalOnProperty не умеет отличать пустое значение от непустого
+// (havingValue = "" срабатывает при любом значении, кроме "false"),
+// поэтому взаимоисключающий выбор клиента делается через SpEL-выражение.
 @Component
-@Primary
-@ConditionalOnProperty(prefix = "skinemsya.ml-service", name = "url", havingValue = "", matchIfMissing = true)
+@ConditionalOnExpression("'${skinemsya.ml-service.url:}'.isEmpty()")
 public class StubMlServiceClient implements MlServiceClient {
 
     @Override
