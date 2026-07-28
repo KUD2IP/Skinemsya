@@ -358,6 +358,7 @@ APP_VERSION=manual docker compose -f docker-compose.prod.yml up -d
 | Кнопка в группе открывает чат с ботом | `TELEGRAM_WEB_APP_SHORT_NAME` в BotFather и `PRODUCTION_ENV` |
 | Нет HTTPS | `sudo nginx -t`; `sudo certbot certificates`; DNS, порты 80/443 |
 | Mini App не авторизует | `TELEGRAM_BOT_TOKEN`, домен в BotFather |
+| «Сервер не отвечает» при чеке, после reload позиции есть | Таймаут фронта/nginx короче OCR; UI ≥120s на `POST .../receipts`, nginx `proxy_read_timeout 120s;` в `location /api/` |
 | OOM | `free -h`, swap, `docker stats` |
 | Deploy job падает на SSH | `SSH_PRIVATE_KEY`, `PRODUCTION_HOST`, `authorized_keys` на сервере |
 | `Permission denied (publickey)` | См. чеклист ниже |
