@@ -59,7 +59,8 @@ public class PositionController {
                     var selectedBy = position.shared()
                             ? List.<PositionSelectorResponse>of()
                             : selectorsByPosition.getOrDefault(position.id(), List.of()).stream()
-                                    .map(selector -> new PositionSelectorResponse(selector.userId(), selector.quantity()))
+                                    .map(selector ->
+                                            new PositionSelectorResponse(selector.userId(), selector.quantity()))
                                     .collect(Collectors.toList());
                     if (position.shared()) {
                         return PositionResponse.from(position, null, 0, null, selectedBy);

@@ -7,10 +7,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import skinemsya.vse.ru.common.event.SelectionsCompleted;
 import skinemsya.vse.ru.debts.application.DebtService;
+import skinemsya.vse.ru.debts.domain.DebtStatus;
 import skinemsya.vse.ru.events.application.EventAccessPort;
 import skinemsya.vse.ru.events.domain.EventStatus;
 import skinemsya.vse.ru.events.domain.exception.EventNotInDistributionException;
-import skinemsya.vse.ru.debts.domain.DebtStatus;
 import skinemsya.vse.ru.receipts.domain.exception.PositionNotFoundException;
 import skinemsya.vse.ru.receipts.domain.exception.SelectionCannotBeReopenedException;
 import skinemsya.vse.ru.receipts.infrastructure.persistence.PositionRepository;
@@ -87,8 +87,8 @@ public class SelectionServiceImpl implements SelectionService {
         if (status != EventStatus.DISTRIBUTION && status != EventStatus.CALCULATED) {
             throw new SelectionCannotBeReopenedException();
         }
-        boolean hasLockedDebt = debtService.findByEvent(eventId).stream()
-                .anyMatch(debt -> debt.status() != DebtStatus.UNPAID);
+        boolean hasLockedDebt =
+                debtService.findByEvent(eventId).stream().anyMatch(debt -> debt.status() != DebtStatus.UNPAID);
         if (hasLockedDebt) {
             throw new SelectionCannotBeReopenedException();
         }

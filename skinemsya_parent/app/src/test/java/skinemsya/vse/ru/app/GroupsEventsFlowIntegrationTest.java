@@ -66,7 +66,8 @@ class GroupsEventsFlowIntegrationTest {
         var eventResponse = mockMvc.perform(post("/api/v1/groups/" + groupId + "/events")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Dinner\",\"description\":\"Pizza\",\"payerId\":" + userId + ",\"expectedParticipantCount\":4}"))
+                        .content("{\"name\":\"Dinner\",\"description\":\"Pizza\",\"payerId\":" + userId
+                                + ",\"expectedParticipantCount\":4}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("DRAFT"))
                 .andExpect(jsonPath("$.payerId").value(userId))
@@ -82,8 +83,10 @@ class GroupsEventsFlowIntegrationTest {
         mockMvc.perform(get("/api/v1/events/" + eventId + "/invite-link").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.startParam").value("event_" + eventId))
-                .andExpect(jsonPath("$.shareText").value(
-                        "Присоединяйся к сбору «Dinner» в группе «Friends» в Skinemsya — делим расходы вместе:"));
+                .andExpect(
+                        jsonPath("$.shareText")
+                                .value(
+                                        "Присоединяйся к сбору «Dinner» в группе «Friends» в Skinemsya — делим расходы вместе:"));
     }
 
     @Test
@@ -155,7 +158,8 @@ class GroupsEventsFlowIntegrationTest {
         mockMvc.perform(post("/api/v1/groups/" + groupId + "/events")
                         .header("Authorization", "Bearer " + ownerToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Tickets\",\"payerId\":" + strangerId + ",\"expectedParticipantCount\":4}"))
+                        .content(
+                                "{\"name\":\"Tickets\",\"payerId\":" + strangerId + ",\"expectedParticipantCount\":4}"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("DOMAIN_RULE_VIOLATION"));
     }
@@ -204,7 +208,8 @@ class GroupsEventsFlowIntegrationTest {
         var eventResponse = mockMvc.perform(post("/api/v1/groups/" + groupId + "/events")
                         .header("Authorization", "Bearer " + ownerToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Open collection\",\"payerId\":" + ownerId + ",\"expectedParticipantCount\":4}"))
+                        .content("{\"name\":\"Open collection\",\"payerId\":" + ownerId
+                                + ",\"expectedParticipantCount\":4}"))
                 .andExpect(status().isCreated())
                 .andReturn()
                 .getResponse()
@@ -218,15 +223,13 @@ class GroupsEventsFlowIntegrationTest {
                         .content("{\"telegramUsername\":\"lateuser\"}"))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(get("/api/v1/events/" + eventId)
-                        .header("Authorization", "Bearer " + lateToken))
+        mockMvc.perform(get("/api/v1/events/" + eventId).header("Authorization", "Bearer " + lateToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.joinedCount").value(1))
                 .andExpect(jsonPath("$.expectedParticipantCount").value(4))
                 .andExpect(jsonPath("$.currentUserJoined").value(false));
 
-        mockMvc.perform(post("/api/v1/events/" + eventId + "/join")
-                        .header("Authorization", "Bearer " + lateToken))
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/join").header("Authorization", "Bearer " + lateToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.joinedCount").value(2))
                 .andExpect(jsonPath("$.currentUserJoined").value(true));
@@ -238,8 +241,7 @@ class GroupsEventsFlowIntegrationTest {
                 .andExpect(jsonPath("$.expectedParticipantCount").value(4))
                 .andExpect(jsonPath("$.joinedCount").value(2));
 
-        mockMvc.perform(post("/api/v1/events/" + eventId + "/leave")
-                        .header("Authorization", "Bearer " + lateToken))
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/leave").header("Authorization", "Bearer " + lateToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.joinedCount").value(1))
                 .andExpect(jsonPath("$.currentUserJoined").value(false));
@@ -269,7 +271,8 @@ class GroupsEventsFlowIntegrationTest {
         var eventResponse = mockMvc.perform(post("/api/v1/groups/" + groupId + "/events")
                         .header("Authorization", "Bearer " + ownerToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Solo event\",\"payerId\":" + ownerId + ",\"expectedParticipantCount\":4}"))
+                        .content(
+                                "{\"name\":\"Solo event\",\"payerId\":" + ownerId + ",\"expectedParticipantCount\":4}"))
                 .andExpect(status().isCreated())
                 .andReturn()
                 .getResponse()
@@ -314,15 +317,15 @@ class GroupsEventsFlowIntegrationTest {
         var eventResponse = mockMvc.perform(post("/api/v1/groups/" + groupId + "/events")
                         .header("Authorization", "Bearer " + ownerToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Kick event\",\"payerId\":" + ownerId + ",\"expectedParticipantCount\":4}"))
+                        .content(
+                                "{\"name\":\"Kick event\",\"payerId\":" + ownerId + ",\"expectedParticipantCount\":4}"))
                 .andExpect(status().isCreated())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
         long eventId = Long.parseLong(readJsonNumberField(eventResponse, "id"));
 
-        mockMvc.perform(post("/api/v1/events/" + eventId + "/join")
-                        .header("Authorization", "Bearer " + memberToken))
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/join").header("Authorization", "Bearer " + memberToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.joinedCount").value(2));
 
@@ -331,16 +334,14 @@ class GroupsEventsFlowIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.joinedCount").value(1));
 
-        mockMvc.perform(post("/api/v1/events/" + eventId + "/join")
-                        .header("Authorization", "Bearer " + memberToken))
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/join").header("Authorization", "Bearer " + memberToken))
                 .andExpect(status().isOk());
 
         mockMvc.perform(delete("/api/v1/groups/" + groupId + "/members/" + memberId)
                         .header("Authorization", "Bearer " + ownerToken))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/v1/events/" + eventId)
-                        .header("Authorization", "Bearer " + ownerToken))
+        mockMvc.perform(get("/api/v1/events/" + eventId).header("Authorization", "Bearer " + ownerToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.joinedCount").value(1));
 
@@ -376,7 +377,8 @@ class GroupsEventsFlowIntegrationTest {
         mockMvc.perform(post("/api/v1/groups/" + groupId + "/events")
                         .header("Authorization", "Bearer " + ownerToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Paid by member\",\"payerId\":" + memberId + ",\"expectedParticipantCount\":4}"))
+                        .content("{\"name\":\"Paid by member\",\"payerId\":" + memberId
+                                + ",\"expectedParticipantCount\":4}"))
                 .andExpect(status().isCreated());
 
         mockMvc.perform(delete("/api/v1/groups/" + groupId + "/members/" + memberId)

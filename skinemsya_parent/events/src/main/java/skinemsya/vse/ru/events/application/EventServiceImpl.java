@@ -9,10 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 import skinemsya.vse.ru.common.api.PageRequest;
 import skinemsya.vse.ru.common.api.PageResult;
 import skinemsya.vse.ru.common.event.EventCompleted;
+import skinemsya.vse.ru.common.event.EventParticipantsChanged;
 import skinemsya.vse.ru.common.event.EventSentToDistribution;
 import skinemsya.vse.ru.events.domain.Event;
 import skinemsya.vse.ru.events.domain.EventStatus;
-import skinemsya.vse.ru.common.event.EventParticipantsChanged;
 import skinemsya.vse.ru.events.domain.exception.EventCannotChangeCapacityException;
 import skinemsya.vse.ru.events.domain.exception.EventCannotJoinException;
 import skinemsya.vse.ru.events.domain.exception.EventCannotLeaveException;
@@ -86,12 +86,7 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
 
     @Override
     public Event create(
-            long groupId,
-            String name,
-            String description,
-            long payerId,
-            long creatorId,
-            int expectedParticipantCount) {
+            long groupId, String name, String description, long payerId, long creatorId, int expectedParticipantCount) {
         validateName(name);
         groupAccessService.requireMember(groupId, creatorId);
         requireUserExists(payerId);

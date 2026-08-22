@@ -1,7 +1,6 @@
 package skinemsya.vse.ru.notifications.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -29,7 +28,6 @@ import skinemsya.vse.ru.groups.application.GroupService;
 import skinemsya.vse.ru.groups.domain.Group;
 import skinemsya.vse.ru.groups.domain.GroupType;
 import skinemsya.vse.ru.integrations.application.TelegramBotClient;
-import skinemsya.vse.ru.notifications.domain.NotificationType;
 import skinemsya.vse.ru.notifications.infrastructure.persistence.NotificationRepository;
 import skinemsya.vse.ru.users.application.UserService;
 import skinemsya.vse.ru.users.domain.User;

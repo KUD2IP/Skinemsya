@@ -275,8 +275,8 @@ public class DebtServiceImpl implements DebtService {
             List<ReceiptDataPort.SharedTargetData> targets,
             long payerId,
             int expectedCount) {
-        Map<Long, BigDecimal> weights = resolveWeights(
-                position, participants, selections, targets, payerId, expectedCount);
+        Map<Long, BigDecimal> weights =
+                resolveWeights(position, participants, selections, targets, payerId, expectedCount);
         if (weights.isEmpty()) {
             return Map.of();
         }

@@ -24,14 +24,14 @@ import skinemsya.vse.ru.events.domain.exception.EventCannotRemoveParticipantExce
 import skinemsya.vse.ru.events.domain.exception.EventDeleteAccessRequiredException;
 import skinemsya.vse.ru.events.domain.exception.EventFullException;
 import skinemsya.vse.ru.events.domain.exception.PayerNotGroupMemberException;
-import skinemsya.vse.ru.groups.domain.exception.GroupMemberIsEventPayerException;
-import skinemsya.vse.ru.groups.domain.exception.GroupOwnerAccessRequiredException;
 import skinemsya.vse.ru.events.infrastructure.mapper.EventMapper;
 import skinemsya.vse.ru.events.infrastructure.persistence.EventEntity;
 import skinemsya.vse.ru.events.infrastructure.persistence.EventParticipantEntity;
 import skinemsya.vse.ru.events.infrastructure.persistence.EventParticipantRepository;
 import skinemsya.vse.ru.events.infrastructure.persistence.EventRepository;
 import skinemsya.vse.ru.groups.application.GroupAccessService;
+import skinemsya.vse.ru.groups.domain.exception.GroupMemberIsEventPayerException;
+import skinemsya.vse.ru.groups.domain.exception.GroupOwnerAccessRequiredException;
 import skinemsya.vse.ru.users.application.UserService;
 import skinemsya.vse.ru.users.domain.User;
 
@@ -85,7 +85,8 @@ class EventServiceTest {
         when(userService.findById(PAYER_ID)).thenReturn(Optional.of(user(PAYER_ID)));
         when(groupAccessService.isMember(GROUP_ID, PAYER_ID)).thenReturn(true);
         when(eventRepository.save(any(EventEntity.class))).thenReturn(saved);
-        when(eventParticipantRepository.existsByEventIdAndUserId(100L, CREATOR_ID)).thenReturn(false);
+        when(eventParticipantRepository.existsByEventIdAndUserId(100L, CREATOR_ID))
+                .thenReturn(false);
         when(eventParticipantRepository.countByEventId(100L)).thenReturn(1L);
         when(eventMapper.toDomain(saved)).thenReturn(domain);
 
@@ -117,7 +118,8 @@ class EventServiceTest {
         when(eventRepository.findById(100L)).thenReturn(Optional.of(existing));
         when(groupAccessService.isMember(GROUP_ID, OTHER_MEMBER_ID)).thenReturn(true);
         when(userService.findById(OTHER_MEMBER_ID)).thenReturn(Optional.of(user(OTHER_MEMBER_ID)));
-        when(eventParticipantRepository.existsByEventIdAndUserId(100L, OTHER_MEMBER_ID)).thenReturn(false);
+        when(eventParticipantRepository.existsByEventIdAndUserId(100L, OTHER_MEMBER_ID))
+                .thenReturn(false);
         when(eventParticipantRepository.countByEventId(100L)).thenReturn(2L);
         when(eventRepository.save(existing)).thenReturn(existing);
         when(eventMapper.toDomain(existing)).thenReturn(updated);
@@ -133,7 +135,8 @@ class EventServiceTest {
         var existing = eventEntity(100L, EventStatus.DISTRIBUTION);
         existing.setExpectedParticipantCount(2);
         when(eventRepository.findById(100L)).thenReturn(Optional.of(existing));
-        when(eventParticipantRepository.existsByEventIdAndUserId(100L, OTHER_MEMBER_ID)).thenReturn(false);
+        when(eventParticipantRepository.existsByEventIdAndUserId(100L, OTHER_MEMBER_ID))
+                .thenReturn(false);
         when(eventParticipantRepository.countByEventId(100L)).thenReturn(2L);
 
         assertThatThrownBy(() -> eventService.join(100L, OTHER_MEMBER_ID)).isInstanceOf(EventFullException.class);
@@ -167,7 +170,9 @@ class EventServiceTest {
     void shouldRejectDeleteForRegularMember() {
         var existing = eventEntity(100L, EventStatus.DRAFT);
         when(eventRepository.findById(100L)).thenReturn(Optional.of(existing));
-        doThrow(new GroupOwnerAccessRequiredException()).when(groupAccessService).requireOwner(GROUP_ID, OTHER_MEMBER_ID);
+        doThrow(new GroupOwnerAccessRequiredException())
+                .when(groupAccessService)
+                .requireOwner(GROUP_ID, OTHER_MEMBER_ID);
 
         assertThatThrownBy(() -> eventService.delete(100L, OTHER_MEMBER_ID))
                 .isInstanceOf(EventDeleteAccessRequiredException.class);
@@ -190,7 +195,8 @@ class EventServiceTest {
 
     @Test
     void shouldRejectGroupMemberCleanupWhenUserIsPayer() {
-        when(eventRepository.existsByGroupIdAndPayerId(GROUP_ID, OTHER_MEMBER_ID)).thenReturn(true);
+        when(eventRepository.existsByGroupIdAndPayerId(GROUP_ID, OTHER_MEMBER_ID))
+                .thenReturn(true);
 
         assertThatThrownBy(() -> eventService.assertUserIsNotPayerOfActiveEvents(GROUP_ID, OTHER_MEMBER_ID))
                 .isInstanceOf(GroupMemberIsEventPayerException.class);
@@ -200,7 +206,8 @@ class EventServiceTest {
     void shouldRemoveRegularParticipantByGroupOwner() {
         var existing = eventEntity(100L, EventStatus.DISTRIBUTION);
         when(eventRepository.findById(100L)).thenReturn(Optional.of(existing));
-        when(eventParticipantRepository.existsByEventIdAndUserId(100L, OTHER_MEMBER_ID)).thenReturn(true);
+        when(eventParticipantRepository.existsByEventIdAndUserId(100L, OTHER_MEMBER_ID))
+                .thenReturn(true);
         when(eventMapper.toDomain(existing)).thenReturn(domainEvent(100L, EventStatus.DISTRIBUTION));
 
         eventService.removeParticipant(100L, CREATOR_ID, OTHER_MEMBER_ID);
@@ -213,7 +220,8 @@ class EventServiceTest {
     void shouldRejectRemovePayerFromEvent() {
         var existing = eventEntity(100L, EventStatus.DISTRIBUTION);
         when(eventRepository.findById(100L)).thenReturn(Optional.of(existing));
-        when(eventParticipantRepository.existsByEventIdAndUserId(100L, PAYER_ID)).thenReturn(true);
+        when(eventParticipantRepository.existsByEventIdAndUserId(100L, PAYER_ID))
+                .thenReturn(true);
 
         assertThatThrownBy(() -> eventService.removeParticipant(100L, CREATOR_ID, PAYER_ID))
                 .isInstanceOf(EventCannotRemoveParticipantException.class);
@@ -223,7 +231,8 @@ class EventServiceTest {
     void shouldRejectLeaveForPayer() {
         var existing = eventEntity(100L, EventStatus.DISTRIBUTION);
         when(eventRepository.findById(100L)).thenReturn(Optional.of(existing));
-        when(eventParticipantRepository.existsByEventIdAndUserId(100L, PAYER_ID)).thenReturn(true);
+        when(eventParticipantRepository.existsByEventIdAndUserId(100L, PAYER_ID))
+                .thenReturn(true);
 
         assertThatThrownBy(() -> eventService.leave(100L, PAYER_ID)).isInstanceOf(EventCannotLeaveException.class);
     }

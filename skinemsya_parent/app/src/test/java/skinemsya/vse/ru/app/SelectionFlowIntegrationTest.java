@@ -209,8 +209,7 @@ class SelectionFlowIntegrationTest {
                 .getResponse()
                 .getContentAsString();
         long eventId = Long.parseLong(readJsonNumberField(eventResponse, "id"));
-        mockMvc.perform(post("/api/v1/events/" + eventId + "/join")
-                        .header("Authorization", "Bearer " + debtorToken))
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/join").header("Authorization", "Bearer " + debtorToken))
                 .andExpect(status().isOk());
 
         var claimedResponse = mockMvc.perform(post("/api/v1/events/" + eventId + "/positions")
@@ -244,13 +243,11 @@ class SelectionFlowIntegrationTest {
                         .header("Authorization", "Bearer " + payerToken))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/v1/events/" + eventId)
-                        .header("Authorization", "Bearer " + payerToken))
+        mockMvc.perform(get("/api/v1/events/" + eventId).header("Authorization", "Bearer " + payerToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CALCULATED"));
 
-        mockMvc.perform(get("/api/v1/events/" + eventId + "/debts")
-                        .header("Authorization", "Bearer " + debtorToken))
+        mockMvc.perform(get("/api/v1/events/" + eventId + "/debts").header("Authorization", "Bearer " + debtorToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].debtorId").value((int) debtorId))
@@ -293,8 +290,7 @@ class SelectionFlowIntegrationTest {
                 .getResponse()
                 .getContentAsString();
         long eventId = Long.parseLong(readJsonNumberField(eventResponse, "id"));
-        mockMvc.perform(post("/api/v1/events/" + eventId + "/join")
-                        .header("Authorization", "Bearer " + debtorToken))
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/join").header("Authorization", "Bearer " + debtorToken))
                 .andExpect(status().isOk());
 
         var teaResponse = mockMvc.perform(post("/api/v1/events/" + eventId + "/positions")
@@ -342,12 +338,10 @@ class SelectionFlowIntegrationTest {
                         .header("Authorization", "Bearer " + debtorToken))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/v1/events/" + eventId)
-                        .header("Authorization", "Bearer " + payerToken))
+        mockMvc.perform(get("/api/v1/events/" + eventId).header("Authorization", "Bearer " + payerToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CALCULATED"));
-        mockMvc.perform(get("/api/v1/events/" + eventId + "/debts")
-                        .header("Authorization", "Bearer " + debtorToken))
+        mockMvc.perform(get("/api/v1/events/" + eventId + "/debts").header("Authorization", "Bearer " + debtorToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].amountKopecks").value(10000));
@@ -364,8 +358,7 @@ class SelectionFlowIntegrationTest {
                         .header("Authorization", "Bearer " + payerToken))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/v1/events/" + eventId)
-                        .header("Authorization", "Bearer " + payerToken))
+        mockMvc.perform(get("/api/v1/events/" + eventId).header("Authorization", "Bearer " + payerToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CALCULATED"));
     }
@@ -432,11 +425,9 @@ class SelectionFlowIntegrationTest {
                 .getResponse()
                 .getContentAsString();
         long eventId = Long.parseLong(readJsonNumberField(eventResponse, "id"));
-        mockMvc.perform(post("/api/v1/events/" + eventId + "/join")
-                        .header("Authorization", "Bearer " + debtorOneToken))
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/join").header("Authorization", "Bearer " + debtorOneToken))
                 .andExpect(status().isOk());
-        mockMvc.perform(post("/api/v1/events/" + eventId + "/join")
-                        .header("Authorization", "Bearer " + debtorTwoToken))
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/join").header("Authorization", "Bearer " + debtorTwoToken))
                 .andExpect(status().isOk());
 
         var positionResponse = mockMvc.perform(post("/api/v1/events/" + eventId + "/positions")
@@ -473,13 +464,11 @@ class SelectionFlowIntegrationTest {
                         .header("Authorization", "Bearer " + payerToken))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/v1/events/" + eventId)
-                        .header("Authorization", "Bearer " + payerToken))
+        mockMvc.perform(get("/api/v1/events/" + eventId).header("Authorization", "Bearer " + payerToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CALCULATED"));
 
-        mockMvc.perform(get("/api/v1/events/" + eventId + "/debts")
-                        .header("Authorization", "Bearer " + payerToken))
+        mockMvc.perform(get("/api/v1/events/" + eventId + "/debts").header("Authorization", "Bearer " + payerToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].amountKopecks").value(10000))
@@ -487,8 +476,7 @@ class SelectionFlowIntegrationTest {
     }
 
     private PreparedSelectionContext prepareDistributedEvent(
-            long payerTelegramId, long debtorTelegramId, String payerUsername, String debtorUsername)
-            throws Exception {
+            long payerTelegramId, long debtorTelegramId, String payerUsername, String debtorUsername) throws Exception {
         var payerToken = authenticate(mockMvc, payerTelegramId, "Payer", payerUsername);
         var payerId = fetchUserId(mockMvc, payerToken);
 
@@ -525,8 +513,7 @@ class SelectionFlowIntegrationTest {
                 .getResponse()
                 .getContentAsString();
         long eventId = Long.parseLong(readJsonNumberField(eventResponse, "id"));
-        mockMvc.perform(post("/api/v1/events/" + eventId + "/join")
-                        .header("Authorization", "Bearer " + debtorToken))
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/join").header("Authorization", "Bearer " + debtorToken))
                 .andExpect(status().isOk());
 
         var positionResponse = mockMvc.perform(post("/api/v1/events/" + eventId + "/positions")

@@ -78,7 +78,8 @@ class ReceiptsFlowIntegrationTest {
         var eventResponse = mockMvc.perform(post("/api/v1/groups/" + groupId + "/events")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Pizza night\",\"payerId\":" + userId + ",\"expectedParticipantCount\":4}"))
+                        .content(
+                                "{\"name\":\"Pizza night\",\"payerId\":" + userId + ",\"expectedParticipantCount\":4}"))
                 .andExpect(status().isCreated())
                 .andReturn()
                 .getResponse()
@@ -181,7 +182,8 @@ class ReceiptsFlowIntegrationTest {
         var eventResponse = mockMvc.perform(post("/api/v1/groups/" + groupId + "/events")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Receipt event\",\"payerId\":" + userId + ",\"expectedParticipantCount\":4}"))
+                        .content("{\"name\":\"Receipt event\",\"payerId\":" + userId
+                                + ",\"expectedParticipantCount\":4}"))
                 .andExpect(status().isCreated())
                 .andReturn()
                 .getResponse()

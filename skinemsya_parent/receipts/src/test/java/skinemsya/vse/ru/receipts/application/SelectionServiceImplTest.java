@@ -61,8 +61,7 @@ class SelectionServiceImplTest {
     @Test
     void shouldRejectReopenWhenPaymentAlreadyStarted() {
         when(eventAccessPort.getStatus(10L)).thenReturn(EventStatus.CALCULATED);
-        when(debtService.findByEvent(10L))
-                .thenReturn(List.of(debt(10L, 2L, DebtStatus.PENDING_CONFIRMATION)));
+        when(debtService.findByEvent(10L)).thenReturn(List.of(debt(10L, 2L, DebtStatus.PENDING_CONFIRMATION)));
 
         assertThatThrownBy(() -> selectionService.reopenSelection(10L, 2L))
                 .isInstanceOf(SelectionCannotBeReopenedException.class);

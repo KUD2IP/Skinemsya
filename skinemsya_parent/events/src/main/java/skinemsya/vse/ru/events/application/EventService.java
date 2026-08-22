@@ -8,12 +8,7 @@ import skinemsya.vse.ru.events.domain.Event;
 public interface EventService {
 
     Event create(
-            long groupId,
-            String name,
-            String description,
-            long payerId,
-            long creatorId,
-            int expectedParticipantCount);
+            long groupId, String name, String description, long payerId, long creatorId, int expectedParticipantCount);
 
     Event update(
             long eventId,

@@ -32,9 +32,9 @@ import skinemsya.vse.ru.groups.domain.GroupMemberView;
 import skinemsya.vse.ru.groups.domain.exception.GroupNotFoundException;
 import skinemsya.vse.ru.integrations.application.TelegramBotClient;
 import skinemsya.vse.ru.integrations.application.TelegramInitDataValidator;
+import skinemsya.vse.ru.integrations.domain.TelegramInitData;
 import skinemsya.vse.ru.integrations.infrastructure.telegram.InviteShareText;
 import skinemsya.vse.ru.integrations.infrastructure.telegram.TelegramStartParam;
-import skinemsya.vse.ru.integrations.domain.TelegramInitData;
 import skinemsya.vse.ru.users.application.UserService;
 
 @RestController
@@ -127,9 +127,7 @@ public class GroupController {
         var group = groupService.findById(groupId).orElseThrow(GroupNotFoundException::new);
         String startParam = TelegramStartParam.forGroup(groupId);
         return new InviteLinkResponse(
-                telegramBotClient.buildMiniAppDeepLink(startParam),
-                startParam,
-                InviteShareText.forGroup(group.name()));
+                telegramBotClient.buildMiniAppDeepLink(startParam), startParam, InviteShareText.forGroup(group.name()));
     }
 
     @GetMapping("/{groupId}/members")

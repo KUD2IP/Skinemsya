@@ -83,8 +83,7 @@ class PaymentFlowIntegrationTest {
                 .getResponse()
                 .getContentAsString();
         long eventId = Long.parseLong(readJsonNumberField(eventResponse, "id"));
-        mockMvc.perform(post("/api/v1/events/" + eventId + "/join")
-                        .header("Authorization", "Bearer " + debtorToken))
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/join").header("Authorization", "Bearer " + debtorToken))
                 .andExpect(status().isOk());
 
         var positionResponse = mockMvc.perform(post("/api/v1/events/" + eventId + "/positions")
@@ -320,8 +319,7 @@ class PaymentFlowIntegrationTest {
                 .getResponse()
                 .getContentAsString();
         long eventId = Long.parseLong(readJsonNumberField(eventResponse, "id"));
-        mockMvc.perform(post("/api/v1/events/" + eventId + "/join")
-                        .header("Authorization", "Bearer " + debtorToken))
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/join").header("Authorization", "Bearer " + debtorToken))
                 .andExpect(status().isOk());
 
         var positionResponse = mockMvc.perform(post("/api/v1/events/" + eventId + "/positions")
