@@ -36,4 +36,6 @@ public interface TelegramBotClient {
     void setMyDescription();
 
     void setMyShortDescription();
+
+    String buildMiniAppDeepLink(String startParam);
 }

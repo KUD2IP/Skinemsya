@@ -40,6 +40,9 @@ public class EventEntity {
     @Column(name = "status", nullable = false, length = 20)
     private EventStatus status;
 
+    @Column(name = "expected_participant_count", nullable = false)
+    private Integer expectedParticipantCount;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -103,6 +106,14 @@ public class EventEntity {
 
     public void setStatus(EventStatus status) {
         this.status = status;
+    }
+
+    public Integer getExpectedParticipantCount() {
+        return expectedParticipantCount;
+    }
+
+    public void setExpectedParticipantCount(Integer expectedParticipantCount) {
+        this.expectedParticipantCount = expectedParticipantCount;
     }
 
     public Instant getCreatedAt() {

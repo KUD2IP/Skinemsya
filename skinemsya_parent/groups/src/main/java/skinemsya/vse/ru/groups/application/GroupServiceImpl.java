@@ -16,8 +16,10 @@ import skinemsya.vse.ru.groups.domain.GroupMember;
 import skinemsya.vse.ru.groups.domain.GroupMemberView;
 import skinemsya.vse.ru.groups.domain.GroupRole;
 import skinemsya.vse.ru.groups.domain.GroupType;
+import skinemsya.vse.ru.groups.domain.exception.GroupCannotRemoveOwnerException;
 import skinemsya.vse.ru.groups.domain.exception.GroupMemberAccessRequiredException;
 import skinemsya.vse.ru.groups.domain.exception.GroupMemberAddFailedException;
+import skinemsya.vse.ru.groups.domain.exception.GroupMemberNotFoundException;
 import skinemsya.vse.ru.groups.domain.exception.GroupNameRequiredException;
 import skinemsya.vse.ru.groups.domain.exception.GroupNameTooLongException;
 import skinemsya.vse.ru.groups.domain.exception.GroupNotFoundException;
@@ -42,6 +44,7 @@ public class GroupServiceImpl implements GroupService {
     private final GroupMapper groupMapper;
     private final UserService userService;
     private final Optional<GroupDeletionGuard> groupDeletionGuard;
+    private final Optional<GroupMemberEventCleanup> groupMemberEventCleanup;
     private final ChatLinkedGroupBootstrapService chatLinkedGroupBootstrapService;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -51,13 +54,15 @@ public class GroupServiceImpl implements GroupService {
             GroupMapper groupMapper,
             UserService userService,
             Optional<GroupDeletionGuard> groupDeletionGuard,
+            Optional<GroupMemberEventCleanup> groupMemberEventCleanup,
             ChatLinkedGroupBootstrapService chatLinkedGroupBootstrapService,
             ApplicationEventPublisher eventPublisher) {
         this.groupRepository = groupRepository;
         this.groupMemberRepository = groupMemberRepository;
         this.groupMapper = groupMapper;
         this.userService = userService;
-        this.groupDeletionGuard = groupDeletionGuard;
+        this.groupDeletionGuard = groupDeletionGuard == null ? Optional.empty() : groupDeletionGuard;
+        this.groupMemberEventCleanup = groupMemberEventCleanup == null ? Optional.empty() : groupMemberEventCleanup;
         this.chatLinkedGroupBootstrapService = chatLinkedGroupBootstrapService;
         this.eventPublisher = eventPublisher;
     }
@@ -93,6 +98,15 @@ public class GroupServiceImpl implements GroupService {
         if (group.getType() != GroupType.CHAT_LINKED) {
             return;
         }
+        requireUserExists(userId);
+        if (ensureMember(groupId, userId, GroupRole.MEMBER)) {
+            eventPublisher.publishEvent(new GroupMemberJoined(groupId, userId));
+        }
+    }
+
+    @Override
+    public void joinFromInvite(long groupId, long userId) {
+        getActiveGroup(groupId);
         requireUserExists(userId);
         if (ensureMember(groupId, userId, GroupRole.MEMBER)) {
             eventPublisher.publishEvent(new GroupMemberJoined(groupId, userId));
@@ -187,6 +201,23 @@ public class GroupServiceImpl implements GroupService {
         entity.setName(name.trim());
         entity.setUpdatedAt(Instant.now());
         return groupMapper.toDomain(groupRepository.save(entity));
+    }
+
+    @Override
+    public void removeMember(long groupId, long ownerUserId, long memberUserId) {
+        var entity = getActiveGroup(groupId);
+        requireOwner(entity, ownerUserId);
+        if (memberUserId == entity.getOwnerId()) {
+            throw new GroupCannotRemoveOwnerException();
+        }
+        var member = groupMemberRepository
+                .findByGroupIdAndUserId(groupId, memberUserId)
+                .orElseThrow(GroupMemberNotFoundException::new);
+        groupMemberEventCleanup.ifPresent(cleanup -> {
+            cleanup.assertUserIsNotPayerOfActiveEvents(groupId, memberUserId);
+            cleanup.removeUserFromGroupEvents(groupId, memberUserId);
+        });
+        groupMemberRepository.delete(member);
     }
 
     @Override

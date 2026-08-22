@@ -19,6 +19,7 @@ import skinemsya.vse.ru.common.domain.ErrorCode;
 import skinemsya.vse.ru.groups.domain.Group;
 import skinemsya.vse.ru.groups.domain.GroupRole;
 import skinemsya.vse.ru.groups.domain.GroupType;
+import skinemsya.vse.ru.groups.domain.exception.GroupCannotRemoveOwnerException;
 import skinemsya.vse.ru.groups.domain.exception.GroupOwnerAccessRequiredException;
 import skinemsya.vse.ru.groups.infrastructure.mapper.GroupMapper;
 import skinemsya.vse.ru.groups.infrastructure.persistence.GroupEntity;
@@ -119,6 +120,49 @@ class GroupServiceTest {
                 .isInstanceOf(GroupOwnerAccessRequiredException.class)
                 .extracting(ex -> ((GroupOwnerAccessRequiredException) ex).errorCode())
                 .isEqualTo(ErrorCode.AUTHORIZATION_ERROR);
+    }
+
+    @Test
+    void shouldJoinFromInvite() {
+        var group = standaloneGroupEntity(10L);
+        when(groupRepository.findById(10L)).thenReturn(Optional.of(group));
+        when(userService.findById(MEMBER_ID)).thenReturn(Optional.of(user(MEMBER_ID)));
+        when(groupMemberRepository.existsByGroupIdAndUserId(10L, MEMBER_ID)).thenReturn(false);
+
+        groupService.joinFromInvite(10L, MEMBER_ID);
+
+        verify(groupMemberRepository)
+                .insertIfAbsent(eq(10L), eq(MEMBER_ID), eq(GroupRole.MEMBER.name()), any(Instant.class));
+    }
+
+    @Test
+    void shouldRemoveMemberWhenOwner() {
+        var group = standaloneGroupEntity(10L);
+        var ownerMember = ownerMemberEntity(10L, OWNER_ID);
+        var target = new GroupMemberEntity();
+        target.setGroupId(10L);
+        target.setUserId(MEMBER_ID);
+        target.setRole(GroupRole.MEMBER);
+
+        when(groupRepository.findById(10L)).thenReturn(Optional.of(group));
+        when(groupMemberRepository.findByGroupIdAndUserId(10L, OWNER_ID)).thenReturn(Optional.of(ownerMember));
+        when(groupMemberRepository.findByGroupIdAndUserId(10L, MEMBER_ID)).thenReturn(Optional.of(target));
+
+        groupService.removeMember(10L, OWNER_ID, MEMBER_ID);
+
+        verify(groupMemberRepository).delete(target);
+    }
+
+    @Test
+    void shouldRejectRemoveOwnerFromGroup() {
+        var group = standaloneGroupEntity(10L);
+        var ownerMember = ownerMemberEntity(10L, OWNER_ID);
+
+        when(groupRepository.findById(10L)).thenReturn(Optional.of(group));
+        when(groupMemberRepository.findByGroupIdAndUserId(10L, OWNER_ID)).thenReturn(Optional.of(ownerMember));
+
+        assertThatThrownBy(() -> groupService.removeMember(10L, OWNER_ID, OWNER_ID))
+                .isInstanceOf(GroupCannotRemoveOwnerException.class);
     }
 
     private static User user(long id) {

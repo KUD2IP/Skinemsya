@@ -2,9 +2,13 @@ package skinemsya.vse.ru.receipts.application;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import skinemsya.vse.ru.receipts.infrastructure.persistence.PositionEntity;
+import skinemsya.vse.ru.receipts.infrastructure.persistence.PositionSelectionEntity;
 import skinemsya.vse.ru.receipts.infrastructure.persistence.PositionSelectionRepository;
 
 @Service
@@ -34,6 +38,19 @@ public class PositionAvailabilityService {
         return new PositionAvailability(totalUnits, remaining, mySelected, soldOut);
     }
 
+    public Map<Long, List<Selector>> selectorsByPositionId(List<Long> positionIds) {
+        if (positionIds == null || positionIds.isEmpty()) {
+            return Map.of();
+        }
+        return selectionRepository.findByPositionIdIn(positionIds).stream()
+                .collect(Collectors.groupingBy(
+                        PositionSelectionEntity::getPositionId,
+                        Collectors.mapping(
+                                selection -> new Selector(
+                                        selection.getUserId(), toIntUnits(selection.getSelectedQuantity())),
+                                Collectors.toList())));
+    }
+
     public void requireAvailableQuantity(PositionEntity position, long userId, BigDecimal requestedQuantity) {
         if (position.isShared()) {
             return;
@@ -52,6 +69,8 @@ public class PositionAvailabilityService {
         }
         return quantity.setScale(0, RoundingMode.DOWN).intValue();
     }
+
+    public record Selector(long userId, int quantity) {}
 
     public record PositionAvailability(
             int totalQuantity, int remainingQuantity, int mySelectedQuantity, boolean soldOut) {

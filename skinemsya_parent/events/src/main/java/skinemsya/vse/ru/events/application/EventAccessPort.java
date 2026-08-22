@@ -16,6 +16,10 @@ public interface EventAccessPort {
 
     long countParticipants(long eventId);
 
+    int getExpectedParticipantCount(long eventId);
+
+    boolean isParticipant(long eventId, long userId);
+
     List<Long> getParticipantUserIds(long eventId);
 
     void markCalculated(long eventId);
@@ -23,6 +27,8 @@ public interface EventAccessPort {
     Event closeByPayer(long eventId, long payerId);
 
     void markSelectionCompleted(long eventId, long userId);
+
+    void clearSelectionCompleted(long eventId, long userId);
 
     boolean allSelectionsCompleted(long eventId);
 

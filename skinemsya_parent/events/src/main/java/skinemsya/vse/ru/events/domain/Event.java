@@ -10,5 +10,6 @@ public record Event(
         long payerId,
         long createdBy,
         EventStatus status,
+        int expectedParticipantCount,
         Instant createdAt,
         Instant updatedAt) {}

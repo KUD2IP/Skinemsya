@@ -23,13 +23,17 @@ import skinemsya.vse.ru.groups.api.dto.ChatLinkedGroupRequest;
 import skinemsya.vse.ru.groups.api.dto.CreateStandaloneGroupRequest;
 import skinemsya.vse.ru.groups.api.dto.GroupMemberViewResponse;
 import skinemsya.vse.ru.groups.api.dto.GroupResponse;
+import skinemsya.vse.ru.groups.api.dto.InviteLinkResponse;
 import skinemsya.vse.ru.groups.api.dto.UpdateGroupRequest;
 import skinemsya.vse.ru.groups.application.GroupAccessService;
 import skinemsya.vse.ru.groups.application.GroupService;
 import skinemsya.vse.ru.groups.domain.Group;
 import skinemsya.vse.ru.groups.domain.GroupMemberView;
 import skinemsya.vse.ru.groups.domain.exception.GroupNotFoundException;
+import skinemsya.vse.ru.integrations.application.TelegramBotClient;
 import skinemsya.vse.ru.integrations.application.TelegramInitDataValidator;
+import skinemsya.vse.ru.integrations.infrastructure.telegram.InviteShareText;
+import skinemsya.vse.ru.integrations.infrastructure.telegram.TelegramStartParam;
 import skinemsya.vse.ru.integrations.domain.TelegramInitData;
 import skinemsya.vse.ru.users.application.UserService;
 
@@ -40,16 +44,19 @@ public class GroupController {
     private final GroupService groupService;
     private final GroupAccessService groupAccessService;
     private final TelegramInitDataValidator telegramInitDataValidator;
+    private final TelegramBotClient telegramBotClient;
     private final UserService userService;
 
     public GroupController(
             GroupService groupService,
             GroupAccessService groupAccessService,
             TelegramInitDataValidator telegramInitDataValidator,
+            TelegramBotClient telegramBotClient,
             UserService userService) {
         this.groupService = groupService;
         this.groupAccessService = groupAccessService;
         this.telegramInitDataValidator = telegramInitDataValidator;
+        this.telegramBotClient = telegramBotClient;
         this.userService = userService;
     }
 
@@ -112,6 +119,19 @@ public class GroupController {
         return toResponse(groupService.updateName(groupId, userId, request.name()));
     }
 
+    @GetMapping("/{groupId}/invite-link")
+    public InviteLinkResponse getInviteLink(
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser, @PathVariable long groupId) {
+        long userId = requireUserId(authenticatedUser);
+        groupAccessService.requireMember(groupId, userId);
+        var group = groupService.findById(groupId).orElseThrow(GroupNotFoundException::new);
+        String startParam = TelegramStartParam.forGroup(groupId);
+        return new InviteLinkResponse(
+                telegramBotClient.buildMiniAppDeepLink(startParam),
+                startParam,
+                InviteShareText.forGroup(group.name()));
+    }
+
     @GetMapping("/{groupId}/members")
     public PageResult<GroupMemberViewResponse> listMembers(
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
@@ -132,6 +152,16 @@ public class GroupController {
         long userId = requireUserId(authenticatedUser);
         var member = groupService.addMemberByTelegramUsername(groupId, userId, request.telegramUsername());
         return toResponse(member);
+    }
+
+    @DeleteMapping("/{groupId}/members/{memberUserId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeMember(
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+            @PathVariable long groupId,
+            @PathVariable long memberUserId) {
+        long userId = requireUserId(authenticatedUser);
+        groupService.removeMember(groupId, userId, memberUserId);
     }
 
     @DeleteMapping("/{groupId}")

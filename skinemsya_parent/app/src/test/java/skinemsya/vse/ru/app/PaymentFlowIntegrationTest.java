@@ -77,12 +77,15 @@ class PaymentFlowIntegrationTest {
         var eventResponse = mockMvc.perform(post("/api/v1/groups/" + groupId + "/events")
                         .header("Authorization", "Bearer " + payerToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Drinks\",\"payerId\":" + payerId + "}"))
+                        .content("{\"name\":\"Drinks\",\"payerId\":" + payerId + ",\"expectedParticipantCount\":4}"))
                 .andExpect(status().isCreated())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
         long eventId = Long.parseLong(readJsonNumberField(eventResponse, "id"));
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/join")
+                        .header("Authorization", "Bearer " + debtorToken))
+                .andExpect(status().isOk());
 
         var positionResponse = mockMvc.perform(post("/api/v1/events/" + eventId + "/positions")
                         .header("Authorization", "Bearer " + payerToken)
@@ -111,7 +114,8 @@ class PaymentFlowIntegrationTest {
         mockMvc.perform(get("/api/v1/events/" + eventId + "/debts").header("Authorization", "Bearer " + debtorToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].debtorId").exists())
-                .andExpect(jsonPath("$[0].status").value("UNPAID"));
+                .andExpect(jsonPath("$[0].status").value("UNPAID"))
+                .andExpect(jsonPath("$[0].amountKopecks").value(30000));
 
         mockMvc.perform(get("/api/v1/events/" + eventId).header("Authorization", "Bearer " + debtorToken))
                 .andExpect(status().isOk())
@@ -310,12 +314,15 @@ class PaymentFlowIntegrationTest {
         var eventResponse = mockMvc.perform(post("/api/v1/groups/" + groupId + "/events")
                         .header("Authorization", "Bearer " + payerToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Drinks\",\"payerId\":" + payerId + "}"))
+                        .content("{\"name\":\"Drinks\",\"payerId\":" + payerId + ",\"expectedParticipantCount\":4}"))
                 .andExpect(status().isCreated())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
         long eventId = Long.parseLong(readJsonNumberField(eventResponse, "id"));
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/join")
+                        .header("Authorization", "Bearer " + debtorToken))
+                .andExpect(status().isOk());
 
         var positionResponse = mockMvc.perform(post("/api/v1/events/" + eventId + "/positions")
                         .header("Authorization", "Bearer " + payerToken)

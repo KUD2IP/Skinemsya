@@ -137,5 +137,10 @@ class TelegramGroupWelcomeServiceTest {
 
         @Override
         public void setMyShortDescription() {}
+
+        @Override
+        public String buildMiniAppDeepLink(String startParam) {
+            return "https://t.me/testbot?startapp=" + startParam;
+        }
     }
 }

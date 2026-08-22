@@ -22,4 +22,11 @@ class TelegramStartParamTest {
         assertThat(TelegramStartParam.forEvent(42L)).isEqualTo("event_42");
         assertThat(TelegramStartParam.parseEventId("event_42")).contains(42L);
     }
+
+    @Test
+    void shouldEncodeAndDecodeGroupId() {
+        assertThat(TelegramStartParam.forGroup(17L)).isEqualTo("group_17");
+        assertThat(TelegramStartParam.parseGroupId("group_17")).contains(17L);
+        assertThat(TelegramStartParam.parseGroupId("event_17")).isEmpty();
+    }
 }

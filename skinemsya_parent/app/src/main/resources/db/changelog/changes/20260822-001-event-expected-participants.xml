@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260822-001-event-expected-participants" author="skinemsya">
+        <addColumn tableName="events">
+            <column name="expected_participant_count" type="INT"/>
+        </addColumn>
+        <sql>
+            UPDATE events e
+            SET expected_participant_count = GREATEST(
+                (SELECT COUNT(*) FROM event_participants ep WHERE ep.event_id = e.id),
+                2
+            )
+            WHERE expected_participant_count IS NULL;
+        </sql>
+        <addNotNullConstraint tableName="events" columnName="expected_participant_count" columnDataType="INT"/>
+        <rollback>
+            <dropColumn tableName="events" columnName="expected_participant_count"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

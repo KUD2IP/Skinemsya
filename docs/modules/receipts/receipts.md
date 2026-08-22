@@ -53,7 +53,7 @@
 - `PositionService.update(positionId, positionData)` → `Position`
 - `PositionService.select(positionId, userId)` → `PositionSelection`
 - `PositionService.sendToDistribution(eventId)` → void
-- REST: `POST /api/v1/events/{eventId}/positions`, `POST /api/v1/events/{eventId}/receipts`
+- REST: `POST /api/v1/events/{eventId}/positions`, `GET /api/v1/events/{eventId}/positions` (`mySelectedQuantity`, `selectedBy`), `POST /api/v1/events/{eventId}/receipts`, `POST /api/v1/events/{eventId}/reopen-selection`
 
 ## Position Model
 

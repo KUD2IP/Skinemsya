@@ -44,6 +44,13 @@ public class SelectionController {
         selectionService.completeSelection(eventId, requireUserId(authenticatedUser));
     }
 
+    @PostMapping("/api/v1/events/{eventId}/reopen-selection")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void reopenSelection(
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser, @PathVariable long eventId) {
+        selectionService.reopenSelection(eventId, requireUserId(authenticatedUser));
+    }
+
     private static long requireUserId(AuthenticatedUser authenticatedUser) {
         if (authenticatedUser == null) {
             throw new DomainException(ErrorCode.AUTHENTICATION_ERROR, "User is not authenticated");

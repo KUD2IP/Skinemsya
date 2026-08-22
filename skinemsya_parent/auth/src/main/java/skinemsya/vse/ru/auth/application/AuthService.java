@@ -77,6 +77,17 @@ public class AuthService {
                         ex);
             }
         });
+        validatedInitData.groupId().ifPresent(groupId -> {
+            try {
+                groupService.joinFromInvite(groupId, session.userId());
+            } catch (RuntimeException ex) {
+                log.warn(
+                        "Group invite bootstrap failed for groupId={}, userId={}",
+                        groupId,
+                        session.userId(),
+                        ex);
+            }
+        });
         return new AuthResult(session.tokens(), buildBootstrap(validatedInitData, session.userId()));
     }
 
@@ -92,6 +103,10 @@ public class AuthService {
                         ChatSuggestedAction.OPEN_APP,
                         eventId);
             });
+        }
+        if (validatedInitData.groupId().isPresent()) {
+            return groupService.findById(validatedInitData.groupId().get()).map(group -> new ChatBootstrap(
+                    group.id(), group.name(), group.type(), ChatSuggestedAction.OPEN_APP, null));
         }
         return validatedInitData.chat().flatMap(chat -> groupService
                 .findByTelegramChatId(chat.chatId())

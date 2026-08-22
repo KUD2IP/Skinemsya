@@ -75,7 +75,9 @@ public class DebtController {
                 })
                 .toList();
 
-        return new ParticipantsStatusResponse(participants.size(), completed, items);
+        long expected = eventAccessPort.getExpectedParticipantCount(eventId);
+        long joined = participants.size();
+        return new ParticipantsStatusResponse(joined, expected, joined, completed, items);
     }
 
     private static long requireUserId(AuthenticatedUser authenticatedUser) {

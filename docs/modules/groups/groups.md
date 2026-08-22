@@ -11,7 +11,9 @@
 - Управление участниками группы.
 - Присоединение пользователей из чата при входе в Mini App.
 - Ручное добавление участников владельцем standalone-группы.
-- Редактирование и удаление группы (только владелец).
+- Пригласительная ссылка Mini App (`startapp=group_{id}`): любой участник копирует её, новый пользователь входит в группу при авторизации.
+- Исключение участника владельцем: человек выходит из группы и из всех её сборов, если он не плательщик живого сбора.
+- Редактирование и удаление группы (только владелец). Удаление группы soft-delete все сборы независимо от статуса.
 
 ## Domain Objects
 
@@ -45,8 +47,10 @@
 - `GroupService.findByChatId(telegramChatId)` → `Optional<Group>`
 - `GroupService.isMember(groupId, userId)` → boolean
 - `GroupService.leave(groupId, userId)` → void
+- `GroupService.joinFromInvite(groupId, userId)` → void
+- `GroupService.removeMember(groupId, ownerId, memberUserId)` → void
 - `GroupService.delete(groupId, ownerId)` → void
-- REST: `POST /api/v1/groups`, `GET /api/v1/groups`, `POST /api/v1/groups/{id}/members`
+- REST: `POST /api/v1/groups`, `GET /api/v1/groups`, `GET /api/v1/groups/{id}/invite-link`, `POST /api/v1/groups/{id}/members`, `DELETE /api/v1/groups/{id}/members/{userId}`, `DELETE /api/v1/groups/{id}`
 
 ## Use Cases
 
@@ -120,9 +124,12 @@ Errors:
 | Create standalone group | Authenticated user |
 | Create chat-linked group | Authenticated user with valid chat context |
 | Edit group name | Owner |
+| Invite link | Any group member |
+| Join from invite | Authenticated user with `startapp=group_{id}` |
 | Add standalone member | Owner |
+| Remove member | Owner. Cannot remove owner. Blocked if the member is payer of a non-deleted event. Cascades out of all group events. |
 | Leave group | Member, if no active blocking debts |
-| Delete group | Owner, if no active blocking events/debts |
+| Delete group | Owner. Soft-deletes all events first, regardless of status. |
 
 Authorization is checked in `groups` application service. Other modules should call `GroupAccessService.requireMember(groupId, userId)` instead of reading `group_members`.
 

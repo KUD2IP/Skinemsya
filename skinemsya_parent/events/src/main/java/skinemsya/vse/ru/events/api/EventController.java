@@ -19,12 +19,19 @@ import skinemsya.vse.ru.common.domain.ErrorCode;
 import skinemsya.vse.ru.common.security.AuthenticatedUser;
 import skinemsya.vse.ru.events.api.dto.CreateEventRequest;
 import skinemsya.vse.ru.events.api.dto.EventResponse;
+import skinemsya.vse.ru.events.api.dto.InviteLinkResponse;
 import skinemsya.vse.ru.events.api.dto.UpdateEventRequest;
+import skinemsya.vse.ru.events.api.dto.UpdateExpectedParticipantsRequest;
 import skinemsya.vse.ru.events.application.EventAccessPort;
 import skinemsya.vse.ru.events.application.EventService;
 import skinemsya.vse.ru.events.domain.Event;
 import skinemsya.vse.ru.events.domain.exception.EventNotFoundException;
 import skinemsya.vse.ru.groups.application.GroupAccessService;
+import skinemsya.vse.ru.groups.application.GroupService;
+import skinemsya.vse.ru.groups.domain.exception.GroupNotFoundException;
+import skinemsya.vse.ru.integrations.application.TelegramBotClient;
+import skinemsya.vse.ru.integrations.infrastructure.telegram.InviteShareText;
+import skinemsya.vse.ru.integrations.infrastructure.telegram.TelegramStartParam;
 import skinemsya.vse.ru.users.application.UserService;
 import skinemsya.vse.ru.users.domain.PayoutRequisites;
 
@@ -34,16 +41,22 @@ public class EventController {
     private final EventService eventService;
     private final EventAccessPort eventAccessPort;
     private final GroupAccessService groupAccessService;
+    private final GroupService groupService;
+    private final TelegramBotClient telegramBotClient;
     private final UserService userService;
 
     public EventController(
             EventService eventService,
             EventAccessPort eventAccessPort,
             GroupAccessService groupAccessService,
+            GroupService groupService,
+            TelegramBotClient telegramBotClient,
             UserService userService) {
         this.eventService = eventService;
         this.eventAccessPort = eventAccessPort;
         this.groupAccessService = groupAccessService;
+        this.groupService = groupService;
+        this.telegramBotClient = telegramBotClient;
         this.userService = userService;
     }
 
@@ -55,7 +68,14 @@ public class EventController {
             @Valid @RequestBody CreateEventRequest request) {
         long userId = requireUserId(authenticatedUser);
         return toResponse(
-                eventService.create(groupId, request.name(), request.description(), request.payerId(), userId));
+                eventService.create(
+                        groupId,
+                        request.name(),
+                        request.description(),
+                        request.payerId(),
+                        userId,
+                        request.expectedParticipantCount()),
+                userId);
     }
 
     @GetMapping("/api/v1/groups/{groupId}/events")
@@ -66,7 +86,21 @@ public class EventController {
             @RequestParam(required = false) Integer size) {
         long userId = requireUserId(authenticatedUser);
         var result = eventService.listByGroup(groupId, userId, resolvePageRequest(page, size));
-        return mapPage(result, this::toResponse);
+        return mapPage(result, event -> toResponse(event, userId));
+    }
+
+    @GetMapping("/api/v1/events/{eventId}/invite-link")
+    public InviteLinkResponse getInviteLink(
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser, @PathVariable long eventId) {
+        long userId = requireUserId(authenticatedUser);
+        var event = eventService.findById(eventId).orElseThrow(EventNotFoundException::new);
+        groupAccessService.requireMember(event.groupId(), userId);
+        var group = groupService.findById(event.groupId()).orElseThrow(GroupNotFoundException::new);
+        String startParam = TelegramStartParam.forEvent(eventId);
+        return new InviteLinkResponse(
+                telegramBotClient.buildMiniAppDeepLink(startParam),
+                startParam,
+                InviteShareText.forEvent(event.name(), group.name()));
     }
 
     @GetMapping("/api/v1/events/{eventId}")
@@ -75,7 +109,7 @@ public class EventController {
         long userId = requireUserId(authenticatedUser);
         var event = eventService.findById(eventId).orElseThrow(EventNotFoundException::new);
         groupAccessService.requireMember(event.groupId(), userId);
-        return toResponse(event);
+        return toResponse(event, userId);
     }
 
     @PutMapping("/api/v1/events/{eventId}")
@@ -85,7 +119,14 @@ public class EventController {
             @Valid @RequestBody UpdateEventRequest request) {
         long userId = requireUserId(authenticatedUser);
         return toResponse(
-                eventService.update(eventId, userId, request.name(), request.description(), request.payerId()));
+                eventService.update(
+                        eventId,
+                        userId,
+                        request.name(),
+                        request.description(),
+                        request.payerId(),
+                        request.expectedParticipantCount()),
+                userId);
     }
 
     @DeleteMapping("/api/v1/events/{eventId}")
@@ -99,14 +140,48 @@ public class EventController {
     public EventResponse sendToDistribution(
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser, @PathVariable long eventId) {
         long userId = requireUserId(authenticatedUser);
-        return toResponse(eventAccessPort.sendToDistribution(eventId, userId));
+        return toResponse(eventAccessPort.sendToDistribution(eventId, userId), userId);
     }
 
     @PostMapping("/api/v1/events/{eventId}/close")
     public EventResponse closeEvent(
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser, @PathVariable long eventId) {
         long userId = requireUserId(authenticatedUser);
-        return toResponse(eventAccessPort.closeByPayer(eventId, userId));
+        return toResponse(eventAccessPort.closeByPayer(eventId, userId), userId);
+    }
+
+    @PostMapping("/api/v1/events/{eventId}/join")
+    public EventResponse joinEvent(
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser, @PathVariable long eventId) {
+        long userId = requireUserId(authenticatedUser);
+        return toResponse(eventService.join(eventId, userId), userId);
+    }
+
+    @PostMapping("/api/v1/events/{eventId}/leave")
+    public EventResponse leaveEvent(
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser, @PathVariable long eventId) {
+        long userId = requireUserId(authenticatedUser);
+        return toResponse(eventService.leave(eventId, userId), userId);
+    }
+
+    @DeleteMapping("/api/v1/events/{eventId}/participants/{targetUserId}")
+    public EventResponse removeParticipant(
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+            @PathVariable long eventId,
+            @PathVariable long targetUserId) {
+        long userId = requireUserId(authenticatedUser);
+        return toResponse(eventService.removeParticipant(eventId, userId, targetUserId), userId);
+    }
+
+    @PutMapping("/api/v1/events/{eventId}/expected-participants")
+    public EventResponse updateExpectedParticipants(
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+            @PathVariable long eventId,
+            @Valid @RequestBody UpdateExpectedParticipantsRequest request) {
+        long userId = requireUserId(authenticatedUser);
+        return toResponse(
+                eventService.updateExpectedParticipantCount(eventId, userId, request.expectedParticipantCount()),
+                userId);
     }
 
     private static long requireUserId(AuthenticatedUser authenticatedUser) {
@@ -116,7 +191,7 @@ public class EventController {
         return authenticatedUser.getUserId();
     }
 
-    private EventResponse toResponse(Event event) {
+    private EventResponse toResponse(Event event, long userId) {
         return new EventResponse(
                 event.id(),
                 event.groupId(),
@@ -126,6 +201,9 @@ public class EventController {
                 event.createdBy(),
                 event.status(),
                 PayoutRequisites.hasAny(userService.getPaymentDetails(event.payerId())),
+                event.expectedParticipantCount(),
+                eventAccessPort.countParticipants(event.id()),
+                eventAccessPort.isParticipant(event.id(), userId),
                 event.createdAt(),
                 event.updatedAt());
     }

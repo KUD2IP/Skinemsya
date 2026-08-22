@@ -9,5 +9,7 @@ public interface SelectionService {
 
     void completeSelection(long eventId, long userId);
 
+    void reopenSelection(long eventId, long userId);
+
     record SelectionUpdate(long positionId, BigDecimal quantity) {}
 }

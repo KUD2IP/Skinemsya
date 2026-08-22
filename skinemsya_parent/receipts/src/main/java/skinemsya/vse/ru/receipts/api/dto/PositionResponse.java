@@ -2,6 +2,7 @@ package skinemsya.vse.ru.receipts.api.dto;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import skinemsya.vse.ru.receipts.application.PositionAvailabilityService;
 import skinemsya.vse.ru.receipts.domain.Position;
 import skinemsya.vse.ru.receipts.domain.PositionSource;
@@ -20,27 +21,35 @@ public record PositionResponse(
         Instant createdAt,
         Integer remainingQuantity,
         Integer mySelectedQuantity,
-        Boolean soldOut) {
+        Boolean soldOut,
+        List<PositionSelectorResponse> selectedBy) {
     public static PositionResponse from(Position position) {
-        return new PositionResponse(
-                position.id(),
-                position.eventId(),
-                position.receiptId(),
-                position.name(),
-                position.quantity(),
-                position.totalPriceKopecks(),
-                position.shared(),
-                position.tips(),
-                position.lowConfidence(),
-                position.source(),
-                position.createdAt(),
-                null,
-                null,
-                null);
+        return from(position, null, null, null, List.of());
     }
 
     public static PositionResponse from(
             Position position, PositionAvailabilityService.PositionAvailability availability) {
+        return from(position, availability, List.of());
+    }
+
+    public static PositionResponse from(
+            Position position,
+            PositionAvailabilityService.PositionAvailability availability,
+            List<PositionSelectorResponse> selectedBy) {
+        return from(
+                position,
+                availability.remainingQuantity(),
+                availability.mySelectedQuantity(),
+                availability.soldOut(),
+                selectedBy);
+    }
+
+    public static PositionResponse from(
+            Position position,
+            Integer remainingQuantity,
+            Integer mySelectedQuantity,
+            Boolean soldOut,
+            List<PositionSelectorResponse> selectedBy) {
         return new PositionResponse(
                 position.id(),
                 position.eventId(),
@@ -53,8 +62,9 @@ public record PositionResponse(
                 position.lowConfidence(),
                 position.source(),
                 position.createdAt(),
-                availability.remainingQuantity(),
-                availability.mySelectedQuantity(),
-                availability.soldOut());
+                remainingQuantity,
+                mySelectedQuantity,
+                soldOut,
+                selectedBy == null ? List.of() : selectedBy);
     }
 }

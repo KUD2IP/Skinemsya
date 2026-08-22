@@ -146,7 +146,8 @@ public class TelegramBotClientImpl implements TelegramBotClient {
         callApi("setMyShortDescription", Map.of("short_description", "Скинемся вместе — делим чек в группе"));
     }
 
-    private String buildMiniAppDeepLink(String startParam) {
+    @Override
+    public String buildMiniAppDeepLink(String startParam) {
         String username = resolveBotUsername();
         String shortName = properties.webAppShortName();
         String base = shortName != null && !shortName.isBlank()

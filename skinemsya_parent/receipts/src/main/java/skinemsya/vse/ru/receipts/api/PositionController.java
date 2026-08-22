@@ -2,6 +2,7 @@ package skinemsya.vse.ru.receipts.api;
 
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -20,6 +21,7 @@ import skinemsya.vse.ru.events.domain.EventStatus;
 import skinemsya.vse.ru.receipts.api.dto.CreatePositionRequest;
 import skinemsya.vse.ru.receipts.api.dto.MarkSharedRequest;
 import skinemsya.vse.ru.receipts.api.dto.PositionResponse;
+import skinemsya.vse.ru.receipts.api.dto.PositionSelectorResponse;
 import skinemsya.vse.ru.receipts.api.dto.UpdatePositionRequest;
 import skinemsya.vse.ru.receipts.application.PositionAvailabilityService;
 import skinemsya.vse.ru.receipts.application.PositionService;
@@ -49,14 +51,30 @@ public class PositionController {
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser, @PathVariable long eventId) {
         long userId = requireUserId(authenticatedUser);
         var status = eventAccessPort.getStatus(eventId);
-        return positionService.listByEvent(eventId, userId).stream()
+        var positions = positionService.listByEvent(eventId, userId);
+        var selectorsByPosition = positionAvailabilityService.selectorsByPositionId(
+                positions.stream().map(position -> position.id()).toList());
+        return positions.stream()
                 .map(position -> {
-                    if (status != EventStatus.DISTRIBUTION || position.shared()) {
-                        return PositionResponse.from(position);
+                    var selectedBy = position.shared()
+                            ? List.<PositionSelectorResponse>of()
+                            : selectorsByPosition.getOrDefault(position.id(), List.of()).stream()
+                                    .map(selector -> new PositionSelectorResponse(selector.userId(), selector.quantity()))
+                                    .collect(Collectors.toList());
+                    if (position.shared()) {
+                        return PositionResponse.from(position, null, 0, null, selectedBy);
                     }
-                    var entity = positionRepository.findById(position.id()).orElseThrow();
-                    var availability = positionAvailabilityService.availabilityFor(entity, userId);
-                    return PositionResponse.from(position, availability);
+                    if (status == EventStatus.DISTRIBUTION || status == EventStatus.CALCULATED) {
+                        var entity = positionRepository.findById(position.id()).orElseThrow();
+                        var availability = positionAvailabilityService.availabilityFor(entity, userId);
+                        return PositionResponse.from(position, availability, selectedBy);
+                    }
+                    int mySelected = selectedBy.stream()
+                            .filter(selector -> selector.userId() == userId)
+                            .mapToInt(PositionSelectorResponse::quantity)
+                            .findFirst()
+                            .orElse(0);
+                    return PositionResponse.from(position, null, mySelected, null, selectedBy);
                 })
                 .toList();
     }

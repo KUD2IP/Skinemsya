@@ -7,9 +7,29 @@ import skinemsya.vse.ru.events.domain.Event;
 
 public interface EventService {
 
-    Event create(long groupId, String name, String description, long payerId, long creatorId);
+    Event create(
+            long groupId,
+            String name,
+            String description,
+            long payerId,
+            long creatorId,
+            int expectedParticipantCount);
 
-    Event update(long eventId, long requesterId, String name, String description, long payerId);
+    Event update(
+            long eventId,
+            long requesterId,
+            String name,
+            String description,
+            long payerId,
+            int expectedParticipantCount);
+
+    Event join(long eventId, long userId);
+
+    Event leave(long eventId, long userId);
+
+    Event removeParticipant(long eventId, long requesterId, long targetUserId);
+
+    Event updateExpectedParticipantCount(long eventId, long requesterId, int expectedParticipantCount);
 
     Optional<Event> findById(long eventId);
 

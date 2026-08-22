@@ -12,5 +12,8 @@ public record EventResponse(
         long createdBy,
         EventStatus status,
         boolean payerRequisitesReady,
+        int expectedParticipantCount,
+        long joinedCount,
+        boolean currentUserJoined,
         Instant createdAt,
         Instant updatedAt) {}

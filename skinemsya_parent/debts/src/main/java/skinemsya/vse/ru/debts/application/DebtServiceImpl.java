@@ -17,7 +17,6 @@ import skinemsya.vse.ru.debts.domain.Debt;
 import skinemsya.vse.ru.debts.domain.DebtStatus;
 import skinemsya.vse.ru.debts.domain.DebtSummary;
 import skinemsya.vse.ru.debts.domain.exception.DebtNotFoundException;
-import skinemsya.vse.ru.debts.domain.exception.PositionHasNoTargetsException;
 import skinemsya.vse.ru.debts.infrastructure.persistence.DebtEntity;
 import skinemsya.vse.ru.debts.infrastructure.persistence.DebtRepository;
 import skinemsya.vse.ru.events.application.EventAccessPort;
@@ -205,6 +204,7 @@ public class DebtServiceImpl implements DebtService {
     private Map<Long, Long> computeAggregatedDebts(long eventId) {
         long payerId = eventAccessPort.getPayerId(eventId);
         List<Long> participants = eventAccessPort.getParticipantUserIds(eventId);
+        int expectedCount = eventAccessPort.getExpectedParticipantCount(eventId);
 
         var positions = receiptDataPort.getPositions(eventId);
         var selections = receiptDataPort.getSelections(eventId);
@@ -218,16 +218,13 @@ public class DebtServiceImpl implements DebtService {
         Map<Long, Long> aggregated = new HashMap<>();
 
         for (var position : positions) {
-            Map<Long, BigDecimal> weights = resolveWeights(
+            var shares = sharesForPosition(
                     position,
                     participants,
                     selectionsByPosition.getOrDefault(position.id(), List.of()),
-                    sharedTargetsByPosition.getOrDefault(position.id(), List.of()));
-            if (weights.isEmpty()) {
-                throw new PositionHasNoTargetsException();
-            }
-
-            var shares = splitKopecks(position.totalPriceKopecks(), weights);
+                    sharedTargetsByPosition.getOrDefault(position.id(), List.of()),
+                    payerId,
+                    expectedCount);
             for (var entry : shares.entrySet()) {
                 long userId = entry.getKey();
                 long share = entry.getValue();
@@ -247,6 +244,7 @@ public class DebtServiceImpl implements DebtService {
         }
 
         List<Long> participants = eventAccessPort.getParticipantUserIds(eventId);
+        int expectedCount = eventAccessPort.getExpectedParticipantCount(eventId);
         var positions = receiptDataPort.getPositions(eventId);
         var selections = receiptDataPort.getSelections(eventId);
         var sharedTargets = receiptDataPort.getSharedTargets(eventId);
@@ -258,18 +256,61 @@ public class DebtServiceImpl implements DebtService {
 
         long total = 0;
         for (var position : positions) {
-            Map<Long, BigDecimal> weights = resolveWeights(
+            var shares = sharesForPosition(
                     position,
                     participants,
                     selectionsByPosition.getOrDefault(position.id(), List.of()),
-                    sharedTargetsByPosition.getOrDefault(position.id(), List.of()));
-            if (weights.isEmpty()) {
-                continue;
-            }
-            var shares = splitKopecks(position.totalPriceKopecks(), weights);
+                    sharedTargetsByPosition.getOrDefault(position.id(), List.of()),
+                    payerId,
+                    expectedCount);
             total += shares.getOrDefault(userId, 0L);
         }
         return total;
+    }
+
+    private Map<Long, Long> sharesForPosition(
+            ReceiptDataPort.PositionData position,
+            List<Long> participants,
+            List<ReceiptDataPort.SelectionData> selections,
+            List<ReceiptDataPort.SharedTargetData> targets,
+            long payerId,
+            int expectedCount) {
+        Map<Long, BigDecimal> weights = resolveWeights(
+                position, participants, selections, targets, payerId, expectedCount);
+        if (weights.isEmpty()) {
+            return Map.of();
+        }
+        long amount = amountToSplit(position, selections);
+        if (amount <= 0) {
+            return Map.of();
+        }
+        return splitKopecks(amount, weights);
+    }
+
+    private static long amountToSplit(
+            ReceiptDataPort.PositionData position, List<ReceiptDataPort.SelectionData> selections) {
+        if (position.shared()) {
+            return position.totalPriceKopecks();
+        }
+        int totalUnits = toIntUnits(position.quantity());
+        int selectedUnits = 0;
+        for (var selection : selections) {
+            selectedUnits += toIntUnits(selection.selectedQuantity());
+        }
+        if (totalUnits <= 0 || selectedUnits <= 0) {
+            return 0;
+        }
+        if (selectedUnits >= totalUnits) {
+            return position.totalPriceKopecks();
+        }
+        return position.totalPriceKopecks() * selectedUnits / totalUnits;
+    }
+
+    private static int toIntUnits(BigDecimal quantity) {
+        if (quantity == null) {
+            return 0;
+        }
+        return quantity.setScale(0, java.math.RoundingMode.DOWN).intValue();
     }
 
     private boolean isDebtLocked(long eventId, long debtorId) {
@@ -289,12 +330,18 @@ public class DebtServiceImpl implements DebtService {
             ReceiptDataPort.PositionData position,
             List<Long> participants,
             List<ReceiptDataPort.SelectionData> selections,
-            List<ReceiptDataPort.SharedTargetData> targets) {
+            List<ReceiptDataPort.SharedTargetData> targets,
+            long payerId,
+            int expectedCount) {
         Map<Long, BigDecimal> weights = new LinkedHashMap<>();
         if (position.shared()) {
             if (targets.isEmpty()) {
                 for (long userId : participants) {
                     weights.put(userId, BigDecimal.ONE);
+                }
+                int unjoined = Math.max(0, expectedCount - participants.size());
+                if (unjoined > 0) {
+                    weights.merge(payerId, BigDecimal.valueOf(unjoined), BigDecimal::add);
                 }
             } else {
                 for (var target : targets) {

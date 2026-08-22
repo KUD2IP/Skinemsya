@@ -17,6 +17,8 @@ public interface PositionSelectionRepository extends JpaRepository<PositionSelec
 
     void deleteByPositionId(long positionId);
 
+    void deleteByUserIdAndPositionIdIn(long userId, List<Long> positionIds);
+
     @Query(
             """
             SELECT COALESCE(SUM(ps.selectedQuantity), 0)

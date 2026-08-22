@@ -246,7 +246,7 @@ class GroupsFlowIntegrationTest {
     }
 
     @Test
-    void shouldRejectDeleteWhenNonDraftEventExists() throws Exception {
+    void shouldDeleteGroupWithNonDraftEvents() throws Exception {
         var ownerToken = authenticate(mockMvc, 100_013L, "Blocked");
         var userId = IntegrationTestSupport.fetchUserId(mockMvc, ownerToken);
 
@@ -263,7 +263,7 @@ class GroupsFlowIntegrationTest {
         var eventResponse = mockMvc.perform(post("/api/v1/groups/" + groupId + "/events")
                         .header("Authorization", "Bearer " + ownerToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Active\",\"payerId\":" + userId + "}"))
+                        .content("{\"name\":\"Active\",\"payerId\":" + userId + ",\"expectedParticipantCount\":4}"))
                 .andExpect(status().isCreated())
                 .andReturn()
                 .getResponse()
@@ -275,8 +275,11 @@ class GroupsFlowIntegrationTest {
         eventRepository.save(event);
 
         mockMvc.perform(delete("/api/v1/groups/" + groupId).header("Authorization", "Bearer " + ownerToken))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.code").value("DOMAIN_RULE_VIOLATION"));
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/v1/groups/" + groupId).header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isNotFound());
+        assertThat(eventRepository.findById(eventId)).isEmpty();
     }
 
     @Test
@@ -297,7 +300,7 @@ class GroupsFlowIntegrationTest {
         mockMvc.perform(post("/api/v1/groups/" + groupId + "/events")
                         .header("Authorization", "Bearer " + ownerToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Draft\",\"payerId\":" + userId + "}"))
+                        .content("{\"name\":\"Draft\",\"payerId\":" + userId + ",\"expectedParticipantCount\":4}"))
                 .andExpect(status().isCreated());
 
         mockMvc.perform(delete("/api/v1/groups/" + groupId).header("Authorization", "Bearer " + ownerToken))
@@ -325,5 +328,48 @@ class GroupsFlowIntegrationTest {
         mockMvc.perform(get("/api/v1/groups/" + groupId).header("Authorization", "Bearer " + outsiderToken))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("AUTHORIZATION_ERROR"));
+    }
+
+    @Test
+    void shouldReturnInviteLinkAndJoinStandaloneGroupFromStartParam() throws Exception {
+        var ownerToken = authenticate(mockMvc, 100_015L, "InviteOwner");
+
+        var createResponse = mockMvc.perform(post("/api/v1/groups/standalone")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Invite friends\"}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        long groupId = Long.parseLong(readJsonNumberField(createResponse, "id"));
+
+        var inviteResponse = mockMvc.perform(get("/api/v1/groups/" + groupId + "/invite-link")
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.startParam").value("group_" + groupId))
+                .andExpect(jsonPath("$.url").value(org.hamcrest.Matchers.containsString("startapp=group_" + groupId)))
+                .andExpect(jsonPath("$.shareText").value(
+                        "Присоединяйся к группе «Invite friends» в Skinemsya — делим расходы вместе:"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        assertThat(inviteResponse).contains("t.me");
+
+        var guestInitData = TelegramInitDataTestHelper.buildInitDataWithStartParam(
+                100_016L, "InviteGuest", Instant.now(), "group_" + groupId, "private");
+        var guestAuth = mockMvc.perform(post("/api/v1/auth/telegram")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"initData\":\"" + escapeJson(guestInitData) + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.chatBootstrap.groupId").value(groupId))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        var guestToken = IntegrationTestSupport.readJsonField(guestAuth, "accessToken");
+
+        mockMvc.perform(get("/api/v1/groups/" + groupId).header("Authorization", "Bearer " + guestToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(groupId));
     }
 }

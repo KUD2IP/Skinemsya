@@ -8,9 +8,9 @@
 
 - Создание и редактирование мероприятия внутри группы.
 - Назначение и смена плательщика до финального расчета.
-- Управление участниками мероприятия.
+- Управление участниками мероприятия, включая исключение участника владельцем группы.
 - Контроль статуса мероприятия: черновик, распределение, расчет, завершено.
-- Удаление мероприятия (владелец мероприятия или владелец группы).
+- Удаление мероприятия в любом статусе (создатель сбора, плательщик или владелец группы).
 
 ## Domain Objects
 
@@ -44,7 +44,17 @@
 - `EventService.sendToDistribution(eventId)` → `Event`
 - `EventService.findByGroup(groupId)` → `List<Event>`
 - `EventService.delete(eventId, requesterId)` → void
-- REST: `POST /api/v1/groups/{groupId}/events`, `GET /api/v1/events/{id}`
+- `EventService.removeParticipant(eventId, requesterId, targetUserId)` → `Event`
+- REST: `POST /api/v1/groups/{groupId}/events`, `GET /api/v1/events/{id}`, `GET /api/v1/events/{id}/invite-link`, `DELETE /api/v1/events/{id}`, `DELETE /api/v1/events/{id}/participants/{userId}`
+
+## Authorization Rules
+
+| Operation | Required Access |
+| --- | --- |
+| Delete event | Group owner, event creator, or payer. Allowed in any status. Soft-deletes the event. |
+| Remove participant | Group owner. Cannot remove payer or creator. Blocked if event is completed or debts are locked. |
+| Leave event | Participant who is not payer or creator. Same lock as remove. |
+| Invite link | Any group member. `startapp=event_{id}` joins the group (including standalone) and tries to join the event. |
 
 ## Future Extensions
 

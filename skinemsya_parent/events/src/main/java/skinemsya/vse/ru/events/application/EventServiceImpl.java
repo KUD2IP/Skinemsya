@@ -1,10 +1,8 @@
 package skinemsya.vse.ru.events.application;
 
 import java.time.Instant;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,9 +12,16 @@ import skinemsya.vse.ru.common.event.EventCompleted;
 import skinemsya.vse.ru.common.event.EventSentToDistribution;
 import skinemsya.vse.ru.events.domain.Event;
 import skinemsya.vse.ru.events.domain.EventStatus;
+import skinemsya.vse.ru.common.event.EventParticipantsChanged;
+import skinemsya.vse.ru.events.domain.exception.EventCannotChangeCapacityException;
+import skinemsya.vse.ru.events.domain.exception.EventCannotJoinException;
+import skinemsya.vse.ru.events.domain.exception.EventCannotLeaveException;
+import skinemsya.vse.ru.events.domain.exception.EventCannotRemoveParticipantException;
 import skinemsya.vse.ru.events.domain.exception.EventCloseAccessRequiredException;
 import skinemsya.vse.ru.events.domain.exception.EventDeleteAccessRequiredException;
 import skinemsya.vse.ru.events.domain.exception.EventDistributionAccessRequiredException;
+import skinemsya.vse.ru.events.domain.exception.EventExpectedParticipantCountException;
+import skinemsya.vse.ru.events.domain.exception.EventFullException;
 import skinemsya.vse.ru.events.domain.exception.EventNameRequiredException;
 import skinemsya.vse.ru.events.domain.exception.EventNameTooLongException;
 import skinemsya.vse.ru.events.domain.exception.EventNotCalculatedException;
@@ -34,15 +39,16 @@ import skinemsya.vse.ru.events.infrastructure.persistence.EventParticipantReposi
 import skinemsya.vse.ru.events.infrastructure.persistence.EventRepository;
 import skinemsya.vse.ru.groups.application.GroupAccessService;
 import skinemsya.vse.ru.groups.application.GroupDeletionGuard;
-import skinemsya.vse.ru.groups.domain.exception.GroupHasBlockingEventsException;
+import skinemsya.vse.ru.groups.application.GroupMemberEventCleanup;
 import skinemsya.vse.ru.groups.domain.exception.GroupMemberAccessRequiredException;
+import skinemsya.vse.ru.groups.domain.exception.GroupMemberIsEventPayerException;
 import skinemsya.vse.ru.groups.domain.exception.GroupOwnerAccessRequiredException;
 import skinemsya.vse.ru.users.application.UserService;
 import skinemsya.vse.ru.users.domain.PayoutRequisites;
 
 @Service
 @Transactional
-public class EventServiceImpl implements EventService, EventAccessPort, GroupDeletionGuard {
+public class EventServiceImpl implements EventService, EventAccessPort, GroupDeletionGuard, GroupMemberEventCleanup {
 
     private final EventRepository eventRepository;
     private final EventParticipantRepository eventParticipantRepository;
@@ -51,8 +57,9 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
     private final UserService userService;
     private final ApplicationEventPublisher eventPublisher;
     private final DistributionReadinessPort distributionReadinessPort;
-    private final EventParticipantSyncService eventParticipantSyncService;
     private final EventCloseReadinessPort eventCloseReadinessPort;
+    private final EventDebtLockPort eventDebtLockPort;
+    private final EventSelectionCleanupPort eventSelectionCleanupPort;
 
     public EventServiceImpl(
             EventRepository eventRepository,
@@ -62,8 +69,9 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
             UserService userService,
             ApplicationEventPublisher eventPublisher,
             DistributionReadinessPort distributionReadinessPort,
-            EventParticipantSyncService eventParticipantSyncService,
-            EventCloseReadinessPort eventCloseReadinessPort) {
+            EventCloseReadinessPort eventCloseReadinessPort,
+            EventDebtLockPort eventDebtLockPort,
+            EventSelectionCleanupPort eventSelectionCleanupPort) {
         this.eventRepository = eventRepository;
         this.eventParticipantRepository = eventParticipantRepository;
         this.eventMapper = eventMapper;
@@ -71,12 +79,19 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
         this.userService = userService;
         this.eventPublisher = eventPublisher;
         this.distributionReadinessPort = distributionReadinessPort;
-        this.eventParticipantSyncService = eventParticipantSyncService;
         this.eventCloseReadinessPort = eventCloseReadinessPort;
+        this.eventDebtLockPort = eventDebtLockPort;
+        this.eventSelectionCleanupPort = eventSelectionCleanupPort;
     }
 
     @Override
-    public Event create(long groupId, String name, String description, long payerId, long creatorId) {
+    public Event create(
+            long groupId,
+            String name,
+            String description,
+            long payerId,
+            long creatorId,
+            int expectedParticipantCount) {
         validateName(name);
         groupAccessService.requireMember(groupId, creatorId);
         requireUserExists(payerId);
@@ -91,28 +106,121 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
         entity.setPayerId(payerId);
         entity.setCreatedBy(creatorId);
         entity.setStatus(EventStatus.DRAFT);
+        entity.setExpectedParticipantCount(expectedParticipantCount);
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
         entity = eventRepository.save(entity);
 
-        addParticipants(entity.getId(), groupId);
+        addSeedParticipants(entity.getId(), creatorId, payerId);
+        int joined = (int) eventParticipantRepository.countByEventId(entity.getId());
+        validateExpectedCount(expectedParticipantCount, joined);
         return eventMapper.toDomain(entity);
     }
 
     @Override
-    public Event update(long eventId, long requesterId, String name, String description, long payerId) {
+    public Event update(
+            long eventId,
+            long requesterId,
+            String name,
+            String description,
+            long payerId,
+            int expectedParticipantCount) {
         validateName(name);
         var entity = getActiveEvent(eventId);
         groupAccessService.requireMember(entity.getGroupId(), requesterId);
         requireDraft(entity);
         requirePayerIsGroupMember(entity.getGroupId(), payerId);
         requireUserExists(payerId);
+        addParticipant(eventId, payerId);
+        validateExpectedCount(expectedParticipantCount, eventParticipantRepository.countByEventId(eventId));
 
         entity.setName(name.trim());
         entity.setDescription(normalizeDescription(description));
         entity.setPayerId(payerId);
+        entity.setExpectedParticipantCount(expectedParticipantCount);
         entity.setUpdatedAt(Instant.now());
         return eventMapper.toDomain(eventRepository.save(entity));
+    }
+
+    @Override
+    public Event join(long eventId, long userId) {
+        var entity = getActiveEvent(eventId);
+        groupAccessService.requireMember(entity.getGroupId(), userId);
+        if (eventParticipantRepository.existsByEventIdAndUserId(eventId, userId)) {
+            return eventMapper.toDomain(entity);
+        }
+        if (entity.getStatus() == EventStatus.COMPLETED) {
+            throw new EventCannotJoinException();
+        }
+        if (entity.getStatus() == EventStatus.CALCULATED && eventDebtLockPort.hasLockedDebts(eventId)) {
+            throw new EventCannotJoinException();
+        }
+        if (eventParticipantRepository.countByEventId(eventId) >= entity.getExpectedParticipantCount()) {
+            throw new EventFullException();
+        }
+        addParticipant(eventId, userId);
+        eventPublisher.publishEvent(new EventParticipantsChanged(eventId, entity.getGroupId()));
+        return eventMapper.toDomain(entity);
+    }
+
+    @Override
+    public Event leave(long eventId, long userId) {
+        var entity = getActiveEvent(eventId);
+        requireParticipant(eventId, userId);
+        if (entity.getPayerId() == userId || entity.getCreatedBy() == userId) {
+            throw new EventCannotLeaveException();
+        }
+        if (entity.getStatus() == EventStatus.COMPLETED) {
+            throw new EventCannotLeaveException();
+        }
+        if (eventDebtLockPort.hasLockedDebts(eventId)) {
+            throw new EventCannotLeaveException();
+        }
+        removeParticipantRecord(eventId, userId, entity.getGroupId());
+        return eventMapper.toDomain(entity);
+    }
+
+    @Override
+    public Event removeParticipant(long eventId, long requesterId, long targetUserId) {
+        var entity = getActiveEvent(eventId);
+        try {
+            groupAccessService.requireOwner(entity.getGroupId(), requesterId);
+        } catch (GroupMemberAccessRequiredException | GroupOwnerAccessRequiredException ex) {
+            throw new EventCannotRemoveParticipantException();
+        }
+        requireParticipant(eventId, targetUserId);
+        if (entity.getPayerId() == targetUserId || entity.getCreatedBy() == targetUserId) {
+            throw new EventCannotRemoveParticipantException();
+        }
+        if (entity.getStatus() == EventStatus.COMPLETED) {
+            throw new EventCannotRemoveParticipantException();
+        }
+        if (eventDebtLockPort.hasLockedDebts(eventId)) {
+            throw new EventCannotRemoveParticipantException();
+        }
+        removeParticipantRecord(eventId, targetUserId, entity.getGroupId());
+        return eventMapper.toDomain(entity);
+    }
+
+    @Override
+    public Event updateExpectedParticipantCount(long eventId, long requesterId, int expectedParticipantCount) {
+        var entity = getActiveEvent(eventId);
+        groupAccessService.requireMember(entity.getGroupId(), requesterId);
+        if (entity.getPayerId() != requesterId && entity.getCreatedBy() != requesterId) {
+            throw new EventCannotChangeCapacityException();
+        }
+        if (entity.getStatus() == EventStatus.COMPLETED) {
+            throw new EventCannotChangeCapacityException();
+        }
+        if (entity.getStatus() != EventStatus.DRAFT && eventDebtLockPort.hasLockedDebts(eventId)) {
+            throw new EventCannotChangeCapacityException();
+        }
+        validateExpectedCount(expectedParticipantCount, eventParticipantRepository.countByEventId(eventId));
+        entity.setExpectedParticipantCount(expectedParticipantCount);
+        entity.setUpdatedAt(Instant.now());
+        entity = eventRepository.save(entity);
+        eventPublisher.publishEvent(new EventParticipantsChanged(eventId, entity.getGroupId()));
+        return eventMapper.toDomain(entity);
     }
 
     @Override
@@ -135,7 +243,6 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
     public void delete(long eventId, long requesterId) {
         var entity = getActiveEvent(eventId);
         groupAccessService.requireMember(entity.getGroupId(), requesterId);
-        requireDraft(entity);
         requireDeleteAccess(entity, requesterId);
         entity.setDeletedAt(Instant.now());
         entity.setUpdatedAt(Instant.now());
@@ -171,6 +278,18 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
     @Transactional(readOnly = true)
     public long countParticipants(long eventId) {
         return eventParticipantRepository.countByEventId(eventId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int getExpectedParticipantCount(long eventId) {
+        return getActiveEvent(eventId).getExpectedParticipantCount();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isParticipant(long eventId, long userId) {
+        return eventParticipantRepository.existsByEventIdAndUserId(eventId, userId);
     }
 
     @Override
@@ -220,7 +339,6 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
         if (entity.getPayerId() != requesterId && entity.getCreatedBy() != requesterId) {
             throw new EventDistributionAccessRequiredException();
         }
-        eventParticipantSyncService.syncAllMembersBeforeDistribution(eventId, entity.getGroupId());
         distributionReadinessPort.assertReadyForDistribution(eventId);
         var paymentDetails = userService.getPaymentDetails(entity.getPayerId());
         if (!PayoutRequisites.hasAny(paymentDetails)) {
@@ -239,19 +357,33 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
 
     @Override
     public void ensureGroupCanBeDeleted(long groupId) {
-        if (eventRepository.existsByGroupIdAndDeletedAtIsNullAndStatusNot(groupId, EventStatus.DRAFT)) {
-            throw new GroupHasBlockingEventsException();
-        }
+        // Groups can be deleted regardless of event status.
     }
 
     @Override
     public void prepareGroupForDeletion(long groupId) {
         var now = Instant.now();
-        var draftEvents = eventRepository.findByGroupIdAndStatusAndDeletedAtIsNull(groupId, EventStatus.DRAFT);
-        for (var event : draftEvents) {
+        for (var event : eventRepository.findByGroupIdOrderByCreatedAtDesc(groupId)) {
             event.setDeletedAt(now);
             event.setUpdatedAt(now);
             eventRepository.save(event);
+        }
+    }
+
+    @Override
+    public void assertUserIsNotPayerOfActiveEvents(long groupId, long userId) {
+        if (eventRepository.existsByGroupIdAndPayerId(groupId, userId)) {
+            throw new GroupMemberIsEventPayerException();
+        }
+    }
+
+    @Override
+    public void removeUserFromGroupEvents(long groupId, long userId) {
+        for (var event : eventRepository.findByGroupIdOrderByCreatedAtDesc(groupId)) {
+            if (!eventParticipantRepository.existsByEventIdAndUserId(event.getId(), userId)) {
+                continue;
+            }
+            removeParticipantRecord(event.getId(), userId, groupId);
         }
     }
 
@@ -262,6 +394,16 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
                 .findByEventIdAndUserId(eventId, userId)
                 .orElseThrow(EventNotParticipantException::new);
         participant.setSelectionCompletedAt(Instant.now());
+        eventParticipantRepository.save(participant);
+    }
+
+    @Override
+    public void clearSelectionCompleted(long eventId, long userId) {
+        requireParticipant(eventId, userId);
+        var participant = eventParticipantRepository
+                .findByEventIdAndUserId(eventId, userId)
+                .orElseThrow(EventNotParticipantException::new);
+        participant.setSelectionCompletedAt(null);
         eventParticipantRepository.save(participant);
     }
 
@@ -293,13 +435,35 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
         eventRepository.save(entity);
     }
 
-    private void addParticipants(long eventId, long groupId) {
-        Set<Long> userIds = new HashSet<>(groupAccessService.memberUserIds(groupId));
-        for (long userId : userIds) {
-            var participant = new EventParticipantEntity();
-            participant.setEventId(eventId);
-            participant.setUserId(userId);
-            eventParticipantRepository.save(participant);
+    private void addSeedParticipants(long eventId, long creatorId, long payerId) {
+        addParticipant(eventId, creatorId);
+        if (payerId != creatorId) {
+            addParticipant(eventId, payerId);
+        }
+    }
+
+    private void addParticipant(long eventId, long userId) {
+        if (eventParticipantRepository.existsByEventIdAndUserId(eventId, userId)) {
+            return;
+        }
+        var participant = new EventParticipantEntity();
+        participant.setEventId(eventId);
+        participant.setUserId(userId);
+        eventParticipantRepository.save(participant);
+    }
+
+    private void removeParticipantRecord(long eventId, long userId, long groupId) {
+        eventSelectionCleanupPort.removeSelectionsForUser(eventId, userId);
+        eventParticipantRepository.deleteByEventIdAndUserId(eventId, userId);
+        eventPublisher.publishEvent(new EventParticipantsChanged(eventId, groupId));
+    }
+
+    private static void validateExpectedCount(int expectedParticipantCount, long joinedCount) {
+        if (expectedParticipantCount < 2 || expectedParticipantCount > 99) {
+            throw new EventExpectedParticipantCountException();
+        }
+        if (expectedParticipantCount < joinedCount) {
+            throw new EventExpectedParticipantCountException();
         }
     }
 
@@ -324,7 +488,7 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
     }
 
     private void requireDeleteAccess(EventEntity entity, long requesterId) {
-        if (entity.getCreatedBy() == requesterId) {
+        if (entity.getCreatedBy() == requesterId || entity.getPayerId() == requesterId) {
             return;
         }
         try {

@@ -17,6 +17,8 @@ public interface EventRepository extends JpaRepository<EventEntity, Long> {
 
     boolean existsByGroupIdAndDeletedAtIsNullAndStatusNot(long groupId, EventStatus status);
 
+    boolean existsByGroupIdAndPayerId(long groupId, long payerId);
+
     List<EventEntity> findByGroupIdAndStatusAndDeletedAtIsNull(long groupId, EventStatus status);
 
     List<EventEntity> findByGroupIdAndDeletedAtIsNullAndStatusIn(long groupId, Collection<EventStatus> statuses);

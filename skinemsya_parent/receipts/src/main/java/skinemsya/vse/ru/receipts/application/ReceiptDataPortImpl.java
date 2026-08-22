@@ -28,7 +28,7 @@ public class ReceiptDataPortImpl implements ReceiptDataPort {
     @Override
     public List<PositionData> getPositions(long eventId) {
         return positionRepository.findByEventIdOrderByCreatedAtAsc(eventId).stream()
-                .map(p -> new PositionData(p.getId(), p.getTotalPriceKopecks(), p.isShared()))
+                .map(p -> new PositionData(p.getId(), p.getTotalPriceKopecks(), p.isShared(), p.getQuantity()))
                 .toList();
     }
 
