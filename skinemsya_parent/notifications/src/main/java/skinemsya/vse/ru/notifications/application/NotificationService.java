@@ -9,6 +9,8 @@ public interface NotificationService {
 
     void sendToEventParticipants(long eventId, NotificationType type, String payload);
 
+    void sendToGroupChat(long telegramChatId, NotificationType type, String message);
+
     void sendToGroupChat(long telegramChatId, NotificationType type, String message, long eventId);
 
     void remindIncompleteSelections(long eventId, long requesterId);

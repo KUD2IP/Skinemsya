@@ -1,9 +1,16 @@
 package skinemsya.vse.ru.notifications.application;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import skinemsya.vse.ru.debts.application.DebtService;
+import skinemsya.vse.ru.debts.domain.DebtStatus;
 import skinemsya.vse.ru.events.application.EventAccessPort;
+import skinemsya.vse.ru.events.domain.EventStatus;
 import skinemsya.vse.ru.events.infrastructure.persistence.EventParticipantRepository;
 import skinemsya.vse.ru.groups.application.GroupService;
 import skinemsya.vse.ru.integrations.application.TelegramBotClient;
@@ -14,6 +21,7 @@ import skinemsya.vse.ru.notifications.domain.NotificationType;
 import skinemsya.vse.ru.notifications.infrastructure.persistence.NotificationEntity;
 import skinemsya.vse.ru.notifications.infrastructure.persistence.NotificationRepository;
 import skinemsya.vse.ru.users.application.UserService;
+import skinemsya.vse.ru.users.domain.User;
 
 @Service
 @Transactional
@@ -25,6 +33,7 @@ public class NotificationServiceImpl implements NotificationService {
     private final EventParticipantRepository eventParticipantRepository;
     private final GroupService groupService;
     private final UserService userService;
+    private final DebtService debtService;
 
     public NotificationServiceImpl(
             NotificationRepository notificationRepository,
@@ -32,16 +41,19 @@ public class NotificationServiceImpl implements NotificationService {
             EventAccessPort eventAccessPort,
             EventParticipantRepository eventParticipantRepository,
             GroupService groupService,
-            UserService userService) {
+            UserService userService,
+            DebtService debtService) {
         this.notificationRepository = notificationRepository;
         this.telegramBotClient = telegramBotClient;
         this.eventAccessPort = eventAccessPort;
         this.eventParticipantRepository = eventParticipantRepository;
         this.groupService = groupService;
         this.userService = userService;
+        this.debtService = debtService;
     }
 
     @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Notification send(long userId, NotificationType type, String payload) {
         var entity = new NotificationEntity();
         entity.setUserId(userId);
@@ -71,6 +83,11 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    public void sendToGroupChat(long telegramChatId, NotificationType type, String message) {
+        telegramBotClient.sendMessage(telegramChatId, message);
+    }
+
+    @Override
     public void sendToGroupChat(long telegramChatId, NotificationType type, String message, long eventId) {
         telegramBotClient.sendMessageWithOpenAppButton(
                 telegramChatId, message, "Скинуть", "supergroup", TelegramStartParam.forEvent(eventId));
@@ -85,20 +102,68 @@ public class NotificationServiceImpl implements NotificationService {
             return;
         }
 
-        var participants = eventParticipantRepository.findByEventId(eventId);
-        for (var participant : participants) {
-            if (participant.getSelectionCompletedAt() != null) {
-                continue;
-            }
-            var user = userService.findById(participant.getUserId()).orElse(null);
-            if (user == null) {
-                continue;
-            }
-            String username = user.telegramUsername() != null ? user.telegramUsername() : user.displayName();
-            String text = "Ждём выбор блюд от @" + username;
-            sendToGroupChat(group.telegramChatId(), NotificationType.REMINDER, text, eventId);
-            break;
+        var status = eventAccessPort.getStatus(eventId);
+        List<String> mentions;
+        String prefix;
+        if (status == EventStatus.DISTRIBUTION) {
+            mentions = mentionsForIncompleteSelections(eventId);
+            prefix = "Ждём выбор позиций от ";
+        } else if (status == EventStatus.CALCULATED) {
+            mentions = mentionsForUnpaidDebts(eventId);
+            prefix = "Ждём перевод от ";
+        } else {
+            return;
         }
+        if (mentions.isEmpty()) {
+            return;
+        }
+        sendToGroupChat(group.telegramChatId(), NotificationType.REMINDER, prefix + formatMentions(mentions), eventId);
+    }
+
+    private List<String> mentionsForIncompleteSelections(long eventId) {
+        long payerId = eventAccessPort.getPayerId(eventId);
+        List<String> mentions = new ArrayList<>();
+        for (var participant : eventParticipantRepository.findByEventId(eventId)) {
+            if (participant.getUserId() == payerId || participant.getSelectionCompletedAt() != null) {
+                continue;
+            }
+            mentionOf(participant.getUserId()).ifPresent(mentions::add);
+        }
+        return mentions;
+    }
+
+    private List<String> mentionsForUnpaidDebts(long eventId) {
+        List<String> mentions = new ArrayList<>();
+        for (var debt : debtService.findByEvent(eventId)) {
+            if (debt.status() != DebtStatus.UNPAID) {
+                continue;
+            }
+            mentionOf(debt.debtorId()).ifPresent(mentions::add);
+        }
+        return mentions;
+    }
+
+    private Optional<String> mentionOf(long userId) {
+        return userService.findById(userId).map(NotificationServiceImpl::mentionOf);
+    }
+
+    static String mentionOf(User user) {
+        var username = user.telegramUsername();
+        if (username != null && !username.isBlank()) {
+            return username.startsWith("@") ? username : "@" + username;
+        }
+        return user.displayName();
+    }
+
+    static String formatMentions(List<String> mentions) {
+        if (mentions.isEmpty()) {
+            return "";
+        }
+        if (mentions.size() == 1) {
+            return mentions.getFirst();
+        }
+        var leading = String.join(", ", mentions.subList(0, mentions.size() - 1));
+        return leading + " и " + mentions.getLast();
     }
 
     private static String toJsonPayload(String message) {

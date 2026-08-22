@@ -1,6 +1,5 @@
 package skinemsya.vse.ru.payments.application;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,8 +21,6 @@ import skinemsya.vse.ru.payments.domain.exception.PayerPaymentDetailsMissingExce
 import skinemsya.vse.ru.payments.domain.exception.PaymentAccessDeniedException;
 import skinemsya.vse.ru.payments.domain.exception.PaymentInvalidStateException;
 import skinemsya.vse.ru.payments.domain.exception.PaymentNotFoundException;
-import skinemsya.vse.ru.payments.infrastructure.persistence.PayerReminderJobEntity;
-import skinemsya.vse.ru.payments.infrastructure.persistence.PayerReminderJobRepository;
 import skinemsya.vse.ru.payments.infrastructure.persistence.PaymentEntity;
 import skinemsya.vse.ru.payments.infrastructure.persistence.PaymentRepository;
 import skinemsya.vse.ru.users.application.UserService;
@@ -33,15 +30,12 @@ import skinemsya.vse.ru.users.domain.PayoutRequisites;
 @Transactional
 public class PaymentServiceImpl implements PaymentService {
 
-    private static final Duration REMINDER_DELAY = Duration.ofHours(2);
-
     private final PaymentRepository paymentRepository;
     private final DebtRepository debtRepository;
     private final DebtService debtService;
     private final UserService userService;
     private final FileService fileService;
     private final EventAccessPort eventAccessPort;
-    private final PayerReminderJobRepository reminderJobRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     public PaymentServiceImpl(
@@ -51,7 +45,6 @@ public class PaymentServiceImpl implements PaymentService {
             UserService userService,
             FileService fileService,
             EventAccessPort eventAccessPort,
-            PayerReminderJobRepository reminderJobRepository,
             ApplicationEventPublisher eventPublisher) {
         this.paymentRepository = paymentRepository;
         this.debtRepository = debtRepository;
@@ -59,7 +52,6 @@ public class PaymentServiceImpl implements PaymentService {
         this.userService = userService;
         this.fileService = fileService;
         this.eventAccessPort = eventAccessPort;
-        this.reminderJobRepository = reminderJobRepository;
         this.eventPublisher = eventPublisher;
     }
 
@@ -126,7 +118,6 @@ public class PaymentServiceImpl implements PaymentService {
         payment = paymentRepository.save(payment);
 
         debtService.markPendingConfirmation(debtId);
-        scheduleReminder(payment.getId(), now);
 
         var debtor = userService.findById(debtorId).orElseThrow(DebtNotFoundException::new);
         eventPublisher.publishEvent(new DebtorConfirmed(
@@ -240,15 +231,6 @@ public class PaymentServiceImpl implements PaymentService {
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
         return paymentRepository.save(entity);
-    }
-
-    private void scheduleReminder(long paymentId, Instant from) {
-        if (reminderJobRepository.findByPaymentId(paymentId).isEmpty()) {
-            var job = new PayerReminderJobEntity();
-            job.setPaymentId(paymentId);
-            job.setScheduledAt(from.plus(REMINDER_DELAY));
-            reminderJobRepository.save(job);
-        }
     }
 
     private static Payment toDomain(PaymentEntity entity) {
