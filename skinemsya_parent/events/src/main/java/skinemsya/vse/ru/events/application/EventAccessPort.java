@@ -34,6 +34,8 @@ public interface EventAccessPort {
 
     List<Long> getSelectionCompletedParticipantUserIds(long eventId);
 
+    List<Long> getIncompleteSelectionParticipantUserIds(long eventId);
+
     void revertCalculatedToDistribution(long eventId);
 
     Event sendToDistribution(long eventId, long requesterId);

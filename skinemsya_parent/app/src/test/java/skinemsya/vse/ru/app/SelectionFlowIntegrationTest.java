@@ -475,6 +475,253 @@ class SelectionFlowIntegrationTest {
                 .andExpect(jsonPath("$[1].amountKopecks").value(10000));
     }
 
+    @Test
+    void shouldAutoCompleteOtherParticipantWhenLastPositionIsTaken() throws Exception {
+        var payerToken = authenticate(mockMvc, 500_061L, "Payer", "payer506");
+        var payerId = fetchUserId(mockMvc, payerToken);
+        mockMvc.perform(put("/api/v1/users/me/profile")
+                        .header("Authorization", "Bearer " + payerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentDetails\":\"Card 4242\"}"))
+                .andExpect(status().isOk());
+
+        var groupResponse = mockMvc.perform(post("/api/v1/groups/standalone")
+                        .header("Authorization", "Bearer " + payerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Bar\"}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        long groupId = Long.parseLong(readJsonNumberField(groupResponse, "id"));
+
+        var debtorToken = authenticate(mockMvc, 500_062L, "Debtor", "debtor506");
+        var debtorId = fetchUserId(mockMvc, debtorToken);
+        mockMvc.perform(post("/api/v1/groups/" + groupId + "/members")
+                        .header("Authorization", "Bearer " + payerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"telegramUsername\":\"debtor506\"}"))
+                .andExpect(status().isCreated());
+
+        var eventResponse = mockMvc.perform(post("/api/v1/groups/" + groupId + "/events")
+                        .header("Authorization", "Bearer " + payerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Pizza\",\"payerId\":" + payerId + ",\"expectedParticipantCount\":2}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        long eventId = Long.parseLong(readJsonNumberField(eventResponse, "id"));
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/join").header("Authorization", "Bearer " + debtorToken))
+                .andExpect(status().isOk());
+
+        var positionResponse = mockMvc.perform(post("/api/v1/events/" + eventId + "/positions")
+                        .header("Authorization", "Bearer " + payerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Pizza\",\"quantity\":1,\"totalPriceKopecks\":50000}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        long positionId = Long.parseLong(readJsonNumberField(positionResponse, "id"));
+
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/send-to-distribution")
+                        .header("Authorization", "Bearer " + payerToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(put("/api/v1/events/" + eventId + "/selections")
+                        .header("Authorization", "Bearer " + payerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"selections\":[{\"positionId\":" + positionId + ",\"quantity\":1}]}"))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/complete-selection")
+                        .header("Authorization", "Bearer " + payerToken))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/v1/events/" + eventId).header("Authorization", "Bearer " + payerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CALCULATED"));
+
+        mockMvc.perform(get("/api/v1/events/" + eventId + "/participants-status")
+                        .header("Authorization", "Bearer " + debtorToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.completedSelections").value(2))
+                .andExpect(jsonPath("$.participants[?(@.userId == " + debtorId + ")].selectionCompleted")
+                        .value(org.hamcrest.Matchers.contains(true)));
+
+        mockMvc.perform(get("/api/v1/events/" + eventId + "/debts").header("Authorization", "Bearer " + debtorToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void shouldAutoCompletePayerWhenLastPositionIsTakenByDebtor() throws Exception {
+        var payerToken = authenticate(mockMvc, 500_071L, "Payer", "payer507");
+        var payerId = fetchUserId(mockMvc, payerToken);
+        mockMvc.perform(put("/api/v1/users/me/profile")
+                        .header("Authorization", "Bearer " + payerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentDetails\":\"Card 4242\"}"))
+                .andExpect(status().isOk());
+
+        var groupResponse = mockMvc.perform(post("/api/v1/groups/standalone")
+                        .header("Authorization", "Bearer " + payerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Bar\"}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        long groupId = Long.parseLong(readJsonNumberField(groupResponse, "id"));
+
+        var debtorToken = authenticate(mockMvc, 500_072L, "Debtor", "debtor507");
+        mockMvc.perform(post("/api/v1/groups/" + groupId + "/members")
+                        .header("Authorization", "Bearer " + payerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"telegramUsername\":\"debtor507\"}"))
+                .andExpect(status().isCreated());
+
+        var eventResponse = mockMvc.perform(post("/api/v1/groups/" + groupId + "/events")
+                        .header("Authorization", "Bearer " + payerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Pizza\",\"payerId\":" + payerId + ",\"expectedParticipantCount\":2}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        long eventId = Long.parseLong(readJsonNumberField(eventResponse, "id"));
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/join").header("Authorization", "Bearer " + debtorToken))
+                .andExpect(status().isOk());
+
+        var positionResponse = mockMvc.perform(post("/api/v1/events/" + eventId + "/positions")
+                        .header("Authorization", "Bearer " + payerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Pizza\",\"quantity\":1,\"totalPriceKopecks\":50000}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        long positionId = Long.parseLong(readJsonNumberField(positionResponse, "id"));
+
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/send-to-distribution")
+                        .header("Authorization", "Bearer " + payerToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(put("/api/v1/events/" + eventId + "/selections")
+                        .header("Authorization", "Bearer " + debtorToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"selections\":[{\"positionId\":" + positionId + ",\"quantity\":1}]}"))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/complete-selection")
+                        .header("Authorization", "Bearer " + debtorToken))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/v1/events/" + eventId).header("Authorization", "Bearer " + payerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CALCULATED"));
+
+        mockMvc.perform(get("/api/v1/events/" + eventId + "/participants-status")
+                        .header("Authorization", "Bearer " + payerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.completedSelections").value(2))
+                .andExpect(jsonPath("$.participants[?(@.userId == " + payerId + ")].selectionCompleted")
+                        .value(org.hamcrest.Matchers.contains(true)));
+    }
+
+    @Test
+    void shouldReplaceCoffeeWithTeaOnEditWithoutLeavingDistribution() throws Exception {
+        var payerToken = authenticate(mockMvc, 500_081L, "Payer", "payer508");
+        var payerId = fetchUserId(mockMvc, payerToken);
+        mockMvc.perform(put("/api/v1/users/me/profile")
+                        .header("Authorization", "Bearer " + payerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentDetails\":\"Card 4242\"}"))
+                .andExpect(status().isOk());
+
+        var groupResponse = mockMvc.perform(post("/api/v1/groups/standalone")
+                        .header("Authorization", "Bearer " + payerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Cafe\"}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        long groupId = Long.parseLong(readJsonNumberField(groupResponse, "id"));
+
+        var debtorToken = authenticate(mockMvc, 500_082L, "Debtor", "debtor508");
+        mockMvc.perform(post("/api/v1/groups/" + groupId + "/members")
+                        .header("Authorization", "Bearer " + payerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"telegramUsername\":\"debtor508\"}"))
+                .andExpect(status().isCreated());
+
+        var eventResponse = mockMvc.perform(post("/api/v1/groups/" + groupId + "/events")
+                        .header("Authorization", "Bearer " + payerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Coffee\",\"payerId\":" + payerId + ",\"expectedParticipantCount\":2}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        long eventId = Long.parseLong(readJsonNumberField(eventResponse, "id"));
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/join").header("Authorization", "Bearer " + debtorToken))
+                .andExpect(status().isOk());
+
+        var coffeeResponse = mockMvc.perform(post("/api/v1/events/" + eventId + "/positions")
+                        .header("Authorization", "Bearer " + payerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Coffee\",\"quantity\":1,\"totalPriceKopecks\":15000}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        long coffeeId = Long.parseLong(readJsonNumberField(coffeeResponse, "id"));
+        var teaResponse = mockMvc.perform(post("/api/v1/events/" + eventId + "/positions")
+                        .header("Authorization", "Bearer " + payerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Tea\",\"quantity\":1,\"totalPriceKopecks\":10000}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        long teaId = Long.parseLong(readJsonNumberField(teaResponse, "id"));
+
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/send-to-distribution")
+                        .header("Authorization", "Bearer " + payerToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(put("/api/v1/events/" + eventId + "/selections")
+                        .header("Authorization", "Bearer " + payerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"selections\":[{\"positionId\":" + coffeeId + ",\"quantity\":1}]}"))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/complete-selection")
+                        .header("Authorization", "Bearer " + payerToken))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/reopen-selection")
+                        .header("Authorization", "Bearer " + payerToken))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(put("/api/v1/events/" + eventId + "/selections")
+                        .header("Authorization", "Bearer " + payerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"selections\":[{\"positionId\":" + teaId + ",\"quantity\":1}]}"))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/complete-selection")
+                        .header("Authorization", "Bearer " + payerToken))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/v1/events/" + eventId).header("Authorization", "Bearer " + payerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DISTRIBUTION"));
+        mockMvc.perform(get("/api/v1/events/" + eventId + "/positions").header("Authorization", "Bearer " + payerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.id == " + coffeeId + ")].mySelectedQuantity")
+                        .value(org.hamcrest.Matchers.contains(0)))
+                .andExpect(jsonPath("$[?(@.id == " + teaId + ")].mySelectedQuantity")
+                        .value(org.hamcrest.Matchers.contains(1)));
+    }
+
     private PreparedSelectionContext prepareDistributedEvent(
             long payerTelegramId, long debtorTelegramId, String payerUsername, String debtorUsername) throws Exception {
         var payerToken = authenticate(mockMvc, payerTelegramId, "Payer", payerUsername);

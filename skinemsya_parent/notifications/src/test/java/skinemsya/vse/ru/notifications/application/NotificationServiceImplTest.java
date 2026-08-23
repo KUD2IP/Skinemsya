@@ -28,6 +28,7 @@ import skinemsya.vse.ru.groups.application.GroupService;
 import skinemsya.vse.ru.groups.domain.Group;
 import skinemsya.vse.ru.groups.domain.GroupType;
 import skinemsya.vse.ru.integrations.application.TelegramBotClient;
+import skinemsya.vse.ru.notifications.domain.NotificationType;
 import skinemsya.vse.ru.notifications.infrastructure.persistence.NotificationRepository;
 import skinemsya.vse.ru.users.application.UserService;
 import skinemsya.vse.ru.users.domain.User;
@@ -111,6 +112,20 @@ class NotificationServiceImplTest {
                         eq("supergroup"),
                         eq("event_" + EVENT_ID));
         verify(eventParticipantRepository, never()).findByEventId(anyLong());
+    }
+
+    @Test
+    void shouldUseResultsButtonWhenEventCompleted() {
+        notificationService.sendToGroupChat(
+                CHAT_ID, NotificationType.EVENT_COMPLETED, "Сбор «Ужин» закрыт. Все скинули!", EVENT_ID);
+
+        verify(telegramBotClient)
+                .sendMessageWithOpenAppButton(
+                        eq(CHAT_ID),
+                        eq("Сбор «Ужин» закрыт. Все скинули!"),
+                        eq("Итоги"),
+                        eq("supergroup"),
+                        eq("event_" + EVENT_ID));
     }
 
     @Test

@@ -15,20 +15,68 @@ import skinemsya.vse.ru.users.domain.TelegramUserData;
 public class TelegramBotUpdateService {
 
     private static final Logger log = LoggerFactory.getLogger(TelegramBotUpdateService.class);
-    private static final String START_HINT =
+
+    private static final String PRIVATE_START =
             """
-            Откройте приложение — вы уже в группе этого чата.
+            👋 Привет! Это <b>Skinemsya</b>.
 
-            Дальше: создайте мероприятие → укажите плательщика → добавьте позиции или чек.""";
-    private static final String PRIVATE_START_HINT =
+            💸 Делите общие расходы в компании: один платит по чеку, остальные скидываются. Сборы живут в группах Telegram.
+
+            🚀 <b>Как начать</b>
+            1. Добавьте бота в групповой чат.
+            2. Откройте приложение из этого чата — вы сразу попадёте в группу Skinemsya.
+            3. Создайте сбор, укажите, кто платил, добавьте позиции или фото чека.
+            4. Каждый выбирает своё и отмечает перевод в приложении.
+            5. Плательщик подтверждает переводы и закрывает сбор.
+
+            💬 Напоминания и статусы приходят в групповой чат, не в личку.
+
+            ℹ️ /help — подробнее, /open — кнопка приложения.""";
+
+    private static final String GROUP_START =
             """
-            Привет! Это Skinemsya.
+            ✅ Вы в группе этого чата. Создайте сбор, добавьте позиции или чек.""";
 
-            Теперь вы будете получать личные уведомления о переводах:
-            • проверка перевода — плательщику
-            • спор по переводу — должнику
+    private static final String PRIVATE_HELP =
+            """
+            💸 <b>Skinemsya</b> — приложение, чтобы скинуться по чеку в компании.
 
-            Откройте приложение, чтобы делить расходы в группах.""";
+            📋 <b>Как пользоваться</b>
+            • Добавьте бота в групповой чат друзей или поездки.
+            • Откройте приложение из этого чата — вы автоматически попадёте в группу Skinemsya.
+            • В приложении будут только те, кто уже заходил: полный список участников Telegram боту недоступен.
+            • Создайте сбор, выберите плательщика и добавьте позиции вручную или с фото чека.
+            • Каждый выбирает своё и отмечает перевод. Плательщик подтверждает переводы и закрывает сбор.
+
+            🔗 Можно создать отдельную группу без привязки к чату — из приложения, и пригласить друзей ссылкой.
+
+            ⌨️ <b>Команды</b>
+            /start — приветствие и как начать
+            /help — эта справка
+            /open — сообщение с кнопкой «Открыть Skinemsya»
+
+            💬 Напоминания и статусы приходят в групповой чат.""";
+
+    private static final String GROUP_HELP =
+            """
+            💸 <b>Skinemsya</b> — приложение, чтобы скинуться по чеку в этом чате.
+
+            📋 <b>Как пользоваться</b>
+            • Откройте приложение из этого чата — вы автоматически попадёте в группу Skinemsya.
+            • В приложении будут только те, кто уже заходил: полный список участников Telegram боту недоступен.
+            • Создайте сбор, выберите плательщика и добавьте позиции вручную или с фото чека.
+            • Каждый выбирает своё и отмечает перевод. Плательщик подтверждает переводы и закрывает сбор.
+
+            🔗 Можно создать отдельную группу без привязки к чату — из приложения, и пригласить друзей ссылкой.
+
+            ⌨️ <b>Команды</b>
+            /start — открыть приложение из чата
+            /help — эта справка
+            /open — сообщение с кнопкой «Открыть Skinemsya»
+
+            💬 Напоминания и статусы приходят в этот чат.""";
+
+    private static final String OPEN_HINT = "📲 Откройте Skinemsya, чтобы делить расходы.";
     private static final String OPEN_BUTTON = "Открыть Skinemsya";
     private static final java.util.Set<String> JOINED_STATUSES = java.util.Set.of("member", "administrator", "creator");
     private static final java.util.Set<String> LEFT_STATUSES = java.util.Set.of("left", "kicked");
@@ -77,16 +125,17 @@ public class TelegramBotUpdateService {
 
     @Transactional
     void handleMessage(JsonNode message) {
-        var chat = message.path("chat");
-        if (!isStartCommand(message.path("text").asText(""))) {
+        BotCommand command = parseCommand(message.path("text").asText(""));
+        if (command == null) {
             return;
         }
 
+        var chat = message.path("chat");
         String chatType = chat.path("type").asText("");
         long chatId = chat.path("id").asLong();
 
         if ("private".equals(chatType)) {
-            handlePrivateStart(chatId);
+            sendOpenAppReply(chatId, "private", replyText(command, true));
             return;
         }
 
@@ -94,21 +143,27 @@ public class TelegramBotUpdateService {
             return;
         }
 
-        ensureChatLinkedGroup(chatId, chatTitle(chat), message.path("from"));
+        if (command == BotCommand.START) {
+            ensureChatLinkedGroup(chatId, chatTitle(chat), message.path("from"));
+        }
 
+        sendOpenAppReply(chatId, chatType, replyText(command, false));
+    }
+
+    private void sendOpenAppReply(long chatId, String chatType, String text) {
         try {
-            telegramBotClient.sendMessageWithOpenAppButton(chatId, START_HINT, OPEN_BUTTON, chatType);
+            telegramBotClient.sendMessageWithOpenAppButton(chatId, text, OPEN_BUTTON, chatType);
         } catch (RuntimeException ex) {
-            log.error("Failed to send /start hint in chat {}", chatId, ex);
+            log.error("Failed to send bot command reply in chat {}", chatId, ex);
         }
     }
 
-    private void handlePrivateStart(long chatId) {
-        try {
-            telegramBotClient.sendMessageWithOpenAppButton(chatId, PRIVATE_START_HINT, OPEN_BUTTON, "private");
-        } catch (RuntimeException ex) {
-            log.error("Failed to send private /start hint in chat {}", chatId, ex);
-        }
+    private static String replyText(BotCommand command, boolean privateChat) {
+        return switch (command) {
+            case START -> privateChat ? PRIVATE_START : GROUP_START;
+            case HELP -> privateChat ? PRIVATE_HELP : GROUP_HELP;
+            case OPEN -> OPEN_HINT;
+        };
     }
 
     private void ensureChatLinkedGroup(long chatId, String chatTitle, JsonNode telegramUser) {
@@ -144,12 +199,21 @@ public class TelegramBotUpdateService {
         return "group".equals(type) || "supergroup".equals(type);
     }
 
-    private static boolean isStartCommand(String text) {
+    private static BotCommand parseCommand(String text) {
         if (text == null || text.isBlank()) {
-            return false;
+            return null;
         }
-        String trimmed = text.trim();
-        return trimmed.equals("/start") || trimmed.startsWith("/start@") || trimmed.startsWith("/start ");
+        String token = text.trim().split("\\s+", 2)[0];
+        int at = token.indexOf('@');
+        if (at >= 0) {
+            token = token.substring(0, at);
+        }
+        return switch (token) {
+            case "/start" -> BotCommand.START;
+            case "/help" -> BotCommand.HELP;
+            case "/open" -> BotCommand.OPEN;
+            default -> null;
+        };
     }
 
     private static String chatTitle(JsonNode chat) {
@@ -167,5 +231,11 @@ public class TelegramBotUpdateService {
             return username;
         }
         return "Telegram user";
+    }
+
+    private enum BotCommand {
+        START,
+        HELP,
+        OPEN
     }
 }

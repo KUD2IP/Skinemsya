@@ -372,4 +372,45 @@ class GroupsFlowIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(groupId));
     }
+
+    @Test
+    void shouldRecreateChatLinkedGroupAfterDelete() throws Exception {
+        var token = authenticate(mockMvc, 100_017L, "Recreate");
+        var initData = TelegramInitDataTestHelper.buildInitDataWithChat(
+                100_017L, "Recreate", Instant.now(), -100_530L, "Recreated chat", "supergroup");
+        var body = "{\"initData\":\"" + escapeJson(initData) + "\"}";
+
+        var first = mockMvc.perform(post("/api/v1/groups/chat-linked")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        long firstGroupId = Long.parseLong(readJsonNumberField(first, "id"));
+
+        mockMvc.perform(delete("/api/v1/groups/" + firstGroupId).header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/v1/groups/" + firstGroupId).header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
+
+        var second = mockMvc.perform(post("/api/v1/groups/chat-linked")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.type").value("CHAT_LINKED"))
+                .andExpect(jsonPath("$.telegramChatId").value(-100_530))
+                .andExpect(jsonPath("$.name").value("Recreated chat"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        long secondGroupId = Long.parseLong(readJsonNumberField(second, "id"));
+
+        assertThat(secondGroupId).isNotEqualTo(firstGroupId);
+        mockMvc.perform(get("/api/v1/groups/" + secondGroupId).header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ownerId").isNumber());
+    }
 }

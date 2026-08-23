@@ -1,5 +1,6 @@
 package skinemsya.vse.ru.app.application;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -11,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -89,8 +91,7 @@ class TelegramBotUpdateServiceTest {
         updateService.handleUpdate(update);
 
         verify(groupService).createFromChat(-100_501L, "Trip", 2L);
-        verify(telegramBotClient)
-                .sendMessageWithOpenAppButton(eq(-100_501L), any(), eq("Открыть Skinemsya"), eq("group"));
+        assertThat(capturedReply(-100_501L, "group")).contains("Вы в группе этого чата");
     }
 
     @Test
@@ -113,8 +114,51 @@ class TelegramBotUpdateServiceTest {
         updateService.handleUpdate(update);
 
         verify(groupService, never()).createFromChat(anyLong(), any(), anyLong());
-        verify(telegramBotClient)
-                .sendMessageWithOpenAppButton(eq(700_010L), any(), eq("Открыть Skinemsya"), eq("private"));
+        String reply = capturedReply(700_010L, "private");
+        assertThat(reply).contains("Привет! Это");
+        assertThat(reply).contains("Как начать");
+        assertThat(reply).doesNotContain("личные уведомления");
+    }
+
+    @Test
+    void shouldSendPrivateHelpWithoutBootstrappingGroup() throws Exception {
+        stubOpenAppButton();
+        updateService.handleUpdate(commandUpdate(700_011L, "private", "/help"));
+
+        verify(groupService, never()).createFromChat(anyLong(), any(), anyLong());
+        String reply = capturedReply(700_011L, "private");
+        assertThat(reply).contains("Как пользоваться");
+        assertThat(reply).contains("/open");
+        assertThat(reply).contains("Добавьте бота в групповой чат");
+    }
+
+    @Test
+    void shouldSendGroupHelpWithoutBootstrappingGroup() throws Exception {
+        stubOpenAppButton();
+        updateService.handleUpdate(commandUpdate(-100_503L, "group", "/help@skinemsyabot"));
+
+        verify(groupService, never()).createFromChat(anyLong(), any(), anyLong());
+        String reply = capturedReply(-100_503L, "group");
+        assertThat(reply).contains("в этом чате");
+        assertThat(reply).doesNotContain("Добавьте бота в групповой чат");
+    }
+
+    @Test
+    void shouldSendPrivateOpenWithoutBootstrappingGroup() throws Exception {
+        stubOpenAppButton();
+        updateService.handleUpdate(commandUpdate(700_012L, "private", "/open"));
+
+        verify(groupService, never()).createFromChat(anyLong(), any(), anyLong());
+        assertThat(capturedReply(700_012L, "private")).contains("Откройте Skinemsya, чтобы делить расходы");
+    }
+
+    @Test
+    void shouldSendGroupOpenWithoutBootstrappingGroup() throws Exception {
+        stubOpenAppButton();
+        updateService.handleUpdate(commandUpdate(-100_504L, "supergroup", "/open"));
+
+        verify(groupService, never()).createFromChat(anyLong(), any(), anyLong());
+        assertThat(capturedReply(-100_504L, "supergroup")).contains("Откройте Skinemsya, чтобы делить расходы");
     }
 
     @Test
@@ -135,6 +179,35 @@ class TelegramBotUpdateServiceTest {
 
         verify(groupWelcomeService).handleMyChatMemberUpdate(update);
         verify(groupService, never()).createFromChat(anyLong(), any(), anyLong());
+    }
+
+    private void stubOpenAppButton() {
+        when(telegramBotClient.sendMessageWithOpenAppButton(anyLong(), any(), eq("Открыть Skinemsya"), any()))
+                .thenReturn(new TelegramSentMessage(1L));
+    }
+
+    private String capturedReply(long chatId, String chatType) {
+        var text = ArgumentCaptor.forClass(String.class);
+        verify(telegramBotClient)
+                .sendMessageWithOpenAppButton(eq(chatId), text.capture(), eq("Открыть Skinemsya"), eq(chatType));
+        return text.getValue();
+    }
+
+    private com.fasterxml.jackson.databind.JsonNode commandUpdate(long chatId, String chatType, String text)
+            throws Exception {
+        boolean group = "group".equals(chatType) || "supergroup".equals(chatType);
+        String titleField = group ? ", \"title\": \"Trip\"" : "";
+        return objectMapper.readTree(
+                """
+                {
+                  "message": {
+                    "chat": { "id": %d, "type": "%s"%s },
+                    "from": { "id": 700002, "first_name": "Bob" },
+                    "text": "%s"
+                  }
+                }
+                """
+                        .formatted(chatId, chatType, titleField, text));
     }
 
     private static User user(long id) {

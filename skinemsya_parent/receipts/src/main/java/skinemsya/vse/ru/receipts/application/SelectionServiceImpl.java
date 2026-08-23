@@ -13,6 +13,7 @@ import skinemsya.vse.ru.events.domain.EventStatus;
 import skinemsya.vse.ru.events.domain.exception.EventNotInDistributionException;
 import skinemsya.vse.ru.receipts.domain.exception.PositionNotFoundException;
 import skinemsya.vse.ru.receipts.domain.exception.SelectionCannotBeReopenedException;
+import skinemsya.vse.ru.receipts.infrastructure.persistence.PositionEntity;
 import skinemsya.vse.ru.receipts.infrastructure.persistence.PositionRepository;
 import skinemsya.vse.ru.receipts.infrastructure.persistence.PositionSelectionEntity;
 import skinemsya.vse.ru.receipts.infrastructure.persistence.PositionSelectionRepository;
@@ -48,7 +49,17 @@ public class SelectionServiceImpl implements SelectionService {
         requireDistribution(eventId);
         eventAccessPort.requireParticipant(eventId, userId);
 
-        for (var update : selections) {
+        var incoming = selections == null ? List.<SelectionUpdate>of() : selections;
+        var incomingIds = incoming.stream().map(SelectionUpdate::positionId).toList();
+        var stalePositionIds = positionRepository.findByEventIdOrderByCreatedAtAsc(eventId).stream()
+                .map(PositionEntity::getId)
+                .filter(positionId -> !incomingIds.contains(positionId))
+                .toList();
+        if (!stalePositionIds.isEmpty()) {
+            selectionRepository.deleteByUserIdAndPositionIdIn(userId, stalePositionIds);
+        }
+
+        for (var update : incoming) {
             var position = positionRepository
                     .findByIdAndEventId(update.positionId(), eventId)
                     .orElseThrow(PositionNotFoundException::new);
@@ -77,6 +88,7 @@ public class SelectionServiceImpl implements SelectionService {
         requireDistribution(eventId);
         eventAccessPort.markSelectionCompleted(eventId, userId);
         debtService.upsertDebtForParticipant(eventId, userId);
+        autoCompleteEmptySelections(eventId);
         maybeCalculateDebts(eventId);
     }
 
@@ -100,6 +112,37 @@ public class SelectionServiceImpl implements SelectionService {
         if (eventAccessPort.allSelectionsCompleted(eventId)) {
             eventPublisher.publishEvent(new SelectionsCompleted(eventId));
         }
+    }
+
+    void autoCompleteEmptySelections(long eventId) {
+        var positions = positionRepository.findByEventIdOrderByCreatedAtAsc(eventId);
+        for (long participantId : eventAccessPort.getIncompleteSelectionParticipantUserIds(eventId)) {
+            if (!hasNothingToSelect(positions, participantId)) {
+                continue;
+            }
+            eventAccessPort.markSelectionCompleted(eventId, participantId);
+            debtService.upsertDebtForParticipant(eventId, participantId);
+        }
+    }
+
+    private boolean hasNothingToSelect(List<PositionEntity> positions, long userId) {
+        boolean hasShared = false;
+        boolean canSelect = false;
+        boolean hasOwnSelection = false;
+        for (var position : positions) {
+            if (position.isShared()) {
+                hasShared = true;
+                continue;
+            }
+            var availability = positionAvailabilityService.availabilityFor(position, userId);
+            if (availability.remainingQuantity() > 0) {
+                canSelect = true;
+            }
+            if (availability.mySelectedQuantity() > 0) {
+                hasOwnSelection = true;
+            }
+        }
+        return !hasShared && !canSelect && !hasOwnSelection;
     }
 
     private void requireDistribution(long eventId) {

@@ -138,7 +138,7 @@ public class TelegramBotClientImpl implements TelegramBotClient {
                 "setMyDescription",
                 Map.of(
                         "description",
-                        "Делите расходы в группах Telegram. Личные уведомления о переводах приходят только после /start в этом чате."));
+                        "Делите общие расходы в группах Telegram. Добавьте бота в чат и откройте приложение."));
     }
 
     @Override

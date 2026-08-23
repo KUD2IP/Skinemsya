@@ -420,6 +420,16 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<Long> getIncompleteSelectionParticipantUserIds(long eventId) {
+        return eventParticipantRepository.findByEventId(eventId).stream()
+                .filter(participant -> participant.getSelectionCompletedAt() == null)
+                .map(EventParticipantEntity::getUserId)
+                .sorted()
+                .toList();
+    }
+
+    @Override
     public void revertCalculatedToDistribution(long eventId) {
         var entity = getActiveEvent(eventId);
         if (entity.getStatus() != EventStatus.CALCULATED) {

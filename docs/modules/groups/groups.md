@@ -13,7 +13,7 @@
 - Ручное добавление участников владельцем standalone-группы.
 - Пригласительная ссылка Mini App (`startapp=group_{id}`): любой участник копирует её, новый пользователь входит в группу при авторизации.
 - Исключение участника владельцем: человек выходит из группы и из всех её сборов, если он не плательщик живого сбора.
-- Редактирование и удаление группы (только владелец). Удаление группы soft-delete все сборы независимо от статуса.
+- Редактирование и удаление группы (только владелец). Удаление группы soft-delete все сборы независимо от статуса. Повторный вход из того же Telegram-чата создаёт новую `CHAT_LINKED` группу.
 
 ## Domain Objects
 
@@ -35,7 +35,7 @@
 
 ## Database Objects
 
-- `groups` — id, name, type, telegram_chat_id (nullable, unique), owner_id (FK users), created_at, updated_at, deleted_at.
+- `groups` — id, name, type, telegram_chat_id (nullable; unique among non-deleted rows), owner_id (FK users), created_at, updated_at, deleted_at.
 - `group_members` — id, group_id (FK), user_id (FK), role, joined_at. Unique (group_id, user_id).
 
 ## Public Contracts
@@ -64,10 +64,10 @@ Input:
 
 Rules:
 
-1. If group with `telegramChatId` exists, return it and ensure user is member.
-2. If not exists, create group with type `CHAT_LINKED`.
+1. If a non-deleted group with `telegramChatId` exists, return it and ensure user is member.
+2. If not exists (including after soft-delete of the previous group), create group with type `CHAT_LINKED`.
 3. Creator becomes `owner`.
-4. `telegramChatId` must be non-null and unique.
+4. `telegramChatId` must be non-null and unique among live groups.
 5. User must have valid Telegram auth session.
 
 Errors:
@@ -129,7 +129,7 @@ Errors:
 | Add standalone member | Owner |
 | Remove member | Owner. Cannot remove owner. Blocked if the member is payer of a non-deleted event. Cascades out of all group events. |
 | Leave group | Member, if no active blocking debts |
-| Delete group | Owner. Soft-deletes all events first, regardless of status. |
+| Delete group | Owner. Soft-deletes all events first, regardless of status. A later entry from the same Telegram chat creates a new group. |
 
 Authorization is checked in `groups` application service. Other modules should call `GroupAccessService.requireMember(groupId, userId)` instead of reading `group_members`.
 
@@ -140,6 +140,7 @@ Authorization is checked in `groups` application service. Other modules should c
 - `STANDALONE.telegramChatId` is null.
 - `(group_id, user_id)` is unique in `group_members`.
 - A deleted group is not returned in normal list/search operations.
+- Soft-deleted `CHAT_LINKED` groups do not keep the unique `telegram_chat_id`; the next chat entry creates a new group.
 - User cannot create event in a group without membership.
 
 ## AI Implementation Notes

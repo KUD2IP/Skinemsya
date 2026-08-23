@@ -29,7 +29,7 @@ public interface GroupRepository extends JpaRepository<GroupEntity, Long> {
                     """
             INSERT INTO groups (name, type, telegram_chat_id, owner_id, created_at, updated_at)
             VALUES (:name, 'CHAT_LINKED', :telegramChatId, :ownerId, :createdAt, :updatedAt)
-            ON CONFLICT (telegram_chat_id) DO NOTHING
+            ON CONFLICT (telegram_chat_id) WHERE deleted_at IS NULL AND telegram_chat_id IS NOT NULL DO NOTHING
             """,
             nativeQuery = true)
     int insertChatLinkedGroupIfAbsent(

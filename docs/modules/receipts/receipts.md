@@ -93,6 +93,8 @@ Constraints:
 - User must be event participant.
 - Position must belong to the same event.
 - Selection is allowed only while event status permits distribution.
+- `PUT /api/v1/events/{eventId}/selections` replaces the user's full selection set: omitted positions are cleared, an empty list clears everything.
+- Auto-complete of sold-out participants and the move to `CALCULATED` run only on `complete-selection`, not on PUT.
 
 ## Receipt Processing Rules
 

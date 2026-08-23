@@ -29,8 +29,12 @@ class TelegramGroupWelcomeServiceTest {
         service.handleMyChatMemberUpdate(botJoinedUpdate("supergroup", "left", "administrator"));
 
         assertThat(botClient.htmlMessages).hasSize(1);
-        assertThat(botClient.htmlMessages.getFirst()).contains("Добро пожаловать");
-        assertThat(botClient.htmlMessages.getFirst()).contains("@ivan");
+        String welcome = botClient.htmlMessages.getFirst();
+        assertThat(welcome).contains("Добро пожаловать");
+        assertThat(welcome).contains("@ivan");
+        assertThat(welcome).contains("откройте Skinemsya из этого чата");
+        assertThat(welcome).doesNotContain("админы");
+        assertThat(welcome).doesNotContain("Личные уведомления");
         assertThat(botClient.buttonMessages).hasSize(1);
         assertThat(botClient.pinnedMessageIds).containsExactly(42L);
     }

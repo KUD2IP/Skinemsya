@@ -28,7 +28,7 @@ public class GroupEntity {
     @Column(name = "type", nullable = false, length = 20)
     private GroupType type;
 
-    @Column(name = "telegram_chat_id", unique = true)
+    @Column(name = "telegram_chat_id")
     private Long telegramChatId;
 
     @Column(name = "owner_id", nullable = false)

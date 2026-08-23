@@ -9,7 +9,7 @@
 - Отправка сообщений в групповой чат через Telegram bot API.
 - Реакция на доменные события других модулей.
 - Одно сообщение на событие: без личных сообщений бота и без дублей.
-- Сообщения с inline-кнопкой **Скинуть** и deep link в Mini App.
+- Сообщения с inline-кнопкой **Скинуть** (для закрытого сбора — **Итоги**) и deep link в Mini App.
 
 ## Domain Objects
 
@@ -44,7 +44,7 @@
 ## Public Contracts
 
 - `NotificationService.sendToGroupChat(telegramChatId, type, payload)` → void (текст без кнопки)
-- `NotificationService.sendToGroupChat(telegramChatId, type, payload, eventId)` → void (с кнопкой **Скинуть**)
+- `NotificationService.sendToGroupChat(telegramChatId, type, payload, eventId)` → void (кнопка **Скинуть**, для закрытого сбора — **Итоги**)
 - `NotificationService.remindIncompleteSelections(eventId, requesterId)` → void
 - REST: `POST /api/v1/events/{eventId}/remind`
 - Внутренний listener на доменные события.
@@ -61,7 +61,7 @@
 | --- | --- | --- | --- | --- |
 | Сбор запущен | `DISTRIBUTION_STARTED` | `{name} запустил сбор «{title}» на {total} ₽. Выберите свои позиции` | **Скинуть** | `startapp=event_{eventId}` |
 | Участник скинул | `PAYMENT_PENDING` | `{name} скинул` | — | — |
-| Сбор закрыт | `EVENT_COMPLETED` | `Сбор «{title}» закрыт. Все скинули!` | **Скинуть** | `startapp=event_{eventId}` |
+| Сбор закрыт | `EVENT_COMPLETED` | `Сбор «{title}» закрыт. Все скинули!` | **Итоги** | `startapp=event_{eventId}` |
 | Напоминание выбрать (`DISTRIBUTION`) | `REMINDER` | `Ждём выбор позиций от {mentions}` | **Скинуть** | `startapp=event_{eventId}` |
 | Напоминание перевести (`CALCULATED`) | `REMINDER` | `Ждём перевод от {mentions}` | **Скинуть** | `startapp=event_{eventId}` |
 

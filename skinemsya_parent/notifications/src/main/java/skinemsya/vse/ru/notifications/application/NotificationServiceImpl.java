@@ -90,7 +90,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public void sendToGroupChat(long telegramChatId, NotificationType type, String message, long eventId) {
         telegramBotClient.sendMessageWithOpenAppButton(
-                telegramChatId, message, "Скинуть", "supergroup", TelegramStartParam.forEvent(eventId));
+                telegramChatId, message, actionButtonLabel(type), "supergroup", TelegramStartParam.forEvent(eventId));
     }
 
     @Override
@@ -184,5 +184,9 @@ public class NotificationServiceImpl implements NotificationService {
 
     static String formatRubles(long kopecks) {
         return String.valueOf(kopecks / 100);
+    }
+
+    static String actionButtonLabel(NotificationType type) {
+        return type == NotificationType.EVENT_COMPLETED ? "Итоги" : "Скинуть";
     }
 }
