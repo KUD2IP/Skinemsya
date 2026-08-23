@@ -94,7 +94,8 @@ class SelectionServiceImplTest {
         when(eventAccessPort.getIncompleteSelectionParticipantUserIds(10L)).thenReturn(List.of(3L));
         var position = position(1L, false);
         when(positionRepository.findByEventIdOrderByCreatedAtAsc(10L)).thenReturn(List.of(position));
-        when(positionAvailabilityService.availabilityFor(position, 3L)).thenReturn(new PositionAvailability(1, 0, 0, true));
+        when(positionAvailabilityService.availabilityFor(position, 3L))
+                .thenReturn(new PositionAvailability(1, 0, 0, true));
         when(eventAccessPort.allSelectionsCompleted(10L)).thenReturn(true);
 
         selectionService.completeSelection(10L, 2L);
@@ -113,7 +114,8 @@ class SelectionServiceImplTest {
         var regular = position(1L, false);
         var shared = position(2L, true);
         when(positionRepository.findByEventIdOrderByCreatedAtAsc(10L)).thenReturn(List.of(regular, shared));
-        when(positionAvailabilityService.availabilityFor(regular, 3L)).thenReturn(new PositionAvailability(1, 0, 0, true));
+        when(positionAvailabilityService.availabilityFor(regular, 3L))
+                .thenReturn(new PositionAvailability(1, 0, 0, true));
         when(eventAccessPort.allSelectionsCompleted(10L)).thenReturn(false);
 
         selectionService.completeSelection(10L, 2L);
