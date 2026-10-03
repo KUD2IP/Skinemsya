@@ -168,8 +168,7 @@ class EventServiceTest {
         when(eventParticipantRepository.existsByEventIdAndUserId(100L, OTHER_MEMBER_ID))
                 .thenReturn(false);
 
-        assertThatThrownBy(() -> eventService.join(100L, OTHER_MEMBER_ID))
-                .isInstanceOf(EventCannotJoinException.class);
+        assertThatThrownBy(() -> eventService.join(100L, OTHER_MEMBER_ID)).isInstanceOf(EventCannotJoinException.class);
     }
 
     @Test
