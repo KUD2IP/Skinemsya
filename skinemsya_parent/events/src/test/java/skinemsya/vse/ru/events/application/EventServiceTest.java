@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -19,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import skinemsya.vse.ru.common.domain.ErrorCode;
 import skinemsya.vse.ru.events.domain.Event;
 import skinemsya.vse.ru.events.domain.EventStatus;
+import skinemsya.vse.ru.events.domain.exception.EventCannotJoinException;
 import skinemsya.vse.ru.events.domain.exception.EventCannotLeaveException;
 import skinemsya.vse.ru.events.domain.exception.EventCannotRemoveParticipantException;
 import skinemsya.vse.ru.events.domain.exception.EventDeleteAccessRequiredException;
@@ -140,6 +142,34 @@ class EventServiceTest {
         when(eventParticipantRepository.countByEventId(100L)).thenReturn(2L);
 
         assertThatThrownBy(() -> eventService.join(100L, OTHER_MEMBER_ID)).isInstanceOf(EventFullException.class);
+    }
+
+    @Test
+    void shouldJoinCalculatedEventWhenAnotherParticipantAlreadyPaid() {
+        var existing = eventEntity(100L, EventStatus.CALCULATED);
+        var domain = domainEvent(100L, EventStatus.CALCULATED);
+        when(eventRepository.findById(100L)).thenReturn(Optional.of(existing));
+        when(eventParticipantRepository.existsByEventIdAndUserId(100L, OTHER_MEMBER_ID))
+                .thenReturn(false);
+        when(eventParticipantRepository.countByEventId(100L)).thenReturn(3L);
+        when(eventMapper.toDomain(existing)).thenReturn(domain);
+        lenient().when(eventDebtLockPort.hasLockedDebts(100L)).thenReturn(true);
+
+        var result = eventService.join(100L, OTHER_MEMBER_ID);
+
+        assertThat(result).isEqualTo(domain);
+        verify(eventParticipantRepository).save(any(EventParticipantEntity.class));
+    }
+
+    @Test
+    void shouldRejectJoinWhenEventIsCompleted() {
+        var existing = eventEntity(100L, EventStatus.COMPLETED);
+        when(eventRepository.findById(100L)).thenReturn(Optional.of(existing));
+        when(eventParticipantRepository.existsByEventIdAndUserId(100L, OTHER_MEMBER_ID))
+                .thenReturn(false);
+
+        assertThatThrownBy(() -> eventService.join(100L, OTHER_MEMBER_ID))
+                .isInstanceOf(EventCannotJoinException.class);
     }
 
     @Test

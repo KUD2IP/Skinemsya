@@ -137,9 +137,6 @@ public class DebtServiceImpl implements DebtService {
         if (status != EventStatus.DISTRIBUTION && status != EventStatus.CALCULATED) {
             return;
         }
-        if (debtRepository.existsByEventIdAndStatusIn(eventId, NON_UNPAID_STATUSES)) {
-            return;
-        }
 
         if (status == EventStatus.CALCULATED) {
             eventAccessPort.revertCalculatedToDistribution(eventId);

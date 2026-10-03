@@ -147,9 +147,6 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
         if (entity.getStatus() == EventStatus.COMPLETED) {
             throw new EventCannotJoinException();
         }
-        if (entity.getStatus() == EventStatus.CALCULATED && eventDebtLockPort.hasLockedDebts(eventId)) {
-            throw new EventCannotJoinException();
-        }
         if (eventParticipantRepository.countByEventId(eventId) >= entity.getExpectedParticipantCount()) {
             throw new EventFullException();
         }
