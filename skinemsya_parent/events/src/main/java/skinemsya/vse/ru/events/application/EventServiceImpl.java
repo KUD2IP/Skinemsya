@@ -397,8 +397,7 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
 
     @Override
     public void assertUserIsNotPayerOfActiveEvents(long groupId, long userId) {
-        if (eventRepository.existsByGroupIdAndPayerIdAndStatusIn(
-                groupId, userId, List.of(EventStatus.DISTRIBUTION, EventStatus.CALCULATED))) {
+        if (eventRepository.existsByGroupIdAndPayerId(groupId, userId)) {
             throw new GroupMemberIsEventPayerException();
         }
     }

@@ -231,8 +231,7 @@ class EventServiceTest {
 
     @Test
     void shouldRejectGroupMemberCleanupWhenUserIsPayer() {
-        when(eventRepository.existsByGroupIdAndPayerIdAndStatusIn(
-                        GROUP_ID, OTHER_MEMBER_ID, List.of(EventStatus.DISTRIBUTION, EventStatus.CALCULATED)))
+        when(eventRepository.existsByGroupIdAndPayerId(GROUP_ID, OTHER_MEMBER_ID))
                 .thenReturn(true);
 
         assertThatThrownBy(() -> eventService.assertUserIsNotPayerOfActiveEvents(GROUP_ID, OTHER_MEMBER_ID))
