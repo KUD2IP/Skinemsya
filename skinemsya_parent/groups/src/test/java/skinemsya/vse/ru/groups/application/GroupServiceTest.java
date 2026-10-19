@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -19,7 +22,10 @@ import skinemsya.vse.ru.common.domain.ErrorCode;
 import skinemsya.vse.ru.groups.domain.Group;
 import skinemsya.vse.ru.groups.domain.GroupRole;
 import skinemsya.vse.ru.groups.domain.GroupType;
+import skinemsya.vse.ru.groups.domain.exception.GroupCannotLeaveException;
 import skinemsya.vse.ru.groups.domain.exception.GroupCannotRemoveOwnerException;
+import skinemsya.vse.ru.groups.domain.exception.GroupMemberHasOpenDebtsException;
+import skinemsya.vse.ru.groups.domain.exception.GroupMemberIsEventPayerException;
 import skinemsya.vse.ru.groups.domain.exception.GroupOwnerAccessRequiredException;
 import skinemsya.vse.ru.groups.infrastructure.mapper.GroupMapper;
 import skinemsya.vse.ru.groups.infrastructure.persistence.GroupEntity;
@@ -154,6 +160,71 @@ class GroupServiceTest {
     }
 
     @Test
+    void shouldLeaveGroupAsMember() {
+        var group = standaloneGroupEntity(10L);
+        var member = memberEntity(10L, MEMBER_ID);
+        var cleanup = mock(GroupMemberEventCleanup.class);
+        when(groupRepository.findById(10L)).thenReturn(Optional.of(group));
+        when(groupMemberRepository.findByGroupIdAndUserId(10L, MEMBER_ID)).thenReturn(Optional.of(member));
+
+        serviceWithCleanup(cleanup).leave(10L, MEMBER_ID);
+
+        verify(cleanup).assertUserIsNotPayerOfActiveEvents(10L, MEMBER_ID);
+        verify(cleanup).assertUserHasNoUnconfirmedTransfer(10L, MEMBER_ID);
+        verify(cleanup).removeUserFromGroupEvents(10L, MEMBER_ID);
+        verify(groupMemberRepository).delete(member);
+    }
+
+    @Test
+    void shouldRejectLeaveWhenRequesterIsOwner() {
+        var group = standaloneGroupEntity(10L);
+        var owner = ownerMemberEntity(10L, OWNER_ID);
+        when(groupRepository.findById(10L)).thenReturn(Optional.of(group));
+        when(groupMemberRepository.findByGroupIdAndUserId(10L, OWNER_ID)).thenReturn(Optional.of(owner));
+
+        assertThatThrownBy(() -> groupService.leave(10L, OWNER_ID))
+                .isInstanceOf(GroupCannotLeaveException.class)
+                .extracting(ex -> ((GroupCannotLeaveException) ex).errorCode())
+                .isEqualTo(ErrorCode.DOMAIN_RULE_VIOLATION);
+        verify(groupMemberRepository, never()).delete(any());
+    }
+
+    @Test
+    void shouldRejectLeaveWhenMemberIsEventPayer() {
+        var group = standaloneGroupEntity(10L);
+        var member = memberEntity(10L, MEMBER_ID);
+        var cleanup = mock(GroupMemberEventCleanup.class);
+        when(groupRepository.findById(10L)).thenReturn(Optional.of(group));
+        when(groupMemberRepository.findByGroupIdAndUserId(10L, MEMBER_ID)).thenReturn(Optional.of(member));
+        doThrow(new GroupMemberIsEventPayerException())
+                .when(cleanup)
+                .assertUserIsNotPayerOfActiveEvents(10L, MEMBER_ID);
+
+        assertThatThrownBy(() -> serviceWithCleanup(cleanup).leave(10L, MEMBER_ID))
+                .isInstanceOf(GroupMemberIsEventPayerException.class);
+        verify(groupMemberRepository, never()).delete(any());
+    }
+
+    @Test
+    void shouldRejectLeaveWhenMemberTransferIsUnconfirmed() {
+        var group = standaloneGroupEntity(10L);
+        var member = memberEntity(10L, MEMBER_ID);
+        var cleanup = mock(GroupMemberEventCleanup.class);
+        when(groupRepository.findById(10L)).thenReturn(Optional.of(group));
+        when(groupMemberRepository.findByGroupIdAndUserId(10L, MEMBER_ID)).thenReturn(Optional.of(member));
+        doThrow(new GroupMemberHasOpenDebtsException())
+                .when(cleanup)
+                .assertUserHasNoUnconfirmedTransfer(10L, MEMBER_ID);
+
+        assertThatThrownBy(() -> serviceWithCleanup(cleanup).leave(10L, MEMBER_ID))
+                .isInstanceOf(GroupMemberHasOpenDebtsException.class)
+                .extracting(ex -> ((GroupMemberHasOpenDebtsException) ex).errorCode())
+                .isEqualTo(ErrorCode.DOMAIN_RULE_VIOLATION);
+        verify(cleanup, never()).removeUserFromGroupEvents(10L, MEMBER_ID);
+        verify(groupMemberRepository, never()).delete(any());
+    }
+
+    @Test
     void shouldRejectRemoveOwnerFromGroup() {
         var group = standaloneGroupEntity(10L);
         var ownerMember = ownerMemberEntity(10L, OWNER_ID);
@@ -163,6 +234,26 @@ class GroupServiceTest {
 
         assertThatThrownBy(() -> groupService.removeMember(10L, OWNER_ID, OWNER_ID))
                 .isInstanceOf(GroupCannotRemoveOwnerException.class);
+    }
+
+    private GroupServiceImpl serviceWithCleanup(GroupMemberEventCleanup cleanup) {
+        return new GroupServiceImpl(
+                groupRepository,
+                groupMemberRepository,
+                groupMapper,
+                userService,
+                Optional.empty(),
+                Optional.of(cleanup),
+                chatLinkedGroupBootstrapService,
+                eventPublisher);
+    }
+
+    private static GroupMemberEntity memberEntity(long groupId, long userId) {
+        var member = new GroupMemberEntity();
+        member.setGroupId(groupId);
+        member.setUserId(userId);
+        member.setRole(GroupRole.MEMBER);
+        return member;
     }
 
     private static User user(long id) {

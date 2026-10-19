@@ -9,4 +9,7 @@ public class NoOpEventSelectionCleanupPort implements EventSelectionCleanupPort 
 
     @Override
     public void removeSelectionsForUser(long eventId, long userId) {}
+
+    @Override
+    public void removeSelectionsForEvent(long eventId) {}
 }

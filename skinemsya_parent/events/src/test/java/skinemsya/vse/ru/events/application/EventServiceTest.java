@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -23,8 +24,10 @@ import skinemsya.vse.ru.events.domain.EventStatus;
 import skinemsya.vse.ru.events.domain.exception.EventCannotJoinException;
 import skinemsya.vse.ru.events.domain.exception.EventCannotLeaveException;
 import skinemsya.vse.ru.events.domain.exception.EventCannotRemoveParticipantException;
+import skinemsya.vse.ru.events.domain.exception.EventCannotRevertToDraftException;
 import skinemsya.vse.ru.events.domain.exception.EventDeleteAccessRequiredException;
 import skinemsya.vse.ru.events.domain.exception.EventFullException;
+import skinemsya.vse.ru.events.domain.exception.EventRevertAccessRequiredException;
 import skinemsya.vse.ru.events.domain.exception.PayerNotGroupMemberException;
 import skinemsya.vse.ru.events.infrastructure.mapper.EventMapper;
 import skinemsya.vse.ru.events.infrastructure.persistence.EventEntity;
@@ -32,6 +35,7 @@ import skinemsya.vse.ru.events.infrastructure.persistence.EventParticipantEntity
 import skinemsya.vse.ru.events.infrastructure.persistence.EventParticipantRepository;
 import skinemsya.vse.ru.events.infrastructure.persistence.EventRepository;
 import skinemsya.vse.ru.groups.application.GroupAccessService;
+import skinemsya.vse.ru.groups.domain.exception.GroupMemberHasOpenDebtsException;
 import skinemsya.vse.ru.groups.domain.exception.GroupMemberIsEventPayerException;
 import skinemsya.vse.ru.groups.domain.exception.GroupOwnerAccessRequiredException;
 import skinemsya.vse.ru.users.application.UserService;
@@ -69,6 +73,9 @@ class EventServiceTest {
 
     @Mock
     private EventSelectionCleanupPort eventSelectionCleanupPort;
+
+    @Mock
+    private EventDebtCleanupPort eventDebtCleanupPort;
 
     @InjectMocks
     private EventServiceImpl eventService;
@@ -224,7 +231,8 @@ class EventServiceTest {
 
     @Test
     void shouldRejectGroupMemberCleanupWhenUserIsPayer() {
-        when(eventRepository.existsByGroupIdAndPayerId(GROUP_ID, OTHER_MEMBER_ID))
+        when(eventRepository.existsByGroupIdAndPayerIdAndStatusIn(
+                        GROUP_ID, OTHER_MEMBER_ID, List.of(EventStatus.DISTRIBUTION, EventStatus.CALCULATED)))
                 .thenReturn(true);
 
         assertThatThrownBy(() -> eventService.assertUserIsNotPayerOfActiveEvents(GROUP_ID, OTHER_MEMBER_ID))
@@ -257,6 +265,107 @@ class EventServiceTest {
     }
 
     @Test
+    void shouldRevertDistributionEventToDraft() {
+        var existing = eventEntity(100L, EventStatus.DISTRIBUTION);
+        var participant = participant(100L, OTHER_MEMBER_ID, Instant.parse("2026-01-01T00:00:00Z"));
+        var domain = domainEvent(100L, EventStatus.DRAFT);
+        when(eventRepository.findById(100L)).thenReturn(Optional.of(existing));
+        when(eventParticipantRepository.findByEventId(100L)).thenReturn(List.of(participant));
+        when(eventRepository.save(existing)).thenReturn(existing);
+        when(eventMapper.toDomain(existing)).thenReturn(domain);
+
+        var result = eventService.revertToDraft(100L, PAYER_ID);
+
+        assertThat(result.status()).isEqualTo(EventStatus.DRAFT);
+        assertThat(existing.getStatus()).isEqualTo(EventStatus.DRAFT);
+        assertThat(participant.getSelectionCompletedAt()).isNull();
+        verify(eventSelectionCleanupPort).removeSelectionsForEvent(100L);
+        verify(eventDebtCleanupPort).deleteUnpaidDebts(100L);
+        verify(eventParticipantRepository).save(participant);
+    }
+
+    @Test
+    void shouldRevertCalculatedEventWhenRequesterIsCreator() {
+        var existing = eventEntity(100L, EventStatus.CALCULATED);
+        existing.setPayerId(9L);
+        var domain = domainEvent(100L, EventStatus.DRAFT);
+        when(eventRepository.findById(100L)).thenReturn(Optional.of(existing));
+        when(eventParticipantRepository.findByEventId(100L)).thenReturn(List.of());
+        when(eventRepository.save(existing)).thenReturn(existing);
+        when(eventMapper.toDomain(existing)).thenReturn(domain);
+
+        eventService.revertToDraft(100L, CREATOR_ID);
+
+        assertThat(existing.getStatus()).isEqualTo(EventStatus.DRAFT);
+        verify(eventSelectionCleanupPort).removeSelectionsForEvent(100L);
+        verify(eventDebtCleanupPort).deleteUnpaidDebts(100L);
+    }
+
+    @Test
+    void shouldKeepDraftEventUnchangedOnRevert() {
+        var existing = eventEntity(100L, EventStatus.DRAFT);
+        var domain = domainEvent(100L, EventStatus.DRAFT);
+        when(eventRepository.findById(100L)).thenReturn(Optional.of(existing));
+        when(eventMapper.toDomain(existing)).thenReturn(domain);
+
+        var result = eventService.revertToDraft(100L, PAYER_ID);
+
+        assertThat(result.status()).isEqualTo(EventStatus.DRAFT);
+        verify(eventRepository, never()).save(any());
+        verify(eventSelectionCleanupPort, never()).removeSelectionsForEvent(100L);
+        verify(eventDebtCleanupPort, never()).deleteUnpaidDebts(100L);
+    }
+
+    @Test
+    void shouldRejectRevertWhenEventIsCompleted() {
+        var existing = eventEntity(100L, EventStatus.COMPLETED);
+        when(eventRepository.findById(100L)).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> eventService.revertToDraft(100L, PAYER_ID))
+                .isInstanceOf(EventCannotRevertToDraftException.class)
+                .extracting(ex -> ((EventCannotRevertToDraftException) ex).errorCode())
+                .isEqualTo(ErrorCode.DOMAIN_RULE_VIOLATION);
+        verify(eventSelectionCleanupPort, never()).removeSelectionsForEvent(100L);
+    }
+
+    @Test
+    void shouldRejectRevertForRegularParticipant() {
+        var existing = eventEntity(100L, EventStatus.DISTRIBUTION);
+        when(eventRepository.findById(100L)).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> eventService.revertToDraft(100L, OTHER_MEMBER_ID))
+                .isInstanceOf(EventRevertAccessRequiredException.class)
+                .extracting(ex -> ((EventRevertAccessRequiredException) ex).errorCode())
+                .isEqualTo(ErrorCode.AUTHORIZATION_ERROR);
+        verify(eventDebtLockPort, never()).hasLockedDebts(100L);
+    }
+
+    @Test
+    void shouldRejectRevertWhenDebtsAreLocked() {
+        var existing = eventEntity(100L, EventStatus.DISTRIBUTION);
+        when(eventRepository.findById(100L)).thenReturn(Optional.of(existing));
+        when(eventDebtLockPort.hasLockedDebts(100L)).thenReturn(true);
+
+        assertThatThrownBy(() -> eventService.revertToDraft(100L, PAYER_ID))
+                .isInstanceOf(EventCannotRevertToDraftException.class);
+        verify(eventDebtCleanupPort, never()).deleteUnpaidDebts(100L);
+    }
+
+    @Test
+    void shouldRejectGroupLeaveWhenUserTransferIsUnconfirmed() {
+        var existing = eventEntity(100L, EventStatus.CALCULATED);
+        when(eventRepository.findByGroupIdOrderByCreatedAtDesc(GROUP_ID)).thenReturn(List.of(existing));
+        when(eventDebtCleanupPort.userHasUnconfirmedTransfer(OTHER_MEMBER_ID, List.of(100L)))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> eventService.assertUserHasNoUnconfirmedTransfer(GROUP_ID, OTHER_MEMBER_ID))
+                .isInstanceOf(GroupMemberHasOpenDebtsException.class)
+                .hasMessage("Нельзя выйти: вы уже отметили перевод, а плательщик его ещё не подтвердил")
+                .extracting(ex -> ((GroupMemberHasOpenDebtsException) ex).errorCode())
+                .isEqualTo(ErrorCode.DOMAIN_RULE_VIOLATION);
+    }
+
+    @Test
     void shouldRejectLeaveForPayer() {
         var existing = eventEntity(100L, EventStatus.DISTRIBUTION);
         when(eventRepository.findById(100L)).thenReturn(Optional.of(existing));
@@ -264,6 +373,48 @@ class EventServiceTest {
                 .thenReturn(true);
 
         assertThatThrownBy(() -> eventService.leave(100L, PAYER_ID)).isInstanceOf(EventCannotLeaveException.class);
+    }
+
+    @Test
+    void shouldLeaveWhenOtherParticipantsAlreadyMarkedTransfers() {
+        var existing = eventEntity(100L, EventStatus.CALCULATED);
+        var domain = domainEvent(100L, EventStatus.CALCULATED);
+        when(eventRepository.findById(100L)).thenReturn(Optional.of(existing));
+        when(eventParticipantRepository.existsByEventIdAndUserId(100L, OTHER_MEMBER_ID))
+                .thenReturn(true);
+        when(eventDebtCleanupPort.userHasUnconfirmedTransfer(OTHER_MEMBER_ID, List.of(100L)))
+                .thenReturn(false);
+        when(eventMapper.toDomain(existing)).thenReturn(domain);
+
+        var result = eventService.leave(100L, OTHER_MEMBER_ID);
+
+        assertThat(result).isEqualTo(domain);
+        verify(eventDebtLockPort, never()).hasLockedDebts(100L);
+        verify(eventDebtCleanupPort).deleteUnpaidDebt(100L, OTHER_MEMBER_ID);
+        verify(eventParticipantRepository).deleteByEventIdAndUserId(100L, OTHER_MEMBER_ID);
+    }
+
+    @Test
+    void shouldRejectLeaveWhenOwnTransferIsUnconfirmed() {
+        var existing = eventEntity(100L, EventStatus.CALCULATED);
+        when(eventRepository.findById(100L)).thenReturn(Optional.of(existing));
+        when(eventParticipantRepository.existsByEventIdAndUserId(100L, OTHER_MEMBER_ID))
+                .thenReturn(true);
+        when(eventDebtCleanupPort.userHasUnconfirmedTransfer(OTHER_MEMBER_ID, List.of(100L)))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> eventService.leave(100L, OTHER_MEMBER_ID))
+                .isInstanceOf(EventCannotLeaveException.class)
+                .hasMessage("Нельзя выйти: вы уже отметили перевод, а плательщик его ещё не подтвердил");
+        verify(eventParticipantRepository, never()).deleteByEventIdAndUserId(100L, OTHER_MEMBER_ID);
+    }
+
+    private static EventParticipantEntity participant(long eventId, long userId, Instant selectionCompletedAt) {
+        var participant = new EventParticipantEntity();
+        participant.setEventId(eventId);
+        participant.setUserId(userId);
+        participant.setSelectionCompletedAt(selectionCompletedAt);
+        return participant;
     }
 
     private static User user(long id) {

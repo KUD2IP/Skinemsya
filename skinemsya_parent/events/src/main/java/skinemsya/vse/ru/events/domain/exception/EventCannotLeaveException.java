@@ -8,6 +8,10 @@ public class EventCannotLeaveException extends EventsDomainException {
         super("Cannot leave this event");
     }
 
+    public EventCannotLeaveException(String message) {
+        super(message);
+    }
+
     @Override
     public ErrorCode errorCode() {
         return ErrorCode.DOMAIN_CONFLICT;

@@ -17,6 +17,7 @@ import skinemsya.vse.ru.events.domain.exception.EventCannotChangeCapacityExcepti
 import skinemsya.vse.ru.events.domain.exception.EventCannotJoinException;
 import skinemsya.vse.ru.events.domain.exception.EventCannotLeaveException;
 import skinemsya.vse.ru.events.domain.exception.EventCannotRemoveParticipantException;
+import skinemsya.vse.ru.events.domain.exception.EventCannotRevertToDraftException;
 import skinemsya.vse.ru.events.domain.exception.EventCloseAccessRequiredException;
 import skinemsya.vse.ru.events.domain.exception.EventDeleteAccessRequiredException;
 import skinemsya.vse.ru.events.domain.exception.EventDistributionAccessRequiredException;
@@ -29,6 +30,7 @@ import skinemsya.vse.ru.events.domain.exception.EventNotDraftException;
 import skinemsya.vse.ru.events.domain.exception.EventNotFoundException;
 import skinemsya.vse.ru.events.domain.exception.EventNotInDistributionException;
 import skinemsya.vse.ru.events.domain.exception.EventNotParticipantException;
+import skinemsya.vse.ru.events.domain.exception.EventRevertAccessRequiredException;
 import skinemsya.vse.ru.events.domain.exception.EventUserNotFoundException;
 import skinemsya.vse.ru.events.domain.exception.PayerNotGroupMemberException;
 import skinemsya.vse.ru.events.domain.exception.PaymentDetailsMissingException;
@@ -41,6 +43,7 @@ import skinemsya.vse.ru.groups.application.GroupAccessService;
 import skinemsya.vse.ru.groups.application.GroupDeletionGuard;
 import skinemsya.vse.ru.groups.application.GroupMemberEventCleanup;
 import skinemsya.vse.ru.groups.domain.exception.GroupMemberAccessRequiredException;
+import skinemsya.vse.ru.groups.domain.exception.GroupMemberHasOpenDebtsException;
 import skinemsya.vse.ru.groups.domain.exception.GroupMemberIsEventPayerException;
 import skinemsya.vse.ru.groups.domain.exception.GroupOwnerAccessRequiredException;
 import skinemsya.vse.ru.users.application.UserService;
@@ -60,6 +63,7 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
     private final EventCloseReadinessPort eventCloseReadinessPort;
     private final EventDebtLockPort eventDebtLockPort;
     private final EventSelectionCleanupPort eventSelectionCleanupPort;
+    private final EventDebtCleanupPort eventDebtCleanupPort;
 
     public EventServiceImpl(
             EventRepository eventRepository,
@@ -71,7 +75,8 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
             DistributionReadinessPort distributionReadinessPort,
             EventCloseReadinessPort eventCloseReadinessPort,
             EventDebtLockPort eventDebtLockPort,
-            EventSelectionCleanupPort eventSelectionCleanupPort) {
+            EventSelectionCleanupPort eventSelectionCleanupPort,
+            EventDebtCleanupPort eventDebtCleanupPort) {
         this.eventRepository = eventRepository;
         this.eventParticipantRepository = eventParticipantRepository;
         this.eventMapper = eventMapper;
@@ -82,6 +87,7 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
         this.eventCloseReadinessPort = eventCloseReadinessPort;
         this.eventDebtLockPort = eventDebtLockPort;
         this.eventSelectionCleanupPort = eventSelectionCleanupPort;
+        this.eventDebtCleanupPort = eventDebtCleanupPort;
     }
 
     @Override
@@ -165,10 +171,37 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
         if (entity.getStatus() == EventStatus.COMPLETED) {
             throw new EventCannotLeaveException();
         }
-        if (eventDebtLockPort.hasLockedDebts(eventId)) {
-            throw new EventCannotLeaveException();
+        if (eventDebtCleanupPort.userHasUnconfirmedTransfer(userId, List.of(eventId))) {
+            throw new EventCannotLeaveException(
+                    "Нельзя выйти: вы уже отметили перевод, а плательщик его ещё не подтвердил");
         }
         removeParticipantRecord(eventId, userId, entity.getGroupId());
+        return eventMapper.toDomain(entity);
+    }
+
+    @Override
+    public Event revertToDraft(long eventId, long requesterId) {
+        var entity = getActiveEvent(eventId);
+        if (entity.getPayerId() != requesterId && entity.getCreatedBy() != requesterId) {
+            throw new EventRevertAccessRequiredException();
+        }
+        if (entity.getStatus() == EventStatus.DRAFT) {
+            return eventMapper.toDomain(entity);
+        }
+        if (entity.getStatus() != EventStatus.DISTRIBUTION && entity.getStatus() != EventStatus.CALCULATED) {
+            throw new EventCannotRevertToDraftException();
+        }
+        if (eventDebtLockPort.hasLockedDebts(eventId)) {
+            throw new EventCannotRevertToDraftException();
+        }
+
+        eventSelectionCleanupPort.removeSelectionsForEvent(eventId);
+        clearAllSelectionCompleted(eventId);
+        eventDebtCleanupPort.deleteUnpaidDebts(eventId);
+
+        entity.setStatus(EventStatus.DRAFT);
+        entity.setUpdatedAt(Instant.now());
+        entity = eventRepository.save(entity);
         return eventMapper.toDomain(entity);
     }
 
@@ -364,8 +397,22 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
 
     @Override
     public void assertUserIsNotPayerOfActiveEvents(long groupId, long userId) {
-        if (eventRepository.existsByGroupIdAndPayerId(groupId, userId)) {
+        if (eventRepository.existsByGroupIdAndPayerIdAndStatusIn(
+                groupId, userId, List.of(EventStatus.DISTRIBUTION, EventStatus.CALCULATED))) {
             throw new GroupMemberIsEventPayerException();
+        }
+    }
+
+    @Override
+    public void assertUserHasNoUnconfirmedTransfer(long groupId, long userId) {
+        var eventIds = eventRepository.findByGroupIdOrderByCreatedAtDesc(groupId).stream()
+                .map(EventEntity::getId)
+                .toList();
+        if (eventIds.isEmpty()) {
+            return;
+        }
+        if (eventDebtCleanupPort.userHasUnconfirmedTransfer(userId, eventIds)) {
+            throw new GroupMemberHasOpenDebtsException();
         }
     }
 
@@ -454,8 +501,19 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
         eventParticipantRepository.save(participant);
     }
 
+    private void clearAllSelectionCompleted(long eventId) {
+        for (var participant : eventParticipantRepository.findByEventId(eventId)) {
+            if (participant.getSelectionCompletedAt() == null) {
+                continue;
+            }
+            participant.setSelectionCompletedAt(null);
+            eventParticipantRepository.save(participant);
+        }
+    }
+
     private void removeParticipantRecord(long eventId, long userId, long groupId) {
         eventSelectionCleanupPort.removeSelectionsForUser(eventId, userId);
+        eventDebtCleanupPort.deleteUnpaidDebt(eventId, userId);
         eventParticipantRepository.deleteByEventIdAndUserId(eventId, userId);
         eventPublisher.publishEvent(new EventParticipantsChanged(eventId, groupId));
     }

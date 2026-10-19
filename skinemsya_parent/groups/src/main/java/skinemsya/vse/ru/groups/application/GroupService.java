@@ -35,5 +35,7 @@ public interface GroupService {
 
     void removeMember(long groupId, long ownerUserId, long memberUserId);
 
+    void leave(long groupId, long userId);
+
     void delete(long groupId, long ownerUserId);
 }

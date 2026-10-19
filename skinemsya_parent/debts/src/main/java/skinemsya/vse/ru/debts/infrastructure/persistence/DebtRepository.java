@@ -1,5 +1,6 @@
 package skinemsya.vse.ru.debts.infrastructure.persistence;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,9 +22,16 @@ public interface DebtRepository extends JpaRepository<DebtEntity, Long> {
 
     void deleteByEventIdAndStatus(long eventId, DebtStatus status);
 
+    void deleteByEventIdAndDebtorIdAndStatus(long eventId, long debtorId, DebtStatus status);
+
     Optional<DebtEntity> findByEventIdAndDebtorId(long eventId, long debtorId);
 
     boolean existsByEventIdAndStatusIn(long eventId, List<DebtStatus> statuses);
+
+    boolean existsByDebtorIdAndEventIdInAndStatusIn(
+            long debtorId, Collection<Long> eventIds, Collection<DebtStatus> statuses);
+
+    boolean existsByDebtorIdAndEventIdAndStatus(long debtorId, long eventId, DebtStatus status);
 
     Optional<DebtEntity> findByIdAndEventId(long id, long eventId);
 }

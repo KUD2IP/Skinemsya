@@ -152,6 +152,13 @@ public class GroupController {
         return toResponse(member);
     }
 
+    @PostMapping("/{groupId}/leave")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void leaveGroup(@AuthenticationPrincipal AuthenticatedUser authenticatedUser, @PathVariable long groupId) {
+        long userId = requireUserId(authenticatedUser);
+        groupService.leave(groupId, userId);
+    }
+
     @DeleteMapping("/{groupId}/members/{memberUserId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void removeMember(

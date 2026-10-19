@@ -31,4 +31,16 @@ public class EventSelectionCleanupPortImpl implements EventSelectionCleanupPort 
         }
         selectionRepository.deleteByUserIdAndPositionIdIn(userId, positionIds);
     }
+
+    @Override
+    @Transactional
+    public void removeSelectionsForEvent(long eventId) {
+        var positionIds = positionRepository.findByEventIdOrderByCreatedAtAsc(eventId).stream()
+                .map(position -> position.getId())
+                .toList();
+        if (positionIds.isEmpty()) {
+            return;
+        }
+        selectionRepository.deleteByPositionIdIn(positionIds);
+    }
 }

@@ -50,7 +50,7 @@
 - `GroupService.joinFromInvite(groupId, userId)` → void
 - `GroupService.removeMember(groupId, ownerId, memberUserId)` → void
 - `GroupService.delete(groupId, ownerId)` → void
-- REST: `POST /api/v1/groups`, `GET /api/v1/groups`, `GET /api/v1/groups/{id}/invite-link`, `POST /api/v1/groups/{id}/members`, `DELETE /api/v1/groups/{id}/members/{userId}`, `DELETE /api/v1/groups/{id}`
+- REST: `POST /api/v1/groups`, `GET /api/v1/groups`, `GET /api/v1/groups/{id}/invite-link`, `POST /api/v1/groups/{id}/members`, `POST /api/v1/groups/{id}/leave`, `DELETE /api/v1/groups/{id}/members/{userId}`, `DELETE /api/v1/groups/{id}`
 
 ## Use Cases
 
@@ -128,7 +128,7 @@ Errors:
 | Join from invite | Authenticated user with `startapp=group_{id}` |
 | Add standalone member | Owner |
 | Remove member | Owner. Cannot remove owner. Blocked if the member is payer of a non-deleted event. Cascades out of all group events. |
-| Leave group | Member, if no active blocking debts |
+| Leave group | Member, not the owner. Blocked if the member is payer of an event in `DISTRIBUTION` or `CALCULATED`, or has their own `PENDING_CONFIRMATION` debt in the group. Unpaid and paid debts do not block. Cascades out of all group events and drops the member's unpaid debts. |
 | Delete group | Owner. Soft-deletes all events first, regardless of status. A later entry from the same Telegram chat creates a new group. |
 
 Authorization is checked in `groups` application service. Other modules should call `GroupAccessService.requireMember(groupId, userId)` instead of reading `group_members`.

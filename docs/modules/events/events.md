@@ -11,6 +11,7 @@
 - Управление участниками мероприятия, включая исключение участника владельцем группы.
 - Контроль статуса мероприятия: черновик, распределение, расчет, завершено.
 - Удаление мероприятия в любом статусе (создатель сбора, плательщик или владелец группы).
+- Возврат запущенного сбора в черновик плательщиком или создателем, пока нет подтверждённого перевода.
 
 ## Domain Objects
 
@@ -45,7 +46,8 @@
 - `EventService.findByGroup(groupId)` → `List<Event>`
 - `EventService.delete(eventId, requesterId)` → void
 - `EventService.removeParticipant(eventId, requesterId, targetUserId)` → `Event`
-- REST: `POST /api/v1/groups/{groupId}/events`, `GET /api/v1/events/{id}`, `GET /api/v1/events/{id}/invite-link`, `DELETE /api/v1/events/{id}`, `DELETE /api/v1/events/{id}/participants/{userId}`
+- `EventService.revertToDraft(eventId, requesterId)` → `Event`
+- REST: `POST /api/v1/groups/{groupId}/events`, `GET /api/v1/events/{id}`, `GET /api/v1/events/{id}/invite-link`, `POST /api/v1/events/{id}/revert-to-draft`, `DELETE /api/v1/events/{id}`, `DELETE /api/v1/events/{id}/participants/{userId}`
 
 ## Authorization Rules
 
@@ -53,12 +55,12 @@
 | --- | --- |
 | Delete event | Group owner, event creator, or payer. Allowed in any status. Soft-deletes the event. |
 | Remove participant | Group owner. Cannot remove payer or creator. Blocked if event is completed or debts are locked. |
-| Leave event | Participant who is not payer or creator. Same lock as remove. |
+| Leave event | Participant who is not payer or creator. Blocked when the event is completed, or when this participant's own debt is `PENDING_CONFIRMATION`. Another participant's marked or paid transfer does not block. Leaving drops this participant's selections and unpaid debt. |
+| Revert to draft | Payer or creator. From `DISTRIBUTION` or `CALCULATED` only, and only when no debt is `PENDING_CONFIRMATION` or `PAID`. Clears selections and unpaid debts; positions, receipts, shared marks and participants stay. Already `DRAFT` is unchanged. `COMPLETED` is rejected. |
 | Invite link | Any group member. `startapp=event_{id}` joins the group (including standalone) and tries to join the event. |
 
 ## Future Extensions
 
 - Несколько плательщиков.
 - Шаблоны мероприятий.
-- Повторное открытие для исправления.
 - Архив мероприятий.

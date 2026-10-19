@@ -143,6 +143,13 @@ public class EventController {
         return toResponse(eventAccessPort.sendToDistribution(eventId, userId), userId);
     }
 
+    @PostMapping("/api/v1/events/{eventId}/revert-to-draft")
+    public EventResponse revertToDraft(
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser, @PathVariable long eventId) {
+        long userId = requireUserId(authenticatedUser);
+        return toResponse(eventService.revertToDraft(eventId, userId), userId);
+    }
+
     @PostMapping("/api/v1/events/{eventId}/close")
     public EventResponse closeEvent(
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser, @PathVariable long eventId) {

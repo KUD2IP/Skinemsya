@@ -17,6 +17,8 @@ public interface PositionSelectionRepository extends JpaRepository<PositionSelec
 
     void deleteByPositionId(long positionId);
 
+    void deleteByPositionIdIn(List<Long> positionIds);
+
     void deleteByUserIdAndPositionIdIn(long userId, List<Long> positionIds);
 
     @Query(

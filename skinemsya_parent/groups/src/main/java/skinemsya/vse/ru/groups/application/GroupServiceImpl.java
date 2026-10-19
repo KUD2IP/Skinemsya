@@ -16,6 +16,7 @@ import skinemsya.vse.ru.groups.domain.GroupMember;
 import skinemsya.vse.ru.groups.domain.GroupMemberView;
 import skinemsya.vse.ru.groups.domain.GroupRole;
 import skinemsya.vse.ru.groups.domain.GroupType;
+import skinemsya.vse.ru.groups.domain.exception.GroupCannotLeaveException;
 import skinemsya.vse.ru.groups.domain.exception.GroupCannotRemoveOwnerException;
 import skinemsya.vse.ru.groups.domain.exception.GroupMemberAccessRequiredException;
 import skinemsya.vse.ru.groups.domain.exception.GroupMemberAddFailedException;
@@ -216,6 +217,23 @@ public class GroupServiceImpl implements GroupService {
         groupMemberEventCleanup.ifPresent(cleanup -> {
             cleanup.assertUserIsNotPayerOfActiveEvents(groupId, memberUserId);
             cleanup.removeUserFromGroupEvents(groupId, memberUserId);
+        });
+        groupMemberRepository.delete(member);
+    }
+
+    @Override
+    public void leave(long groupId, long userId) {
+        var entity = getActiveGroup(groupId);
+        var member = groupMemberRepository
+                .findByGroupIdAndUserId(groupId, userId)
+                .orElseThrow(GroupMemberNotFoundException::new);
+        if (userId == entity.getOwnerId() || member.getRole() == GroupRole.OWNER) {
+            throw new GroupCannotLeaveException();
+        }
+        groupMemberEventCleanup.ifPresent(cleanup -> {
+            cleanup.assertUserIsNotPayerOfActiveEvents(groupId, userId);
+            cleanup.assertUserHasNoUnconfirmedTransfer(groupId, userId);
+            cleanup.removeUserFromGroupEvents(groupId, userId);
         });
         groupMemberRepository.delete(member);
     }

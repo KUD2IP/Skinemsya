@@ -5,7 +5,7 @@ import skinemsya.vse.ru.common.domain.ErrorCode;
 public class GroupMemberIsEventPayerException extends GroupsDomainException {
 
     public GroupMemberIsEventPayerException() {
-        super("Cannot remove a member who is the payer of an active event");
+        super("Нельзя выйти из группы: вы плательщик в незакрытом сборе");
     }
 
     @Override

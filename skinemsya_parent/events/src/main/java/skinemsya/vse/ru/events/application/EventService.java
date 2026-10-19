@@ -22,6 +22,8 @@ public interface EventService {
 
     Event leave(long eventId, long userId);
 
+    Event revertToDraft(long eventId, long requesterId);
+
     Event removeParticipant(long eventId, long requesterId, long targetUserId);
 
     Event updateExpectedParticipantCount(long eventId, long requesterId, int expectedParticipantCount);
