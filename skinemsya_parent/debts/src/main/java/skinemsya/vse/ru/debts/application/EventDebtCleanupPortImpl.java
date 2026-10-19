@@ -33,8 +33,7 @@ public class EventDebtCleanupPortImpl implements EventDebtCleanupPort {
             return false;
         }
         for (long eventId : eventIds) {
-            if (debtRepository.existsByDebtorIdAndEventIdAndStatus(
-                    userId, eventId, DebtStatus.PENDING_CONFIRMATION)) {
+            if (debtRepository.existsByDebtorIdAndEventIdAndStatus(userId, eventId, DebtStatus.PENDING_CONFIRMATION)) {
                 return true;
             }
         }
