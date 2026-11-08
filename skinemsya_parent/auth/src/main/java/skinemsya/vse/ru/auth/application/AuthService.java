@@ -66,7 +66,15 @@ public class AuthService {
                         ex);
             }
         });
-        validatedInitData.eventId().ifPresent(eventId -> {
+        Long eventId = validatedInitData
+                .eventInviteCode()
+                .flatMap(eventService::findIdByInviteCode)
+                .orElse(null);
+        Long groupId = validatedInitData
+                .groupInviteCode()
+                .flatMap(groupService::findIdByInviteCode)
+                .orElse(null);
+        if (eventId != null) {
             try {
                 eventDeepLinkAccessService.ensureAccess(eventId, session.userId());
             } catch (RuntimeException ex) {
@@ -76,20 +84,19 @@ public class AuthService {
                         session.userId(),
                         ex);
             }
-        });
-        validatedInitData.groupId().ifPresent(groupId -> {
+        }
+        if (groupId != null) {
             try {
                 groupService.joinFromInvite(groupId, session.userId());
             } catch (RuntimeException ex) {
                 log.warn("Group invite bootstrap failed for groupId={}, userId={}", groupId, session.userId(), ex);
             }
-        });
-        return new AuthResult(session.tokens(), buildBootstrap(validatedInitData, session.userId()));
+        }
+        return new AuthResult(session.tokens(), buildBootstrap(validatedInitData, eventId, groupId));
     }
 
-    private Optional<ChatBootstrap> buildBootstrap(TelegramInitData validatedInitData, long userId) {
-        if (validatedInitData.eventId().isPresent()) {
-            long eventId = validatedInitData.eventId().get();
+    private Optional<ChatBootstrap> buildBootstrap(TelegramInitData validatedInitData, Long eventId, Long groupId) {
+        if (eventId != null) {
             return eventService.findById(eventId).map(event -> {
                 var group = groupService.findById(event.groupId()).orElse(null);
                 return new ChatBootstrap(
@@ -100,9 +107,9 @@ public class AuthService {
                         eventId);
             });
         }
-        if (validatedInitData.groupId().isPresent()) {
+        if (groupId != null) {
             return groupService
-                    .findById(validatedInitData.groupId().get())
+                    .findById(groupId)
                     .map(group -> new ChatBootstrap(
                             group.id(), group.name(), group.type(), ChatSuggestedAction.OPEN_APP, null));
         }

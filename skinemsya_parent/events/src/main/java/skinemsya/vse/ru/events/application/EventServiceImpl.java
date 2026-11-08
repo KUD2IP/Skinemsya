@@ -11,6 +11,7 @@ import skinemsya.vse.ru.common.api.PageResult;
 import skinemsya.vse.ru.common.event.EventCompleted;
 import skinemsya.vse.ru.common.event.EventParticipantsChanged;
 import skinemsya.vse.ru.common.event.EventSentToDistribution;
+import skinemsya.vse.ru.common.invite.InviteCodes;
 import skinemsya.vse.ru.events.domain.Event;
 import skinemsya.vse.ru.events.domain.EventStatus;
 import skinemsya.vse.ru.events.domain.exception.EventCannotChangeCapacityException;
@@ -106,6 +107,7 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
         entity.setDescription(normalizeDescription(description));
         entity.setPayerId(payerId);
         entity.setCreatedBy(creatorId);
+        entity.setInviteCode(InviteCodes.random());
         entity.setStatus(EventStatus.DRAFT);
         entity.setExpectedParticipantCount(expectedParticipantCount);
         entity.setCreatedAt(now);
@@ -278,6 +280,21 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
     @Transactional(readOnly = true)
     public long getEventGroupId(long eventId) {
         return getActiveEvent(eventId).getGroupId();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String inviteCode(long eventId) {
+        return getActiveEvent(eventId).getInviteCode();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Long> findIdByInviteCode(String inviteCode) {
+        if (!InviteCodes.isToken(inviteCode)) {
+            return Optional.empty();
+        }
+        return eventRepository.findByInviteCode(inviteCode).map(EventEntity::getId);
     }
 
     @Override

@@ -96,7 +96,7 @@ public class EventController {
         var event = eventService.findById(eventId).orElseThrow(EventNotFoundException::new);
         groupAccessService.requireMember(event.groupId(), userId);
         var group = groupService.findById(event.groupId()).orElseThrow(GroupNotFoundException::new);
-        String startParam = TelegramStartParam.forEvent(eventId);
+        String startParam = TelegramStartParam.forEventCode(eventService.inviteCode(eventId));
         return new InviteLinkResponse(
                 telegramBotClient.buildMiniAppDeepLink(startParam),
                 startParam,

@@ -18,5 +18,7 @@
     <include file="db/changelog/changes/20250704-005-user-preferred-bank.xml"/>
     <include file="db/changelog/changes/20260822-001-event-expected-participants.xml"/>
     <include file="db/changelog/changes/20260823-001-groups-telegram-chat-id-active-unique.xml"/>
+    <include file="db/changelog/changes/20261108-001-receipt-vision-and-subscription.xml"/>
+    <include file="db/changelog/changes/20261108-002-invite-codes.xml"/>
 
 </databaseChangeLog>

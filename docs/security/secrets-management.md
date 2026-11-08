@@ -30,7 +30,8 @@
 | JWT secret | `JWT_SECRET` | local, test, prod |
 | DB password | `DB_PASSWORD` | local, test, prod |
 | DB URL | `DB_URL` | local, test, prod |
-| ML service URL | `ML_SERVICE_URL` | local, test, prod |
+| OpenRouter API key | `OPENROUTER_API_KEY` | prod |
+| YooKassa secret | `YOOKASSA_SECRET_KEY` | prod |
 | File storage path | `FILE_STORAGE_PATH` | local, test, prod |
 | SBP credentials | `SBP_*` | prod only (post-MVP) |
 

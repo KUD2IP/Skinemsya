@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import skinemsya.vse.ru.common.api.PageRequest;
 import skinemsya.vse.ru.common.api.PageResult;
 import skinemsya.vse.ru.common.event.GroupMemberJoined;
+import skinemsya.vse.ru.common.invite.InviteCodes;
 import skinemsya.vse.ru.groups.domain.Group;
 import skinemsya.vse.ru.groups.domain.GroupMember;
 import skinemsya.vse.ru.groups.domain.GroupMemberView;
@@ -79,6 +80,7 @@ public class GroupServiceImpl implements GroupService {
         entity.setType(GroupType.STANDALONE);
         entity.setTelegramChatId(null);
         entity.setOwnerId(ownerUserId);
+        entity.setInviteCode(InviteCodes.random());
         entity.setCreatedAt(now);
         entity.setUpdatedAt(now);
         entity = groupRepository.save(entity);
@@ -112,6 +114,21 @@ public class GroupServiceImpl implements GroupService {
         if (ensureMember(groupId, userId, GroupRole.MEMBER)) {
             eventPublisher.publishEvent(new GroupMemberJoined(groupId, userId));
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String inviteCode(long groupId) {
+        return getActiveGroup(groupId).getInviteCode();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Long> findIdByInviteCode(String inviteCode) {
+        if (!InviteCodes.isToken(inviteCode)) {
+            return Optional.empty();
+        }
+        return groupRepository.findByInviteCode(inviteCode).map(GroupEntity::getId);
     }
 
     @Override

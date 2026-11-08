@@ -347,8 +347,9 @@ class GroupsFlowIntegrationTest {
         var inviteResponse = mockMvc.perform(get("/api/v1/groups/" + groupId + "/invite-link")
                         .header("Authorization", "Bearer " + ownerToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.startParam").value("group_" + groupId))
-                .andExpect(jsonPath("$.url").value(org.hamcrest.Matchers.containsString("startapp=group_" + groupId)))
+                .andExpect(jsonPath("$.startParam").value(org.hamcrest.Matchers.matchesPattern("group_[0-9a-f]{32}")))
+                .andExpect(
+                        jsonPath("$.url").value(org.hamcrest.Matchers.matchesPattern(".*startapp=group_[0-9a-f]{32}")))
                 .andExpect(jsonPath("$.shareText")
                         .value("Присоединяйся к группе «Invite friends» в Skinemsya — делим расходы вместе:"))
                 .andReturn()
@@ -357,7 +358,11 @@ class GroupsFlowIntegrationTest {
         assertThat(inviteResponse).contains("t.me");
 
         var guestInitData = TelegramInitDataTestHelper.buildInitDataWithStartParam(
-                100_016L, "InviteGuest", Instant.now(), "group_" + groupId, "private");
+                100_016L,
+                "InviteGuest",
+                Instant.now(),
+                IntegrationTestSupport.readJsonField(inviteResponse, "startParam"),
+                "private");
         var guestAuth = mockMvc.perform(post("/api/v1/auth/telegram")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"initData\":\"" + escapeJson(guestInitData) + "\"}"))

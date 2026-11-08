@@ -15,6 +15,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -89,5 +90,11 @@ public class S3FileStorage implements FileStorage {
     public InputStream read(String storagePath) {
         return s3Client.getObject(
                 GetObjectRequest.builder().bucket(bucket).key(storagePath).build());
+    }
+
+    @Override
+    public void delete(String storagePath) {
+        s3Client.deleteObject(
+                DeleteObjectRequest.builder().bucket(bucket).key(storagePath).build());
     }
 }

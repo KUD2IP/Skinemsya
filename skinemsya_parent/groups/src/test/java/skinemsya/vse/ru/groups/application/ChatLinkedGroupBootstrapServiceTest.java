@@ -2,6 +2,7 @@ package skinemsya.vse.ru.groups.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -61,7 +62,7 @@ class ChatLinkedGroupBootstrapServiceTest {
         var domainGroup = domainGroup(5L);
 
         when(groupRepository.insertChatLinkedGroupIfAbsent(
-                        eq("Team chat"), eq(CHAT_ID), eq(USER_ID), any(Instant.class), any(Instant.class)))
+                        eq("Team chat"), eq(CHAT_ID), eq(USER_ID), anyString(), any(Instant.class), any(Instant.class)))
                 .thenReturn(1);
         when(groupRepository.findByTelegramChatId(CHAT_ID)).thenReturn(Optional.of(group));
         when(groupMapper.toDomain(group)).thenReturn(domainGroup);
@@ -79,7 +80,7 @@ class ChatLinkedGroupBootstrapServiceTest {
         var domainGroup = domainGroup(22L);
 
         when(groupRepository.insertChatLinkedGroupIfAbsent(
-                        eq("Team chat"), eq(CHAT_ID), eq(USER_ID), any(Instant.class), any(Instant.class)))
+                        eq("Team chat"), eq(CHAT_ID), eq(USER_ID), anyString(), any(Instant.class), any(Instant.class)))
                 .thenReturn(0);
         when(groupRepository.findByTelegramChatId(CHAT_ID)).thenReturn(Optional.of(group));
         when(groupMapper.toDomain(group)).thenReturn(domainGroup);
@@ -97,7 +98,7 @@ class ChatLinkedGroupBootstrapServiceTest {
         var domainGroup = domainGroup(23L);
 
         when(groupRepository.insertChatLinkedGroupIfAbsent(
-                        eq("Team chat"), eq(CHAT_ID), eq(USER_ID), any(Instant.class), any(Instant.class)))
+                        eq("Team chat"), eq(CHAT_ID), eq(USER_ID), anyString(), any(Instant.class), any(Instant.class)))
                 .thenReturn(0);
         when(groupRepository.findByTelegramChatId(CHAT_ID)).thenReturn(Optional.of(group));
         when(groupMapper.toDomain(group)).thenReturn(domainGroup);

@@ -4,9 +4,24 @@ import java.time.Instant;
 import skinemsya.vse.ru.receipts.domain.Receipt;
 import skinemsya.vse.ru.receipts.domain.ReceiptStatus;
 
-public record ReceiptResponse(long id, long eventId, long fileId, ReceiptStatus status, Instant createdAt) {
+public record ReceiptResponse(
+        long id,
+        long eventId,
+        long fileId,
+        ReceiptStatus status,
+        Instant createdAt,
+        Long totalKopecks,
+        Long itemsSumKopecks,
+        boolean sumMismatch) {
     public static ReceiptResponse from(Receipt receipt) {
         return new ReceiptResponse(
-                receipt.id(), receipt.eventId(), receipt.fileId(), receipt.status(), receipt.createdAt());
+                receipt.id(),
+                receipt.eventId(),
+                receipt.fileId(),
+                receipt.status(),
+                receipt.createdAt(),
+                receipt.totalKopecks(),
+                receipt.itemsSumKopecks(),
+                receipt.sumMismatch());
     }
 }

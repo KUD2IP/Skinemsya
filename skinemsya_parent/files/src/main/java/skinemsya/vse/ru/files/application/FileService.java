@@ -16,4 +16,6 @@ public interface FileService {
     InputStream getContent(long fileId, long requesterId, boolean allowSharedAccess);
 
     void requireOwnerOrShared(long fileId, long requesterId, boolean sharedAccessGranted);
+
+    void delete(long fileId);
 }

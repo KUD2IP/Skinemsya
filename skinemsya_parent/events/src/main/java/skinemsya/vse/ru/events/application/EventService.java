@@ -30,6 +30,10 @@ public interface EventService {
 
     Optional<Event> findById(long eventId);
 
+    String inviteCode(long eventId);
+
+    Optional<Long> findIdByInviteCode(String inviteCode);
+
     PageResult<Event> listByGroup(long groupId, long requesterId, PageRequest pageRequest);
 
     void delete(long eventId, long requesterId);

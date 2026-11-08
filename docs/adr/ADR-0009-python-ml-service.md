@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [ADR-0011](ADR-0011-openrouter-receipt-vision.md). Python-сервис больше не вызывается.
 
 ## Purpose
 

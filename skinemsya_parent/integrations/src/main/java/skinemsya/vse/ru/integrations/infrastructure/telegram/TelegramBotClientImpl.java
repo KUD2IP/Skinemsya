@@ -94,7 +94,8 @@ public class TelegramBotClientImpl implements TelegramBotClient {
     @Override
     public JsonNode getUpdates(long offset, int timeoutSeconds) {
         var botToken = requireBotToken();
-        String allowedUpdates = URLEncoder.encode("[\"message\",\"my_chat_member\"]", StandardCharsets.UTF_8);
+        String allowedUpdates =
+                URLEncoder.encode("[\"message\",\"my_chat_member\",\"pre_checkout_query\"]", StandardCharsets.UTF_8);
         String url = "https://api.telegram.org/bot" + botToken + "/getUpdates"
                 + "?offset=" + offset
                 + "&timeout=" + timeoutSeconds
@@ -144,6 +145,43 @@ public class TelegramBotClientImpl implements TelegramBotClient {
     @Override
     public void setMyShortDescription() {
         callApi("setMyShortDescription", Map.of("short_description", "Скинемся вместе — делим чек в группе"));
+    }
+
+    @Override
+    public String createStarsSubscriptionLink(String title, String description, String payload, int stars) {
+        var body = new LinkedHashMap<String, Object>();
+        body.put("title", title);
+        body.put("description", description);
+        body.put("payload", payload);
+        body.put("currency", "XTR");
+        body.put("prices", List.of(Map.of("label", "30 дней", "amount", stars)));
+        body.put("subscription_period", 2_592_000);
+        String link = callApi("createInvoiceLink", body).asText("");
+        if (link.isBlank()) {
+            throw new DomainException(ErrorCode.INTEGRATION_ERROR, "Telegram не вернул ссылку на оплату");
+        }
+        return link;
+    }
+
+    @Override
+    public void answerPreCheckoutQuery(String queryId, boolean ok, String errorMessage) {
+        var body = new LinkedHashMap<String, Object>();
+        body.put("pre_checkout_query_id", queryId);
+        body.put("ok", ok);
+        if (!ok && errorMessage != null && !errorMessage.isBlank()) {
+            body.put("error_message", errorMessage);
+        }
+        callApi("answerPreCheckoutQuery", body);
+    }
+
+    @Override
+    public void cancelStarSubscription(long telegramUserId, String chargeId) {
+        callApi(
+                "editUserStarSubscription",
+                Map.of(
+                        "user_id", telegramUserId,
+                        "telegram_payment_charge_id", chargeId,
+                        "is_canceled", true));
     }
 
     @Override

@@ -38,4 +38,16 @@ public interface TelegramBotClient {
     void setMyShortDescription();
 
     String buildMiniAppDeepLink(String startParam);
+
+    default String createStarsSubscriptionLink(String title, String description, String payload, int stars) {
+        throw new UnsupportedOperationException("Stars invoices are not available");
+    }
+
+    default void answerPreCheckoutQuery(String queryId, boolean ok, String errorMessage) {
+        throw new UnsupportedOperationException("Stars invoices are not available");
+    }
+
+    default void cancelStarSubscription(long telegramUserId, String chargeId) {
+        throw new UnsupportedOperationException("Stars invoices are not available");
+    }
 }

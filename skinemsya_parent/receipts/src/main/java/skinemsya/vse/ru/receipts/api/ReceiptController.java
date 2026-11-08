@@ -53,6 +53,15 @@ public class ReceiptController {
         return ReceiptResponse.from(receiptService.splitTips(eventId, id, userId));
     }
 
+    @PostMapping("/api/v1/events/{eventId}/receipts/{id}/discard")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void discardPositions(
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+            @PathVariable long eventId,
+            @PathVariable long id) {
+        receiptService.discardPositions(eventId, id, requireUserId(authenticatedUser));
+    }
+
     private static long requireUserId(AuthenticatedUser authenticatedUser) {
         if (authenticatedUser == null) {
             throw new DomainException(ErrorCode.AUTHENTICATION_ERROR, "User is not authenticated");

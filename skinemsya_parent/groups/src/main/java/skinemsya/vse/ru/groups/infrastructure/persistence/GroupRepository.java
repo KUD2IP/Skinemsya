@@ -14,6 +14,8 @@ public interface GroupRepository extends JpaRepository<GroupEntity, Long> {
 
     Optional<GroupEntity> findByTelegramChatId(Long telegramChatId);
 
+    Optional<GroupEntity> findByInviteCode(String inviteCode);
+
     List<GroupEntity> findByIdIn(List<Long> ids);
 
     @Query(
@@ -27,8 +29,8 @@ public interface GroupRepository extends JpaRepository<GroupEntity, Long> {
     @Query(
             value =
                     """
-            INSERT INTO groups (name, type, telegram_chat_id, owner_id, created_at, updated_at)
-            VALUES (:name, 'CHAT_LINKED', :telegramChatId, :ownerId, :createdAt, :updatedAt)
+            INSERT INTO groups (name, type, telegram_chat_id, owner_id, invite_code, created_at, updated_at)
+            VALUES (:name, 'CHAT_LINKED', :telegramChatId, :ownerId, :inviteCode, :createdAt, :updatedAt)
             ON CONFLICT (telegram_chat_id) WHERE deleted_at IS NULL AND telegram_chat_id IS NOT NULL DO NOTHING
             """,
             nativeQuery = true)
@@ -36,6 +38,7 @@ public interface GroupRepository extends JpaRepository<GroupEntity, Long> {
             @Param("name") String name,
             @Param("telegramChatId") long telegramChatId,
             @Param("ownerId") long ownerId,
+            @Param("inviteCode") String inviteCode,
             @Param("createdAt") Instant createdAt,
             @Param("updatedAt") Instant updatedAt);
 }

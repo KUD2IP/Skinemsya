@@ -8,6 +8,8 @@ public interface EventAccessPort {
 
     long getEventGroupId(long eventId);
 
+    String inviteCode(long eventId);
+
     long getPayerId(long eventId);
 
     EventStatus getStatus(long eventId);

@@ -90,7 +90,11 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public void sendToGroupChat(long telegramChatId, NotificationType type, String message, long eventId) {
         telegramBotClient.sendMessageWithOpenAppButton(
-                telegramChatId, message, actionButtonLabel(type), "supergroup", TelegramStartParam.forEvent(eventId));
+                telegramChatId,
+                message,
+                actionButtonLabel(type),
+                "supergroup",
+                TelegramStartParam.forEventCode(eventAccessPort.inviteCode(eventId)));
     }
 
     @Override

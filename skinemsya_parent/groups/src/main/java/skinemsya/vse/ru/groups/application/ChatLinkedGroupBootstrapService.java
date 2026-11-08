@@ -5,6 +5,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import skinemsya.vse.ru.common.event.GroupMemberJoined;
+import skinemsya.vse.ru.common.invite.InviteCodes;
 import skinemsya.vse.ru.groups.domain.Group;
 import skinemsya.vse.ru.groups.domain.GroupRole;
 import skinemsya.vse.ru.groups.domain.exception.GroupUserNotFoundException;
@@ -41,7 +42,8 @@ public class ChatLinkedGroupBootstrapService {
         requireUserExists(userId);
 
         var now = Instant.now();
-        groupRepository.insertChatLinkedGroupIfAbsent(resolveChatTitle(chatTitle), telegramChatId, userId, now, now);
+        groupRepository.insertChatLinkedGroupIfAbsent(
+                resolveChatTitle(chatTitle), telegramChatId, userId, InviteCodes.random(), now, now);
 
         var group = groupRepository
                 .findByTelegramChatId(telegramChatId)

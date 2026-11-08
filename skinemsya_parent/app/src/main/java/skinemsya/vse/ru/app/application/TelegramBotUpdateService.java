@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import skinemsya.vse.ru.groups.application.GroupService;
 import skinemsya.vse.ru.integrations.application.TelegramBotClient;
 import skinemsya.vse.ru.integrations.application.TelegramGroupWelcomeService;
+import skinemsya.vse.ru.subscriptions.application.SubscriptionServiceImpl;
 import skinemsya.vse.ru.users.application.UserService;
 import skinemsya.vse.ru.users.domain.TelegramUserData;
 
@@ -85,16 +86,19 @@ public class TelegramBotUpdateService {
     private final TelegramBotClient telegramBotClient;
     private final UserService userService;
     private final GroupService groupService;
+    private final SubscriptionServiceImpl subscriptionService;
 
     public TelegramBotUpdateService(
             TelegramGroupWelcomeService groupWelcomeService,
             TelegramBotClient telegramBotClient,
             UserService userService,
-            GroupService groupService) {
+            GroupService groupService,
+            SubscriptionServiceImpl subscriptionService) {
         this.groupWelcomeService = groupWelcomeService;
         this.telegramBotClient = telegramBotClient;
         this.userService = userService;
         this.groupService = groupService;
+        this.subscriptionService = subscriptionService;
     }
 
     public void handleUpdate(JsonNode update) {
@@ -107,6 +111,13 @@ public class TelegramBotUpdateService {
         }
         if (update.hasNonNull("message")) {
             handleMessage(update.path("message"));
+        }
+        if (update.hasNonNull("pre_checkout_query")) {
+            try {
+                subscriptionService.handlePreCheckout(update.path("pre_checkout_query"));
+            } catch (RuntimeException ex) {
+                log.error("Failed to answer pre-checkout", ex);
+            }
         }
     }
 
@@ -125,6 +136,15 @@ public class TelegramBotUpdateService {
 
     @Transactional
     void handleMessage(JsonNode message) {
+        if (message.hasNonNull("successful_payment")) {
+            try {
+                subscriptionService.handleStarsPayment(message);
+            } catch (RuntimeException ex) {
+                log.error("Failed to apply Stars payment", ex);
+            }
+            return;
+        }
+
         BotCommand command = parseCommand(message.path("text").asText(""));
         if (command == null) {
             return;

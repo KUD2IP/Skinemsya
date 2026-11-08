@@ -17,6 +17,10 @@ public interface GroupService {
 
     void joinFromInvite(long groupId, long userId);
 
+    String inviteCode(long groupId);
+
+    Optional<Long> findIdByInviteCode(String inviteCode);
+
     Group addMember(long groupId, long ownerUserId, long memberUserId);
 
     GroupMember addMemberByTelegramUserId(long groupId, long ownerUserId, long telegramUserId);

@@ -379,4 +379,4 @@ APP_VERSION=manual docker compose -f docker-compose.prod.yml up -d
 
 - ~512 MB backend + ~256 MB Postgres — только для проверки.
 - Файлы в MinIO (S3-совместимое хранилище в docker). На слабых VPS без **x86-64-v2** используется образ `minio/minio:RELEASE.*-cpuv1`, не `latest`.
-- ML-сервис не развёрнут без отдельной настройки `ML_SERVICE_URL`.
+- Python ML-сервис не разворачивается. Распознавание чека идёт через OpenRouter, если задан `OPENROUTER_API_KEY`.

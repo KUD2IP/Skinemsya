@@ -86,6 +86,16 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
+    public void delete(long fileId) {
+        var entity = fileRepository.findById(fileId).orElse(null);
+        if (entity == null) {
+            return;
+        }
+        fileStorage.delete(entity.getStoragePath());
+        fileRepository.delete(entity);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public void requireOwnerOrShared(long fileId, long requesterId, boolean sharedAccessGranted) {
         var file = requireById(fileId);

@@ -10,6 +10,8 @@ public enum ErrorCode {
     NOT_FOUND("NOT_FOUND", 404, ErrorSeverity.LOW, "Resource not found"),
     DOMAIN_CONFLICT("DOMAIN_CONFLICT", 409, ErrorSeverity.LOW, "Domain state conflict"),
     DOMAIN_RULE_VIOLATION("DOMAIN_RULE_VIOLATION", 422, ErrorSeverity.LOW, "Business rule violation"),
+    SUBSCRIPTION_REQUIRED(
+            "SUBSCRIPTION_REQUIRED", 402, ErrorSeverity.LOW, "Receipt recognition requires a subscription"),
     INTEGRATION_ERROR("INTEGRATION_ERROR", 502, ErrorSeverity.CRITICAL, "External system error"),
     INTERNAL_ERROR("INTERNAL_ERROR", 500, ErrorSeverity.CRITICAL, "Internal server error");
 

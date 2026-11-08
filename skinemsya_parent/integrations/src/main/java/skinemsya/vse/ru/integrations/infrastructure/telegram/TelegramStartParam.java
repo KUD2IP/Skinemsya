@@ -1,6 +1,7 @@
 package skinemsya.vse.ru.integrations.infrastructure.telegram;
 
 import java.util.Optional;
+import skinemsya.vse.ru.common.invite.InviteCodes;
 
 public final class TelegramStartParam {
 
@@ -14,12 +15,12 @@ public final class TelegramStartParam {
         return CHAT_PREFIX + chatId;
     }
 
-    public static String forEvent(long eventId) {
-        return EVENT_PREFIX + eventId;
+    public static String forEventCode(String inviteCode) {
+        return EVENT_PREFIX + inviteCode;
     }
 
-    public static String forGroup(long groupId) {
-        return GROUP_PREFIX + groupId;
+    public static String forGroupCode(String inviteCode) {
+        return GROUP_PREFIX + inviteCode;
     }
 
     public static Optional<Long> parseChatId(String startParam) {
@@ -33,22 +34,19 @@ public final class TelegramStartParam {
         }
     }
 
-    public static Optional<Long> parseEventId(String startParam) {
-        return parsePrefixedId(startParam, EVENT_PREFIX);
+    public static Optional<String> parseEventCode(String startParam) {
+        return parseInviteCode(startParam, EVENT_PREFIX);
     }
 
-    public static Optional<Long> parseGroupId(String startParam) {
-        return parsePrefixedId(startParam, GROUP_PREFIX);
+    public static Optional<String> parseGroupCode(String startParam) {
+        return parseInviteCode(startParam, GROUP_PREFIX);
     }
 
-    private static Optional<Long> parsePrefixedId(String startParam, String prefix) {
+    private static Optional<String> parseInviteCode(String startParam, String prefix) {
         if (startParam == null || !startParam.startsWith(prefix)) {
             return Optional.empty();
         }
-        try {
-            return Optional.of(Long.parseLong(startParam.substring(prefix.length())));
-        } catch (NumberFormatException ex) {
-            return Optional.empty();
-        }
+        String raw = startParam.substring(prefix.length());
+        return InviteCodes.isToken(raw) ? Optional.of(raw) : Optional.empty();
     }
 }

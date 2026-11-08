@@ -20,6 +20,10 @@ skinemsya:
     bot-polling-enabled: false
   file-storage:
     max-upload-size-bytes: 1024
+  subscription:
+    enforced: false
+  receipt-vision:
+    api-key: ""
 
 logging:
   level:

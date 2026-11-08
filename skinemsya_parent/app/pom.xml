@@ -57,6 +57,10 @@
             <artifactId>notifications</artifactId>
         </dependency>
         <dependency>
+            <groupId>skinemsya.vse.ru</groupId>
+            <artifactId>subscriptions</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>

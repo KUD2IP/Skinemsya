@@ -64,9 +64,26 @@ skinemsya:
       - http://localhost:*
       - http://127.0.0.1:*
       - https://web.telegram.org
-  ml-service:
-    url: ${ML_SERVICE_URL:http://localhost:8000}
-    timeout: ${ML_SERVICE_TIMEOUT:90s}
+  receipt-vision:
+    api-key: ${OPENROUTER_API_KEY:}
+    base-url: ${OPENROUTER_BASE_URL:https://openrouter.ai/api/v1}
+    model: ${OPENROUTER_RECEIPT_MODEL:qwen/qwen3.8-flash}
+    timeout: ${OPENROUTER_TIMEOUT:30s}
+    max-image-side: ${OPENROUTER_MAX_IMAGE_SIDE:1600}
+  admin:
+    usernames: ${ADMIN_USERNAMES:kudzip}
+  subscription:
+    enforced: ${SUBSCRIPTION_ENFORCED:true}
+    price-kopecks: ${SUBSCRIPTION_PRICE_KOPECKS:4900}
+    period-days: ${SUBSCRIPTION_PERIOD_DAYS:30}
+    stars: ${SUBSCRIPTION_STARS:25}
+    max-parses-per-day: ${SUBSCRIPTION_MAX_PARSES_PER_DAY:100}
+    yookassa:
+      shop-id: ${YOOKASSA_SHOP_ID:}
+      secret-key: ${YOOKASSA_SECRET_KEY:}
+      return-url: ${YOOKASSA_RETURN_URL:${TELEGRAM_MINI_APP_URL:}}
+      vat-code: ${YOOKASSA_VAT_CODE:1}
+      receipt-enabled: ${YOOKASSA_RECEIPT_ENABLED:true}
   file-storage:
     type: ${FILE_STORAGE_TYPE:local}
     path: ${FILE_STORAGE_PATH:./storage}

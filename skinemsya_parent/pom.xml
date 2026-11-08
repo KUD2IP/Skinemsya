@@ -25,6 +25,7 @@
         <module>events</module>
         <module>debts</module>
         <module>files</module>
+        <module>subscriptions</module>
     </modules>
 
     <properties>
@@ -81,6 +82,11 @@
             <dependency>
                 <groupId>skinemsya.vse.ru</groupId>
                 <artifactId>files</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>skinemsya.vse.ru</groupId>
+                <artifactId>subscriptions</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

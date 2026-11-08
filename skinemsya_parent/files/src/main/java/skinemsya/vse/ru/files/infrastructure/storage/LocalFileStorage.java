@@ -41,4 +41,13 @@ public class LocalFileStorage implements FileStorage {
             throw new IllegalStateException("Failed to read file", ex);
         }
     }
+
+    @Override
+    public void delete(String storagePath) {
+        try {
+            Files.deleteIfExists(resolvePath(storagePath));
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to delete file", ex);
+        }
+    }
 }

@@ -22,6 +22,7 @@ import skinemsya.vse.ru.groups.domain.GroupType;
 import skinemsya.vse.ru.integrations.application.TelegramBotClient;
 import skinemsya.vse.ru.integrations.application.TelegramGroupWelcomeService;
 import skinemsya.vse.ru.integrations.domain.TelegramSentMessage;
+import skinemsya.vse.ru.subscriptions.application.SubscriptionServiceImpl;
 import skinemsya.vse.ru.users.application.UserService;
 import skinemsya.vse.ru.users.domain.TelegramUserData;
 import skinemsya.vse.ru.users.domain.User;
@@ -40,6 +41,9 @@ class TelegramBotUpdateServiceTest {
 
     @Mock
     private GroupService groupService;
+
+    @Mock
+    private SubscriptionServiceImpl subscriptionService;
 
     @InjectMocks
     private TelegramBotUpdateService updateService;

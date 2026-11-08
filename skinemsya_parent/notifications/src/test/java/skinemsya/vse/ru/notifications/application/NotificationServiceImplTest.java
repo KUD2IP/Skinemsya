@@ -28,6 +28,7 @@ import skinemsya.vse.ru.groups.application.GroupService;
 import skinemsya.vse.ru.groups.domain.Group;
 import skinemsya.vse.ru.groups.domain.GroupType;
 import skinemsya.vse.ru.integrations.application.TelegramBotClient;
+import skinemsya.vse.ru.integrations.infrastructure.telegram.TelegramStartParam;
 import skinemsya.vse.ru.notifications.domain.NotificationType;
 import skinemsya.vse.ru.notifications.infrastructure.persistence.NotificationRepository;
 import skinemsya.vse.ru.users.application.UserService;
@@ -41,6 +42,7 @@ class NotificationServiceImplTest {
     private static final long CHAT_ID = -100L;
     private static final long REQUESTER_ID = 1L;
     private static final long PAYER_ID = 1L;
+    private static final String INVITE_CODE = "0123456789abcdef0123456789abcdef";
 
     @Mock
     private NotificationRepository notificationRepository;
@@ -87,7 +89,7 @@ class NotificationServiceImplTest {
                         eq("Ждём выбор позиций от @ivan и Петр"),
                         eq("Скинуть"),
                         eq("supergroup"),
-                        eq("event_" + EVENT_ID));
+                        eq(TelegramStartParam.forEventCode(INVITE_CODE)));
     }
 
     @Test
@@ -110,12 +112,13 @@ class NotificationServiceImplTest {
                         eq("Ждём перевод от @ivan и @anna"),
                         eq("Скинуть"),
                         eq("supergroup"),
-                        eq("event_" + EVENT_ID));
+                        eq(TelegramStartParam.forEventCode(INVITE_CODE)));
         verify(eventParticipantRepository, never()).findByEventId(anyLong());
     }
 
     @Test
     void shouldUseResultsButtonWhenEventCompleted() {
+        when(eventAccessPort.inviteCode(EVENT_ID)).thenReturn(INVITE_CODE);
         notificationService.sendToGroupChat(
                 CHAT_ID, NotificationType.EVENT_COMPLETED, "Сбор «Ужин» закрыт. Все скинули!", EVENT_ID);
 
@@ -125,7 +128,7 @@ class NotificationServiceImplTest {
                         eq("Сбор «Ужин» закрыт. Все скинули!"),
                         eq("Итоги"),
                         eq("supergroup"),
-                        eq("event_" + EVENT_ID));
+                        eq(TelegramStartParam.forEventCode(INVITE_CODE)));
     }
 
     @Test
@@ -160,12 +163,17 @@ class NotificationServiceImplTest {
         var message = ArgumentCaptor.forClass(String.class);
         verify(telegramBotClient)
                 .sendMessageWithOpenAppButton(
-                        eq(CHAT_ID), message.capture(), eq("Скинуть"), eq("supergroup"), eq("event_" + EVENT_ID));
+                        eq(CHAT_ID),
+                        message.capture(),
+                        eq("Скинуть"),
+                        eq("supergroup"),
+                        eq(TelegramStartParam.forEventCode(INVITE_CODE)));
         assertThat(message.getValue()).isEqualTo("Ждём выбор позиций от @ivan, @anna и Петр");
     }
 
     private void stubGroupChat(EventStatus status) {
         when(eventAccessPort.getEventGroupId(EVENT_ID)).thenReturn(GROUP_ID);
+        when(eventAccessPort.inviteCode(EVENT_ID)).thenReturn(INVITE_CODE);
         when(groupService.findById(GROUP_ID)).thenReturn(Optional.of(group(CHAT_ID)));
         when(eventAccessPort.getStatus(EVENT_ID)).thenReturn(status);
     }

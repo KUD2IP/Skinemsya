@@ -50,9 +50,9 @@ public class TelegramInitDataValidatorImpl implements TelegramInitDataValidator 
         var identity = parseIdentity(params);
         var chat = resolveChat(params);
         var startParam = params.get("start_param");
-        var eventId = TelegramStartParam.parseEventId(startParam);
-        var groupId = TelegramStartParam.parseGroupId(startParam);
-        return new TelegramInitData(identity, chat, eventId, groupId);
+        var eventInviteCode = TelegramStartParam.parseEventCode(startParam);
+        var groupInviteCode = TelegramStartParam.parseGroupCode(startParam);
+        return new TelegramInitData(identity, chat, eventInviteCode, groupInviteCode);
     }
 
     static Optional<TelegramChatContext> resolveChat(Map<String, String> params) {

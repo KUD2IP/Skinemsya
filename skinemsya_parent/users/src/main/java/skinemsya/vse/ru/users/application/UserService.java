@@ -14,6 +14,8 @@ public interface UserService {
 
     Optional<User> findByTelegramUsername(String telegramUsername);
 
+    UserSlice searchOthers(long excludeUserId, String usernameQuery, int page, int size);
+
     User upsertFromTelegram(TelegramUserData telegramUserData);
 
     UserProfile updateProfile(

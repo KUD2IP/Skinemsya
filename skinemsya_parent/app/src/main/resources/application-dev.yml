@@ -16,3 +16,5 @@ skinemsya:
       - https://web.telegram.org
       - https://*.ngrok-free.app
       - https://audacity-savor-saxophone.ngrok-free.dev
+  subscription:
+    enforced: true

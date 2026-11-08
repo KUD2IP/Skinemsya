@@ -125,7 +125,7 @@ public class GroupController {
         long userId = requireUserId(authenticatedUser);
         groupAccessService.requireMember(groupId, userId);
         var group = groupService.findById(groupId).orElseThrow(GroupNotFoundException::new);
-        String startParam = TelegramStartParam.forGroup(groupId);
+        String startParam = TelegramStartParam.forGroupCode(groupService.inviteCode(groupId));
         return new InviteLinkResponse(
                 telegramBotClient.buildMiniAppDeepLink(startParam), startParam, InviteShareText.forGroup(group.name()));
     }

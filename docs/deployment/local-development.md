@@ -44,7 +44,7 @@ Prerequisites:
 - `DB_PASSWORD=skinemsya`
 - `JWT_SECRET=dev-secret-min-32-characters-long`
 - `TELEGRAM_BOT_TOKEN=<from @BotFather>`
-- `ML_SERVICE_URL=http://localhost:8000` (опционально)
+- `OPENROUTER_API_KEY=` (пусто — заглушка распознавания, без Python-сервиса)
 - `FILE_STORAGE_PATH=./storage`
 
 Liquibase migrate автоматически при старте Spring Boot.

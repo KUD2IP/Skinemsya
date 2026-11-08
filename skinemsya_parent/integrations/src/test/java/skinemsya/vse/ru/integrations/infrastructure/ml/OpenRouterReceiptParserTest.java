@@ -1,0 +1,71 @@
+package skinemsya.vse.ru.integrations.infrastructure.ml;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.junit.jupiter.api.Test;
+import skinemsya.vse.ru.integrations.domain.MlReceiptItem;
+import skinemsya.vse.ru.integrations.domain.MlReceiptResponse;
+
+class OpenRouterReceiptParserTest {
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Test
+    void parsesFencedJsonAndStringNumbers() {
+        String content =
+                """
+                ```json
+                {"merchant":"Кафе","date":"2026-11-08","total":"1 250,50","currency":"RUB",
+                 "items":[{"name":"Борщ","quantity":"1","unit_price":"450","total_price":"450,00","confidence":"0.8"}],
+                 "confidence":0.9,"errors":[]}
+                ```
+                """;
+
+        MlReceiptResponse response = OpenRouterReceiptParser.parseContent(content, objectMapper);
+
+        assertThat(response.merchant()).isEqualTo("Кафе");
+        assertThat(response.total()).isEqualTo(1250.50);
+        assertThat(response.items()).hasSize(1);
+        MlReceiptItem item = response.items().getFirst();
+        assertThat(item.name()).isEqualTo("Борщ");
+        assertThat(item.totalPrice()).isEqualTo(450.0);
+        assertThat(OpenRouterReceiptParser.shouldRetry(response)).isTrue();
+    }
+
+    @Test
+    void doesNotRetryWhenSumMatches() {
+        MlReceiptResponse response = OpenRouterReceiptParser.parseContent(
+                """
+                {"total":100,"items":[{"name":"Чай","quantity":1,"total_price":100,"confidence":0.95}],"confidence":0.95}
+                """,
+                objectMapper);
+
+        assertThat(OpenRouterReceiptParser.shouldRetry(response)).isFalse();
+    }
+
+    @Test
+    void retriesEmptyAndUnreadableContent() {
+        assertThat(OpenRouterReceiptParser.shouldRetry(OpenRouterReceiptParser.parseContent("не json", objectMapper)))
+                .isTrue();
+        assertThat(OpenRouterReceiptParser.shouldRetry(OpenRouterReceiptParser.parseContent("", objectMapper)))
+                .isTrue();
+    }
+
+    @Test
+    void readsTextPartsFromArrayContent() {
+        ObjectNode message = objectMapper.createObjectNode();
+        ArrayNode content = message.putArray("content");
+        content.add("{\"total\":10,");
+        content.addObject()
+                .put("type", "text")
+                .put("text", "\"items\":[{\"name\":\"Хлеб\",\"quantity\":1,\"total_price\":10}]}");
+
+        MlReceiptResponse response =
+                OpenRouterReceiptParser.parseContent(OpenRouterReceiptParser.messageContent(message), objectMapper);
+
+        assertThat(response.items()).extracting(MlReceiptItem::name).containsExactly("Хлеб");
+    }
+}

@@ -48,8 +48,12 @@ Spring profiles:
 | JWT access TTL | `JWT_ACCESS_TTL` | 15m | Access token lifetime |
 | JWT refresh TTL | `JWT_REFRESH_TTL` | 7d | Refresh token lifetime |
 | Telegram bot token | `TELEGRAM_BOT_TOKEN` | — | Bot API token |
-| ML service URL | `ML_SERVICE_URL` | — | Python ML endpoint |
-| ML service timeout | `ML_SERVICE_TIMEOUT` | 30s | HTTP timeout |
+| OpenRouter API key | `OPENROUTER_API_KEY` | — | Ключ распознавания чека. Пустой ключ оставляет заглушку |
+| OpenRouter model | `OPENROUTER_RECEIPT_MODEL` | qwen/qwen3.8-flash | Vision-модель |
+| Subscription enforced | `SUBSCRIPTION_ENFORCED` | true | В test выключено, в dev и prod включено |
+| Subscription price | `SUBSCRIPTION_PRICE_KOPECKS` | 4900 | 49 ₽ за 30 дней |
+| YooKassa shop | `YOOKASSA_SHOP_ID` | — | Магазин для карты и СБП |
+| YooKassa secret | `YOOKASSA_SECRET_KEY` | — | Секрет магазина |
 | File storage path | `FILE_STORAGE_PATH` | ./storage | Local file storage |
 | Server port | `SERVER_PORT` | 8080 | HTTP port |
 

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Документ описывает Docker-подход для контейнеризации backend, PostgreSQL и ML-сервиса.
+Документ описывает Docker-подход для контейнеризации backend и PostgreSQL. Python ML-сервис в деплой не входит: распознавание чека идёт через OpenRouter, см. `docs/adr/ADR-0011-openrouter-receipt-vision.md`.
 
 ## Context
 
@@ -27,12 +27,10 @@ Docker Compose services:
 | --- | --- | --- | --- |
 | postgres | postgres:16-alpine | 5432 | Основная БД |
 | backend | skinemsya-backend:latest | 8080 | Spring Boot app |
-| ml-service | skinemsya-ml:latest | 8000 | Python ML/OCR (опционально local) |
 
-`docker-compose.yml` (целевое состояние):
+`docker-compose.yml`:
 - `postgres` с volume для data persistence.
 - `backend` depends_on postgres, env vars из `.env`.
-- `ml-service` — profile `ml` (опциональный запуск).
 
 Backend Dockerfile:
 - Multi-stage: Maven build → JRE 21 slim runtime.
@@ -52,11 +50,10 @@ Volumes:
 ## Future Evolution
 
 - Docker Compose profiles для staging.
-- ML-service containerization.
 - Multi-arch images (arm64/amd64).
 
 ## Related Documents
 
 - `docs/deployment/local-development.md`
 - `docs/deployment/environments.md`
-- `docs/integrations/ml-service.md`
+- `docs/adr/ADR-0011-openrouter-receipt-vision.md`

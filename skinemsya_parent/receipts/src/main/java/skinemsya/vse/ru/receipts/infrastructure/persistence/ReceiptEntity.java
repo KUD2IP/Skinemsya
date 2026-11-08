@@ -35,6 +35,15 @@ public class ReceiptEntity {
     @Column(name = "ml_raw_json", columnDefinition = "jsonb")
     private String mlRawJson;
 
+    @Column(name = "image_sha256", length = 64)
+    private String imageSha256;
+
+    @Column(name = "total_kopecks")
+    private Long totalKopecks;
+
+    @Column(name = "items_sum_kopecks")
+    private Long itemsSumKopecks;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -76,6 +85,30 @@ public class ReceiptEntity {
 
     public void setMlRawJson(String mlRawJson) {
         this.mlRawJson = mlRawJson;
+    }
+
+    public String getImageSha256() {
+        return imageSha256;
+    }
+
+    public void setImageSha256(String imageSha256) {
+        this.imageSha256 = imageSha256;
+    }
+
+    public Long getTotalKopecks() {
+        return totalKopecks;
+    }
+
+    public void setTotalKopecks(Long totalKopecks) {
+        this.totalKopecks = totalKopecks;
+    }
+
+    public Long getItemsSumKopecks() {
+        return itemsSumKopecks;
+    }
+
+    public void setItemsSumKopecks(Long itemsSumKopecks) {
+        this.itemsSumKopecks = itemsSumKopecks;
     }
 
     public Instant getCreatedAt() {

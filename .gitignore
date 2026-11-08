@@ -39,3 +39,5 @@ build/
 .DS_Store
 
 .env
+storage/
+skinemsya_parent/app/storage/

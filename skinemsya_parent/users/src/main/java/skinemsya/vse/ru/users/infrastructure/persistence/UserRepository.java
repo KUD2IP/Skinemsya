@@ -2,6 +2,8 @@ package skinemsya.vse.ru.users.infrastructure.persistence;
 
 import java.time.Instant;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -12,6 +14,11 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     Optional<UserEntity> findByTelegramUserId(long telegramUserId);
 
     Optional<UserEntity> findByTelegramUsernameIgnoreCase(String telegramUsername);
+
+    Page<UserEntity> findByIdNotOrderByCreatedAtDesc(long id, Pageable pageable);
+
+    Page<UserEntity> findByIdNotAndTelegramUsernameContainingIgnoreCaseOrderByCreatedAtDesc(
+            long id, String telegramUsername, Pageable pageable);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(

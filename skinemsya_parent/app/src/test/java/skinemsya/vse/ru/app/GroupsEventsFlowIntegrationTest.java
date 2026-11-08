@@ -82,7 +82,7 @@ class GroupsEventsFlowIntegrationTest {
 
         mockMvc.perform(get("/api/v1/events/" + eventId + "/invite-link").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.startParam").value("event_" + eventId))
+                .andExpect(jsonPath("$.startParam").value(org.hamcrest.Matchers.matchesPattern("event_[0-9a-f]{32}")))
                 .andExpect(
                         jsonPath("$.shareText")
                                 .value(

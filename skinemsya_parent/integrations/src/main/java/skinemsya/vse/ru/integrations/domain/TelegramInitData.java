@@ -5,5 +5,5 @@ import java.util.Optional;
 public record TelegramInitData(
         TelegramIdentity identity,
         Optional<TelegramChatContext> chat,
-        Optional<Long> eventId,
-        Optional<Long> groupId) {}
+        Optional<String> eventInviteCode,
+        Optional<String> groupInviteCode) {}

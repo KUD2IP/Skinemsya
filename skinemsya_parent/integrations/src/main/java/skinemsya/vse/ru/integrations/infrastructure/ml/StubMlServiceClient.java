@@ -7,11 +7,8 @@ import skinemsya.vse.ru.integrations.application.MlServiceClient;
 import skinemsya.vse.ru.integrations.domain.MlReceiptItem;
 import skinemsya.vse.ru.integrations.domain.MlReceiptResponse;
 
-// @ConditionalOnProperty не умеет отличать пустое значение от непустого
-// (havingValue = "" срабатывает при любом значении, кроме "false"),
-// поэтому взаимоисключающий выбор клиента делается через SpEL-выражение.
 @Component
-@ConditionalOnExpression("'${skinemsya.ml-service.url:}'.isEmpty()")
+@ConditionalOnExpression("'${skinemsya.receipt-vision.api-key:}'.isEmpty()")
 public class StubMlServiceClient implements MlServiceClient {
 
     @Override

@@ -10,4 +10,6 @@ public interface FileStorage {
     Path resolvePath(String storagePath);
 
     InputStream read(String storagePath);
+
+    void delete(String storagePath);
 }

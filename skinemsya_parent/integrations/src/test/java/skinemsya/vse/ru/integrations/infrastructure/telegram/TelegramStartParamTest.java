@@ -3,8 +3,11 @@ package skinemsya.vse.ru.integrations.infrastructure.telegram;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
+import skinemsya.vse.ru.common.invite.InviteCodes;
 
 class TelegramStartParamTest {
+
+    private static final String CODE = "0123456789abcdef0123456789abcdef";
 
     @Test
     void shouldEncodeAndDecodeChatId() {
@@ -18,15 +21,15 @@ class TelegramStartParamTest {
     }
 
     @Test
-    void shouldEncodeAndDecodeEventId() {
-        assertThat(TelegramStartParam.forEvent(42L)).isEqualTo("event_42");
-        assertThat(TelegramStartParam.parseEventId("event_42")).contains(42L);
-    }
-
-    @Test
-    void shouldEncodeAndDecodeGroupId() {
-        assertThat(TelegramStartParam.forGroup(17L)).isEqualTo("group_17");
-        assertThat(TelegramStartParam.parseGroupId("group_17")).contains(17L);
-        assertThat(TelegramStartParam.parseGroupId("event_17")).isEmpty();
+    void shouldAcceptOnlyUnguessableInviteCodes() {
+        assertThat(InviteCodes.isToken(CODE)).isTrue();
+        assertThat(TelegramStartParam.forEventCode(CODE)).isEqualTo("event_" + CODE);
+        assertThat(TelegramStartParam.parseEventCode("event_" + CODE)).contains(CODE);
+        assertThat(TelegramStartParam.forGroupCode(CODE)).isEqualTo("group_" + CODE);
+        assertThat(TelegramStartParam.parseGroupCode("group_" + CODE)).contains(CODE);
+        assertThat(TelegramStartParam.parseEventCode("event_h2a")).isEmpty();
+        assertThat(TelegramStartParam.parseEventCode("event_42")).isEmpty();
+        assertThat(TelegramStartParam.parseGroupCode("group_h11")).isEmpty();
+        assertThat(TelegramStartParam.parseGroupCode("group_17")).isEmpty();
     }
 }

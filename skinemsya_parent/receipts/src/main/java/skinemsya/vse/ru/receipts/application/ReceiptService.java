@@ -8,5 +8,7 @@ public interface ReceiptService {
 
     Receipt splitTips(long eventId, long receiptId, long userId);
 
+    void discardPositions(long eventId, long receiptId, long userId);
+
     java.util.List<Receipt> listByEvent(long eventId, long userId);
 }

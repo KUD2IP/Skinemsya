@@ -10,4 +10,6 @@ public interface SharedPositionTargetRepository extends JpaRepository<SharedPosi
     List<SharedPositionTargetEntity> findByPositionIdIn(List<Long> positionIds);
 
     void deleteByPositionId(long positionId);
+
+    void deleteByPositionIdIn(List<Long> positionIds);
 }

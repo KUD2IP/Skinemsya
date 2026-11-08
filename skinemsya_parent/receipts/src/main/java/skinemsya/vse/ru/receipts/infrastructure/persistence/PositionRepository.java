@@ -15,4 +15,6 @@ public interface PositionRepository extends JpaRepository<PositionEntity, Long> 
     long sumTotalPriceKopecksByEventId(long eventId);
 
     Optional<PositionEntity> findByIdAndEventId(long id, long eventId);
+
+    List<PositionEntity> findByReceiptId(long receiptId);
 }

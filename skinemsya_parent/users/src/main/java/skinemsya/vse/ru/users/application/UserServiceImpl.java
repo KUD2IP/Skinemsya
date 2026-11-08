@@ -2,6 +2,7 @@ package skinemsya.vse.ru.users.application;
 
 import java.time.Instant;
 import java.util.Optional;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import skinemsya.vse.ru.common.domain.DomainException;
@@ -50,6 +51,27 @@ public class UserServiceImpl implements UserService {
             return Optional.empty();
         }
         return userRepository.findByTelegramUsernameIgnoreCase(normalized).map(userMapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserSlice searchOthers(long excludeUserId, String usernameQuery, int page, int size) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), 30);
+        String query = usernameQuery == null ? "" : usernameQuery.trim();
+        if (query.startsWith("@")) {
+            query = query.substring(1).trim();
+        }
+        var pageable = PageRequest.of(safePage, safeSize);
+        var result = query.isEmpty()
+                ? userRepository.findByIdNotOrderByCreatedAtDesc(excludeUserId, pageable)
+                : userRepository.findByIdNotAndTelegramUsernameContainingIgnoreCaseOrderByCreatedAtDesc(
+                        excludeUserId, query, pageable);
+        return new UserSlice(
+                result.getContent().stream().map(userMapper::toDomain).toList(),
+                result.getNumber(),
+                result.getSize(),
+                result.getTotalElements());
     }
 
     @Override
