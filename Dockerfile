@@ -17,6 +17,7 @@ COPY skinemsya_parent/receipts/pom.xml skinemsya_parent/receipts/pom.xml
 COPY skinemsya_parent/debts/pom.xml skinemsya_parent/debts/pom.xml
 COPY skinemsya_parent/payments/pom.xml skinemsya_parent/payments/pom.xml
 COPY skinemsya_parent/notifications/pom.xml skinemsya_parent/notifications/pom.xml
+COPY skinemsya_parent/subscriptions/pom.xml skinemsya_parent/subscriptions/pom.xml
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends maven \
