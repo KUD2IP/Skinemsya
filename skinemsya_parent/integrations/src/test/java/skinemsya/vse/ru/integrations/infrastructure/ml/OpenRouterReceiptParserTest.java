@@ -55,6 +55,83 @@ class OpenRouterReceiptParserTest {
     }
 
     @Test
+    void convertsDraftLitersIntoGlassesWithoutChangingTheLineTotal() {
+        MlReceiptResponse response = OpenRouterReceiptParser.parseContent(
+                """
+                {"total":3440,"items":[
+                  {"name":"Пилснер 400 мл розлив","quantity":3.2,"unit_price":1075,"total_price":3440,"confidence":0.9}
+                ],"confidence":0.9}
+                """,
+                objectMapper);
+
+        MlReceiptItem beer = response.items().getFirst();
+        assertThat(beer.quantity()).isEqualTo(8);
+        assertThat(beer.totalPrice()).isEqualTo(3440);
+        assertThat(OpenRouterReceiptParser.shouldRetry(response)).isFalse();
+    }
+
+    @Test
+    void keepsDraftQuantityWhenTheModelAlreadyCountedGlasses() {
+        MlReceiptResponse response = OpenRouterReceiptParser.parseContent(
+                """
+                {"total":3440,"items":[
+                  {"name":"Пилснер 400 мл розлив","quantity":8,"unit_price":430,"total_price":3440,"confidence":0.9}
+                ],"confidence":0.9}
+                """,
+                objectMapper);
+
+        assertThat(response.items().getFirst().quantity()).isEqualTo(8);
+    }
+
+    @Test
+    void subtractsDiscountPrintedUnderTheDishFromThatDish() {
+        MlReceiptResponse response = OpenRouterReceiptParser.parseContent(
+                """
+                {"total":244,"items":[
+                  {"name":"Белый Русский","quantity":1,"unit_price":305,"total_price":305,"confidence":0.9},
+                  {"name":"Скидка в День Рождения 20%","quantity":1,"total_price":-61,"confidence":0.8}
+                ],"confidence":0.9}
+                """,
+                objectMapper);
+
+        assertThat(response.items()).hasSize(1);
+        assertThat(response.items().getFirst().name()).isEqualTo("Белый Русский");
+        assertThat(response.items().getFirst().totalPrice()).isEqualTo(244);
+        assertThat(OpenRouterReceiptParser.shouldRetry(response)).isFalse();
+    }
+
+    @Test
+    void doesNotSubtractDiscountThatIsAlreadyInsideTheDishPrice() {
+        MlReceiptResponse response = OpenRouterReceiptParser.parseContent(
+                """
+                {"total":244,"items":[
+                  {"name":"Белый Русский","quantity":1,"unit_price":305,"total_price":244,"confidence":0.9},
+                  {"name":"Скидка в День Рождения 20%","quantity":1,"total_price":-61,"confidence":0.8}
+                ],"confidence":0.9}
+                """,
+                objectMapper);
+
+        assertThat(response.items()).hasSize(1);
+        assertThat(response.items().getFirst().totalPrice()).isEqualTo(244);
+    }
+
+    @Test
+    void dropsNearbyDiscountWhenLineTotalsAlreadyMatchTheAmountDue() {
+        MlReceiptResponse response = OpenRouterReceiptParser.parseContent(
+                """
+                {"total":651,"items":[
+                  {"name":"Белый Русский","quantity":1,"total_price":244,"confidence":0.9},
+                  {"name":"Скидка в День Рождения 20%","quantity":1,"total_price":-61,"confidence":0.8},
+                  {"name":"Мохито","quantity":1,"total_price":407,"confidence":0.9},
+                  {"name":"Скидка в День Рождения 20%","quantity":1,"total_price":-102,"confidence":0.8}
+                ],"confidence":0.9}
+                """,
+                objectMapper);
+
+        assertThat(response.items()).extracting(MlReceiptItem::totalPrice).containsExactly(244.0, 407.0);
+    }
+
+    @Test
     void readsTextPartsFromArrayContent() {
         ObjectNode message = objectMapper.createObjectNode();
         ArrayNode content = message.putArray("content");

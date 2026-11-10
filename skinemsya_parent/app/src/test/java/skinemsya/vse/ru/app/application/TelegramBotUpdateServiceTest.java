@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -16,6 +17,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import skinemsya.vse.ru.app.predictions.ChatPerson;
+import skinemsya.vse.ru.app.predictions.EveningPredictionService;
 import skinemsya.vse.ru.groups.application.GroupService;
 import skinemsya.vse.ru.groups.domain.Group;
 import skinemsya.vse.ru.groups.domain.GroupType;
@@ -44,6 +47,9 @@ class TelegramBotUpdateServiceTest {
 
     @Mock
     private SubscriptionServiceImpl subscriptionService;
+
+    @Mock
+    private EveningPredictionService eveningPredictionService;
 
     @InjectMocks
     private TelegramBotUpdateService updateService;
@@ -163,6 +169,56 @@ class TelegramBotUpdateServiceTest {
 
         verify(groupService, never()).createFromChat(anyLong(), any(), anyLong());
         assertThat(capturedReply(-100_504L, "supergroup")).contains("Откройте Skinemsya, чтобы делить расходы");
+    }
+
+    @Test
+    void shouldSendEveningPredictionWithoutAppButton() throws Exception {
+        when(eveningPredictionService.reply(eq(-100_505L), any(ChatPerson.class), isNull()))
+                .thenReturn("Сегодня вечером @bob");
+
+        updateService.handleUpdate(commandUpdate(-100_505L, "supergroup", "/vecher@skinemsyabot"));
+
+        var text = ArgumentCaptor.forClass(String.class);
+        verify(telegramBotClient).sendHtmlMessage(eq(-100_505L), text.capture());
+        assertThat(text.getValue()).isEqualTo("Сегодня вечером @bob");
+        verify(telegramBotClient, never()).sendMessageWithOpenAppButton(anyLong(), any(), any(), any());
+        verify(groupService, never()).createFromChat(anyLong(), any(), anyLong());
+    }
+
+    @Test
+    void shouldAddressReplyTarget() throws Exception {
+        when(eveningPredictionService.reply(eq(-100_506L), any(ChatPerson.class), any(ChatPerson.class)))
+                .thenReturn("про Ann");
+        var update = objectMapper.readTree(
+                """
+                {
+                  "message": {
+                    "chat": { "id": -100506, "type": "group", "title": "Trip" },
+                    "from": { "id": 700002, "first_name": "Bob" },
+                    "reply_to_message": { "from": { "id": 9, "first_name": "Ann", "username": "ann_ok" } },
+                    "text": "/вечер"
+                  }
+                }
+                """);
+
+        updateService.handleUpdate(update);
+
+        var target = ArgumentCaptor.forClass(ChatPerson.class);
+        verify(eveningPredictionService).reply(eq(-100_506L), any(ChatPerson.class), target.capture());
+        assertThat(target.getValue().telegramUserId()).isEqualTo(9L);
+        assertThat(target.getValue().username()).isEqualTo("ann_ok");
+        verify(telegramBotClient).sendHtmlMessage(-100_506L, "про Ann");
+    }
+
+    @Test
+    void shouldSendEveningPredictionInPrivateChat() throws Exception {
+        when(eveningPredictionService.reply(eq(700_020L), any(ChatPerson.class), isNull()))
+                .thenReturn("Сегодня вечером @bob");
+
+        updateService.handleUpdate(commandUpdate(700_020L, "private", "/vecher"));
+
+        verify(telegramBotClient).sendHtmlMessage(700_020L, "Сегодня вечером @bob");
+        verify(telegramBotClient, never()).sendMessageWithOpenAppButton(anyLong(), any(), any(), any());
     }
 
     @Test

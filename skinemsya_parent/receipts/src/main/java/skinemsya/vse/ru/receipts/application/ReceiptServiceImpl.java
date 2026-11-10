@@ -18,6 +18,7 @@ import skinemsya.vse.ru.files.application.FileService;
 import skinemsya.vse.ru.integrations.application.MlServiceClient;
 import skinemsya.vse.ru.integrations.domain.MlReceiptItem;
 import skinemsya.vse.ru.integrations.domain.MlReceiptResponse;
+import skinemsya.vse.ru.integrations.domain.ReceiptLineReconciler;
 import skinemsya.vse.ru.receipts.domain.PositionSource;
 import skinemsya.vse.ru.receipts.domain.Receipt;
 import skinemsya.vse.ru.receipts.domain.ReceiptStatus;
@@ -91,7 +92,8 @@ public class ReceiptServiceImpl implements ReceiptService {
 
         MlReceiptResponse mlResponse;
         try {
-            mlResponse = resolveRecognition(imageSha256, imageBytes, file.mimeType(), userId);
+            mlResponse = ReceiptLineReconciler.reconcile(
+                    resolveRecognition(imageSha256, imageBytes, file.mimeType(), userId));
             receipt.setMlRawJson(objectMapper.writeValueAsString(mlResponse));
         } catch (DomainException ex) {
             receipt.setStatus(ReceiptStatus.FAILED);

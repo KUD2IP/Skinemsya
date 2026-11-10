@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20261110-001-evening-predictions" author="skinemsya">
+        <createTable tableName="evening_chat_speakers">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" primaryKeyName="pk_evening_chat_speakers"/>
+            </column>
+            <column name="telegram_chat_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="telegram_user_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="display_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="username" type="VARCHAR(64)"/>
+            <column name="last_seen_at" type="TIMESTAMPTZ">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint tableName="evening_chat_speakers"
+                             columnNames="telegram_chat_id,telegram_user_id"
+                             constraintName="uk_evening_chat_speakers_chat_user"/>
+
+        <createTable tableName="evening_prediction_draws">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" primaryKeyName="pk_evening_prediction_draws"/>
+            </column>
+            <column name="telegram_chat_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="frame_id" type="VARCHAR(40)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="target_telegram_user_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="evening_prediction_draws" indexName="idx_evening_prediction_draws_chat_created">
+            <column name="telegram_chat_id"/>
+            <column name="created_at"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="evening_prediction_draws"/>
+            <dropTable tableName="evening_chat_speakers"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

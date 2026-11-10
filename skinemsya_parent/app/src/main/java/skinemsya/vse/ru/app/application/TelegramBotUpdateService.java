@@ -5,6 +5,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import skinemsya.vse.ru.app.predictions.ChatPerson;
+import skinemsya.vse.ru.app.predictions.EveningPredictionService;
 import skinemsya.vse.ru.groups.application.GroupService;
 import skinemsya.vse.ru.integrations.application.TelegramBotClient;
 import skinemsya.vse.ru.integrations.application.TelegramGroupWelcomeService;
@@ -55,6 +57,7 @@ public class TelegramBotUpdateService {
             /start — приветствие и как начать
             /help — эта справка
             /open — сообщение с кнопкой «Открыть Skinemsya»
+            /vecher — предсказание на вечер
 
             💬 Напоминания и статусы приходят в групповой чат.""";
 
@@ -74,6 +77,7 @@ public class TelegramBotUpdateService {
             /start — открыть приложение из чата
             /help — эта справка
             /open — сообщение с кнопкой «Открыть Skinemsya»
+            /vecher — предсказание на вечер. Ответом на сообщение гадает на его автора
 
             💬 Напоминания и статусы приходят в этот чат.""";
 
@@ -87,18 +91,21 @@ public class TelegramBotUpdateService {
     private final UserService userService;
     private final GroupService groupService;
     private final SubscriptionServiceImpl subscriptionService;
+    private final EveningPredictionService eveningPredictionService;
 
     public TelegramBotUpdateService(
             TelegramGroupWelcomeService groupWelcomeService,
             TelegramBotClient telegramBotClient,
             UserService userService,
             GroupService groupService,
-            SubscriptionServiceImpl subscriptionService) {
+            SubscriptionServiceImpl subscriptionService,
+            EveningPredictionService eveningPredictionService) {
         this.groupWelcomeService = groupWelcomeService;
         this.telegramBotClient = telegramBotClient;
         this.userService = userService;
         this.groupService = groupService;
         this.subscriptionService = subscriptionService;
+        this.eveningPredictionService = eveningPredictionService;
     }
 
     public void handleUpdate(JsonNode update) {
@@ -145,14 +152,22 @@ public class TelegramBotUpdateService {
             return;
         }
 
+        var chat = message.path("chat");
+        String chatType = chat.path("type").asText("");
+        long chatId = chat.path("id").asLong();
+        if (isGroupChat(chat)) {
+            eveningPredictionService.remember(chatId, personOrNull(message.path("from")));
+        }
+
         BotCommand command = parseCommand(message.path("text").asText(""));
         if (command == null) {
             return;
         }
 
-        var chat = message.path("chat");
-        String chatType = chat.path("type").asText("");
-        long chatId = chat.path("id").asLong();
+        if (command == BotCommand.VECHER) {
+            sendEveningPrediction(message, chatType, chatId);
+            return;
+        }
 
         if ("private".equals(chatType)) {
             sendOpenAppReply(chatId, "private", replyText(command, true));
@@ -183,7 +198,49 @@ public class TelegramBotUpdateService {
             case START -> privateChat ? PRIVATE_START : GROUP_START;
             case HELP -> privateChat ? PRIVATE_HELP : GROUP_HELP;
             case OPEN -> OPEN_HINT;
+            case VECHER -> throw new IllegalStateException("Evening predictions are sent without the app button");
         };
+    }
+
+    private void sendEveningPrediction(JsonNode message, String chatType, long chatId) {
+        if (!"private".equals(chatType) && !isGroupChat(message.path("chat"))) {
+            return;
+        }
+        try {
+            String text = eveningPredictionService.reply(
+                    chatId,
+                    personOrNull(message.path("from")),
+                    personOrNull(message.path("reply_to_message").path("from")));
+            sendHtml(chatId, text);
+        } catch (RuntimeException ex) {
+            log.error("Failed to send evening prediction in chat {}", chatId, ex);
+        }
+    }
+
+    private void sendHtml(long chatId, String text) {
+        try {
+            telegramBotClient.sendHtmlMessage(chatId, text);
+        } catch (RuntimeException ex) {
+            log.error("Failed to send bot message in chat {}", chatId, ex);
+        }
+    }
+
+    private static ChatPerson personOrNull(JsonNode user) {
+        if (user == null
+                || user.isMissingNode()
+                || user.isNull()
+                || user.path("is_bot").asBoolean(false)) {
+            return null;
+        }
+        long id = user.path("id").asLong(0);
+        if (id <= 0) {
+            return null;
+        }
+        String name = (user.path("first_name").asText("") + " "
+                        + user.path("last_name").asText(""))
+                .trim();
+        JsonNode username = user.get("username");
+        return new ChatPerson(id, name, username == null || username.isNull() ? "" : username.asText(""));
     }
 
     private void ensureChatLinkedGroup(long chatId, String chatTitle, JsonNode telegramUser) {
@@ -228,6 +285,9 @@ public class TelegramBotUpdateService {
         if (at >= 0) {
             token = token.substring(0, at);
         }
+        if ("/vecher".equalsIgnoreCase(token) || "/вечер".equalsIgnoreCase(token)) {
+            return BotCommand.VECHER;
+        }
         return switch (token) {
             case "/start" -> BotCommand.START;
             case "/help" -> BotCommand.HELP;
@@ -256,6 +316,7 @@ public class TelegramBotUpdateService {
     private enum BotCommand {
         START,
         HELP,
-        OPEN
+        OPEN,
+        VECHER
     }
 }
