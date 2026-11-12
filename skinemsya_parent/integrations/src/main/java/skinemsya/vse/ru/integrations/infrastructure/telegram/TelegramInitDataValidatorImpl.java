@@ -122,12 +122,22 @@ public class TelegramInitDataValidatorImpl implements TelegramInitDataValidator 
             String displayName = buildDisplayName(firstName, lastName);
             String username = userNode.path("username").asText("");
             String telegramUsername = username.isBlank() ? null : username.trim();
-            return new TelegramIdentity(telegramUserId, displayName, authDate, telegramUsername);
+            String photoUrl = readPhotoUrl(userNode);
+            return new TelegramIdentity(telegramUserId, displayName, authDate, telegramUsername, photoUrl);
         } catch (DomainException ex) {
             throw ex;
         } catch (Exception ex) {
             throw new DomainException(ErrorCode.AUTHENTICATION_ERROR, "Invalid Telegram user payload", ex);
         }
+    }
+
+    private static String readPhotoUrl(JsonNode userNode) {
+        String raw = userNode.path("photo_url").asText("");
+        String trimmed = raw.trim();
+        if (trimmed.isEmpty() || trimmed.length() > 1024 || !trimmed.startsWith("https://")) {
+            return null;
+        }
+        return trimmed;
     }
 
     private void validateAuthDate(String authDateRaw) {

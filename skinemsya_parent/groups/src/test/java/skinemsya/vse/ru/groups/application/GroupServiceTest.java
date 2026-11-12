@@ -257,7 +257,7 @@ class GroupServiceTest {
     }
 
     private static User user(long id) {
-        return new User(id, 100_000L + id, "User " + id, null, Instant.now(), Instant.now());
+        return new User(id, 100_000L + id, "User " + id, null, Instant.now(), Instant.now(), null);
     }
 
     private static GroupEntity standaloneGroupEntity(long id) {

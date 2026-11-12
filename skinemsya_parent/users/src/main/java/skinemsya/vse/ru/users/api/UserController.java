@@ -38,7 +38,8 @@ public class UserController {
                 profile.paymentDetails(),
                 profile.phone(),
                 profile.preferredBank(),
-                profile.notificationSettings());
+                profile.notificationSettings(),
+                user.photoUrl());
     }
 
     @PutMapping("/me/profile")
@@ -62,7 +63,8 @@ public class UserController {
                 profile.paymentDetails(),
                 profile.phone(),
                 profile.preferredBank(),
-                profile.notificationSettings());
+                profile.notificationSettings(),
+                user.photoUrl());
     }
 
     private static long requireUserId(AuthenticatedUser authenticatedUser) {

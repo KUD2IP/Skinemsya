@@ -70,7 +70,7 @@ class TelegramBotUpdateServiceTest {
                 }
                 """);
 
-        when(userService.upsertFromTelegram(new TelegramUserData(700_001L, "Alice", "")))
+        when(userService.upsertFromTelegram(new TelegramUserData(700_001L, "Alice", "", null)))
                 .thenReturn(user(1L));
         when(groupService.createFromChat(-100_500L, "Weekend", 1L)).thenReturn(group(10L, "Weekend"));
 
@@ -271,7 +271,7 @@ class TelegramBotUpdateServiceTest {
     }
 
     private static User user(long id) {
-        return new User(id, 700_000L + id, "User " + id, null, Instant.now(), Instant.now());
+        return new User(id, 700_000L + id, "User " + id, null, Instant.now(), Instant.now(), null);
     }
 
     private static Group group(long id, String name) {

@@ -53,7 +53,7 @@ class ChatLinkedGroupBootstrapServiceTest {
         bootstrapService = new ChatLinkedGroupBootstrapService(
                 groupRepository, groupMemberRepository, groupMapper, userService, eventPublisher);
         when(userService.findById(USER_ID))
-                .thenReturn(Optional.of(new User(USER_ID, 100_001L, "User", null, Instant.now(), Instant.now())));
+                .thenReturn(Optional.of(new User(USER_ID, 100_001L, "User", null, Instant.now(), Instant.now(), null)));
     }
 
     @Test

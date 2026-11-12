@@ -11,4 +11,5 @@ public record GroupMemberViewResponse(
         String displayName,
         String telegramUsername,
         long telegramUserId,
-        Instant joinedAt) {}
+        Instant joinedAt,
+        String photoUrl) {}

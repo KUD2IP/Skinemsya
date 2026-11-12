@@ -260,7 +260,7 @@ public class TelegramBotUpdateService {
         }
         String displayName = resolveDisplayName(telegramUser);
         String username = telegramUser.path("username").asText("");
-        var user = userService.upsertFromTelegram(new TelegramUserData(telegramUserId, displayName, username));
+        var user = userService.upsertFromTelegram(new TelegramUserData(telegramUserId, displayName, username, null));
         groupService.createFromChat(chatId, chatTitle, user.id());
     }
 

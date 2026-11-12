@@ -203,7 +203,8 @@ public class GroupController {
                 member.displayName(),
                 member.telegramUsername(),
                 member.telegramUserId(),
-                member.joinedAt());
+                member.joinedAt(),
+                member.photoUrl());
     }
 
     private static PageRequest resolvePageRequest(Integer page, Integer size) {

@@ -87,14 +87,14 @@ public class UserServiceImpl implements UserService {
         UserEntity entity;
         if (existing.isPresent()) {
             entity = existing.get();
-            updateTelegramUser(entity, telegramUserData.displayName(), normalizedUsername, now);
+            updateTelegramUser(entity, telegramUserData, now);
         } else {
             userRepository.insertTelegramUserIfAbsent(
                     telegramUserData.telegramUserId(), telegramUserData.displayName(), null, now, now);
             entity = userRepository
                     .findByTelegramUserId(telegramUserData.telegramUserId())
                     .orElseThrow(() -> new DomainException(ErrorCode.INTERNAL_ERROR, "Telegram user was not created"));
-            updateTelegramUser(entity, telegramUserData.displayName(), normalizedUsername, now);
+            updateTelegramUser(entity, telegramUserData, now);
         }
 
         entity = userRepository.save(entity);
@@ -102,13 +102,28 @@ public class UserServiceImpl implements UserService {
         return userMapper.toDomain(entity);
     }
 
-    private static void updateTelegramUser(
-            UserEntity entity, String displayName, String normalizedUsername, Instant updatedAt) {
-        entity.setDisplayName(displayName);
+    private static void updateTelegramUser(UserEntity entity, TelegramUserData telegramUserData, Instant updatedAt) {
+        entity.setDisplayName(telegramUserData.displayName());
+        var normalizedUsername = TelegramUsernameNormalizer.normalize(telegramUserData.telegramUsername());
         if (normalizedUsername != null) {
             entity.setTelegramUsername(normalizedUsername);
         }
+        var photoUrl = normalizePhotoUrl(telegramUserData.photoUrl());
+        if (photoUrl != null) {
+            entity.setPhotoUrl(photoUrl);
+        }
         entity.setUpdatedAt(updatedAt);
+    }
+
+    static String normalizePhotoUrl(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        var trimmed = raw.trim();
+        if (trimmed.length() > 1024 || !trimmed.startsWith("https://")) {
+            return null;
+        }
+        return trimmed;
     }
 
     @Override

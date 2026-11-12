@@ -191,7 +191,8 @@ public class GroupServiceImpl implements GroupService {
                 user.displayName(),
                 user.telegramUsername(),
                 user.telegramUserId(),
-                member.getJoinedAt());
+                member.getJoinedAt(),
+                user.photoUrl());
     }
 
     @Override

@@ -193,7 +193,7 @@ class NotificationServiceImplTest {
 
     private static User user(long id, String displayName, String username) {
         var now = Instant.now();
-        return new User(id, 1000 + id, displayName, username, now, now);
+        return new User(id, 1000 + id, displayName, username, now, now, null);
     }
 
     private static Debt debt(long debtorId, DebtStatus status) {

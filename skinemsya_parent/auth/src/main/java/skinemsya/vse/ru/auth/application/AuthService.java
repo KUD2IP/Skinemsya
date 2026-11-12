@@ -136,7 +136,8 @@ public class AuthService {
         var user = userService.upsertFromTelegram(new TelegramUserData(
                 validatedInitData.identity().telegramUserId(),
                 validatedInitData.identity().displayName(),
-                validatedInitData.identity().telegramUsername()));
+                validatedInitData.identity().telegramUsername(),
+                validatedInitData.identity().photoUrl()));
         refreshTokenService.revokeAllActiveForUser(user.id());
         var tokens = issueTokenPair(user.id());
         return new AuthSession(user.id(), tokens);

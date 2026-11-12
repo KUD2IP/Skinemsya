@@ -80,7 +80,7 @@ class SubscriptionServiceImplTest {
     @Test
     void adminParsesWithoutAPaidPeriod() {
         when(userService.findById(5L))
-                .thenReturn(Optional.of(new User(5L, 50L, "Ivan", "kudzip", Instant.now(), Instant.now())));
+                .thenReturn(Optional.of(new User(5L, 50L, "Ivan", "kudzip", Instant.now(), Instant.now(), null)));
 
         service.authorizeParse(5L);
 
@@ -115,7 +115,7 @@ class SubscriptionServiceImplTest {
     @Test
     void acceptsStarsPayloadOnlyForTheSameUser() {
         when(userService.findById(7L))
-                .thenReturn(Optional.of(new User(7L, 700L, "Ann", null, Instant.now(), Instant.now())));
+                .thenReturn(Optional.of(new User(7L, 700L, "Ann", null, Instant.now(), Instant.now(), null)));
 
         assertThat(service.starsCheckoutValid("sub:7:" + java.util.UUID.randomUUID(), 700L, 30))
                 .isTrue();
@@ -145,7 +145,7 @@ class SubscriptionServiceImplTest {
     @Test
     void grantAddsDaysAfterTheCurrentPeriod() {
         when(userService.findById(5L))
-                .thenReturn(Optional.of(new User(5L, 50L, "Ann", "ann", Instant.now(), Instant.now())));
+                .thenReturn(Optional.of(new User(5L, 50L, "Ann", "ann", Instant.now(), Instant.now(), null)));
         var existing = new SubscriptionEntity();
         existing.setUserId(5L);
         existing.setProvider(SubscriptionProvider.YOOKASSA);

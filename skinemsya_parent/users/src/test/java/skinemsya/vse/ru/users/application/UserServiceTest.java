@@ -39,14 +39,14 @@ class UserServiceTest {
 
     @Test
     void shouldCreateUserAndProfileOnFirstTelegramLogin() {
-        var telegramData = new TelegramUserData(100_001L, "Alice", "alice");
+        var telegramData = new TelegramUserData(100_001L, "Alice", "alice", null);
         var savedEntity = new UserEntity();
         savedEntity.setId(1L);
         savedEntity.setTelegramUserId(100_001L);
         savedEntity.setDisplayName("Alice");
         savedEntity.setCreatedAt(Instant.now());
         savedEntity.setUpdatedAt(Instant.now());
-        var domainUser = new User(1L, 100_001L, "Alice", "alice", Instant.now(), Instant.now());
+        var domainUser = new User(1L, 100_001L, "Alice", "alice", Instant.now(), Instant.now(), null);
 
         when(userRepository.findByTelegramUserId(100_001L)).thenReturn(Optional.empty(), Optional.of(savedEntity));
         when(userRepository.insertTelegramUserIfAbsent(
@@ -68,14 +68,14 @@ class UserServiceTest {
 
     @Test
     void shouldUpdateDisplayNameForExistingUser() {
-        var telegramData = new TelegramUserData(100_001L, "Bob", "bob");
+        var telegramData = new TelegramUserData(100_001L, "Bob", "bob", "https://t.me/i/userpic/320/bob.jpg");
         var existing = new UserEntity();
         existing.setId(1L);
         existing.setTelegramUserId(100_001L);
         existing.setDisplayName("Alice");
         existing.setCreatedAt(Instant.now());
         existing.setUpdatedAt(Instant.now());
-        var domainUser = new User(1L, 100_001L, "Bob", "bob", Instant.now(), Instant.now());
+        var domainUser = new User(1L, 100_001L, "Bob", "bob", Instant.now(), Instant.now(), null);
 
         when(userRepository.findByTelegramUserId(100_001L)).thenReturn(Optional.of(existing));
         when(userRepository.save(existing)).thenReturn(existing);
@@ -84,7 +84,36 @@ class UserServiceTest {
         var result = userService.upsertFromTelegram(telegramData);
 
         assertThat(result.displayName()).isEqualTo("Bob");
+        assertThat(existing.getPhotoUrl()).isEqualTo("https://t.me/i/userpic/320/bob.jpg");
         verify(userRepository, never()).insertTelegramUserIfAbsent(anyLong(), any(), any(), any(), any());
         verify(userProfileRepository).insertIfAbsent(1L);
+    }
+
+    @Test
+    void shouldKeepStoredPhotoWhenLaterLoginOmitsIt() {
+        var telegramData = new TelegramUserData(100_001L, "Bob", "bob", null);
+        var existing = new UserEntity();
+        existing.setId(1L);
+        existing.setTelegramUserId(100_001L);
+        existing.setDisplayName("Bob");
+        existing.setPhotoUrl("https://t.me/i/userpic/320/bob.jpg");
+        existing.setCreatedAt(Instant.now());
+        existing.setUpdatedAt(Instant.now());
+
+        when(userRepository.findByTelegramUserId(100_001L)).thenReturn(Optional.of(existing));
+        when(userRepository.save(existing)).thenReturn(existing);
+        when(userMapper.toDomain(existing))
+                .thenReturn(new User(1L, 100_001L, "Bob", "bob", Instant.now(), Instant.now(), existing.getPhotoUrl()));
+
+        userService.upsertFromTelegram(telegramData);
+
+        assertThat(existing.getPhotoUrl()).isEqualTo("https://t.me/i/userpic/320/bob.jpg");
+    }
+
+    @Test
+    void shouldDropPhotoUrlThatIsNotHttps() {
+        assertThat(UserServiceImpl.normalizePhotoUrl("http://example.com/a.jpg")).isNull();
+        assertThat(UserServiceImpl.normalizePhotoUrl(" https://cdn.example/a.jpg "))
+                .isEqualTo("https://cdn.example/a.jpg");
     }
 }

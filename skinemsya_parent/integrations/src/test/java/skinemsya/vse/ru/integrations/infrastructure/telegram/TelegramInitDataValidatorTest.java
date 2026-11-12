@@ -28,6 +28,28 @@ class TelegramInitDataValidatorTest {
 
         assertThat(identity.telegramUserId()).isEqualTo(100_001L);
         assertThat(identity.displayName()).isEqualTo("Alice");
+        assertThat(identity.photoUrl()).isNull();
+    }
+
+    @Test
+    void shouldKeepHttpsPhotoUrl() {
+        var photoUrl = "https://t.me/i/userpic/320/alice.jpg";
+        var initData = TelegramInitDataTestHelper.buildInitDataWithPhoto(
+                BOT_TOKEN, 100_001L, "Alice", Instant.now(), photoUrl);
+
+        var identity = validator.validate(initData);
+
+        assertThat(identity.photoUrl()).isEqualTo(photoUrl);
+    }
+
+    @Test
+    void shouldDropPhotoUrlThatIsNotHttps() {
+        var initData = TelegramInitDataTestHelper.buildInitDataWithPhoto(
+                BOT_TOKEN, 100_001L, "Alice", Instant.now(), "http://evil.example/a.jpg");
+
+        var identity = validator.validate(initData);
+
+        assertThat(identity.photoUrl()).isNull();
     }
 
     @Test
@@ -124,6 +146,33 @@ class TelegramInitDataTestHelper {
 
     public static String buildInitData(String botToken, long telegramUserId, String firstName, Instant authDate) {
         return buildInitDataWithChat(botToken, telegramUserId, firstName, authDate, null, null, null);
+    }
+
+    public static String buildInitDataWithPhoto(
+            String botToken, long telegramUserId, String firstName, Instant authDate, String photoUrl) {
+        Map<String, String> params = new LinkedHashMap<>();
+        params.put("auth_date", String.valueOf(authDate.getEpochSecond()));
+        params.put(
+                "user",
+                "{\"id\":"
+                        + telegramUserId
+                        + ",\"first_name\":\""
+                        + firstName
+                        + "\",\"photo_url\":\""
+                        + photoUrl
+                        + "\"}");
+
+        String dataCheckString = params.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> entry.getKey() + "=" + entry.getValue())
+                .collect(Collectors.joining("\n"));
+
+        String hash = TelegramInitDataValidatorImpl.calculateHash(botToken, dataCheckString);
+
+        return params.entrySet().stream()
+                        .map(entry -> entry.getKey() + "=" + urlEncode(entry.getValue()))
+                        .collect(Collectors.joining("&"))
+                + "&hash=" + hash;
     }
 
     public static String buildInitDataWithChat(
