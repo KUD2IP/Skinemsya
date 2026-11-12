@@ -112,7 +112,8 @@ class UserServiceTest {
 
     @Test
     void shouldDropPhotoUrlThatIsNotHttps() {
-        assertThat(UserServiceImpl.normalizePhotoUrl("http://example.com/a.jpg")).isNull();
+        assertThat(UserServiceImpl.normalizePhotoUrl("http://example.com/a.jpg"))
+                .isNull();
         assertThat(UserServiceImpl.normalizePhotoUrl(" https://cdn.example/a.jpg "))
                 .isEqualTo("https://cdn.example/a.jpg");
     }
