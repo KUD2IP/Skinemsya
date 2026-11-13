@@ -280,12 +280,6 @@ public class SubscriptionServiceImpl implements ReceiptParseAccess {
             return;
         }
         String phone = phoneOf(subscription.getUserId());
-        if (properties.yookassa().receiptEnabled() && phone == null) {
-            log.warn(
-                    "Skip subscription renewal for user {}: phone is required for the receipt",
-                    subscription.getUserId());
-            return;
-        }
         String key = "renew-" + subscription.getUserId() + "-"
                 + subscription.getCurrentPeriodEnd().getEpochSecond();
         applyRemote(
@@ -333,10 +327,6 @@ public class SubscriptionServiceImpl implements ReceiptParseAccess {
             throw new DomainException(ErrorCode.DOMAIN_RULE_VIOLATION, "Оплата картой сейчас недоступна");
         }
         String phone = phoneOf(userId);
-        if (properties.yookassa().receiptEnabled() && phone == null) {
-            throw new DomainException(
-                    ErrorCode.DOMAIN_RULE_VIOLATION, "Добавьте телефон в профиле — он нужен для чека");
-        }
         YooKassaPayment payment =
                 client.createCheckout(userId, phone, "checkout-" + userId + "-" + UUID.randomUUID(), sbp);
         applyRemote(payment);

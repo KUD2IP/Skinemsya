@@ -49,16 +49,14 @@ public class HttpYooKassaClient implements YooKassaClient {
     @Override
     public YooKassaPayment createCheckout(long userId, String phone, String idempotenceKey, boolean sbp) {
         ObjectNode body = baseBody(userId, phone, "checkout", "Распознавание чеков, 30 дней");
-        if (sbp) {
-            String returnUrl = properties.yookassa().returnUrl();
-            if (returnUrl == null || returnUrl.isBlank()) {
-                throw new DomainException(ErrorCode.INTEGRATION_ERROR, "Не задан адрес возврата после оплаты");
-            }
-            body.putObject("payment_method_data").put("type", "sbp");
-            body.putObject("confirmation").put("type", "redirect").put("return_url", returnUrl.trim());
-        } else {
-            body.putObject("confirmation").put("type", "embedded");
+        String returnUrl = properties.yookassa().returnUrl();
+        if (returnUrl == null || returnUrl.isBlank()) {
+            throw new DomainException(ErrorCode.INTEGRATION_ERROR, "Не задан адрес возврата после оплаты");
         }
+        if (sbp) {
+            body.putObject("payment_method_data").put("type", "sbp");
+        }
+        body.putObject("confirmation").put("type", "redirect").put("return_url", returnUrl.trim());
         return post(body, idempotenceKey);
     }
 

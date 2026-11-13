@@ -3,6 +3,9 @@ package skinemsya.vse.ru.subscriptions.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -32,6 +35,7 @@ import skinemsya.vse.ru.subscriptions.infrastructure.persistence.SubscriptionEnt
 import skinemsya.vse.ru.subscriptions.infrastructure.persistence.SubscriptionPaymentRepository;
 import skinemsya.vse.ru.subscriptions.infrastructure.persistence.SubscriptionRepository;
 import skinemsya.vse.ru.users.application.UserService;
+import skinemsya.vse.ru.users.domain.PaymentDetails;
 import skinemsya.vse.ru.users.domain.User;
 
 @ExtendWith(MockitoExtension.class)
@@ -181,5 +185,33 @@ class SubscriptionServiceImplTest {
         assertThat(SubscriptionServiceImpl.normalizePhone("+7 (900) 123-45-67")).isEqualTo("79001234567");
         assertThat(SubscriptionServiceImpl.normalizePhone("8 900 123 45 67")).isEqualTo("79001234567");
         assertThat(SubscriptionServiceImpl.normalizePhone("123")).isNull();
+    }
+
+    @Test
+    void cardCheckoutDoesNotRequirePhone() {
+        var properties = new SubscriptionProperties(
+                true, 4900, 30, 30, 2, new SubscriptionProperties.YooKassa("shop", "secret", "https://app", 1, true));
+        var telegram = new TelegramIntegrationProperties("token", 86_400, "https://app", "", "bot", "app", false);
+        var receiptService = new SubscriptionServiceImpl(
+                properties,
+                subscriptionRepository,
+                paymentRepository,
+                parseUsageRepository,
+                userService,
+                telegramBotClient,
+                telegram,
+                yooKassaClient,
+                new AdminProperties("kudzip"));
+        when(userService.findById(5L))
+                .thenReturn(Optional.of(new User(5L, 50L, "Ivan", null, Instant.now(), Instant.now(), null)));
+        when(userService.getPaymentDetails(5L)).thenReturn(new PaymentDetails(null, null, null));
+        when(yooKassaClient.getIfAvailable()).thenReturn(yooKassa);
+        when(yooKassa.createCheckout(eq(5L), isNull(), anyString(), eq(false)))
+                .thenReturn(new YooKassaPayment("pay-9", "pending", "https://pay", "token", null, 5L, "checkout"));
+        when(paymentRepository.findByExternalId("pay-9")).thenReturn(Optional.empty());
+
+        var checkout = receiptService.checkout(5L, SubscriptionProvider.YOOKASSA, false);
+
+        assertThat(checkout.confirmationUrl()).isEqualTo("https://pay");
     }
 }
