@@ -29,6 +29,8 @@ import skinemsya.vse.ru.integrations.infrastructure.config.TelegramIntegrationPr
 import skinemsya.vse.ru.subscriptions.domain.SubscriptionProvider;
 import skinemsya.vse.ru.subscriptions.infrastructure.config.AdminProperties;
 import skinemsya.vse.ru.subscriptions.infrastructure.config.SubscriptionProperties;
+import skinemsya.vse.ru.subscriptions.infrastructure.persistence.FreeParseEntity;
+import skinemsya.vse.ru.subscriptions.infrastructure.persistence.FreeParseRepository;
 import skinemsya.vse.ru.subscriptions.infrastructure.persistence.ParseUsageEntity;
 import skinemsya.vse.ru.subscriptions.infrastructure.persistence.ParseUsageRepository;
 import skinemsya.vse.ru.subscriptions.infrastructure.persistence.SubscriptionEntity;
@@ -51,6 +53,9 @@ class SubscriptionServiceImplTest {
     private ParseUsageRepository parseUsageRepository;
 
     @Mock
+    private FreeParseRepository freeParseRepository;
+
+    @Mock
     private UserService userService;
 
     @Mock
@@ -67,13 +72,14 @@ class SubscriptionServiceImplTest {
     @BeforeEach
     void setUp() {
         var properties = new SubscriptionProperties(
-                true, 4900, 30, 30, 2, new SubscriptionProperties.YooKassa("", "", "https://app", 1, false));
+                true, 4900, 30, 30, 2, 1, new SubscriptionProperties.YooKassa("", "", "https://app", 1, false));
         var telegram = new TelegramIntegrationProperties("token", 86_400, "https://app", "", "bot", "app", false);
         service = new SubscriptionServiceImpl(
                 properties,
                 subscriptionRepository,
                 paymentRepository,
                 parseUsageRepository,
+                freeParseRepository,
                 userService,
                 telegramBotClient,
                 telegram,
@@ -93,12 +99,37 @@ class SubscriptionServiceImplTest {
 
     @Test
     void refusesParseWithoutActiveSubscription() {
+        var spent = new FreeParseEntity();
+        spent.setUserId(5L);
+        spent.setUsedCount(1);
+        when(freeParseRepository.findById(5L)).thenReturn(Optional.of(spent));
         when(subscriptionRepository.findByUserId(5L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.authorizeParse(5L))
                 .isInstanceOf(DomainException.class)
                 .extracting(ex -> ((DomainException) ex).errorCode())
                 .isEqualTo(ErrorCode.SUBSCRIPTION_REQUIRED);
+    }
+
+    @Test
+    void allowsOneFreeParseBeforeSubscription() {
+        when(subscriptionRepository.findByUserId(5L)).thenReturn(Optional.empty());
+        when(freeParseRepository.findById(5L)).thenReturn(Optional.empty());
+
+        service.authorizeParse(5L);
+    }
+
+    @Test
+    void successfulFreeParseIsSpentOnce() {
+        when(subscriptionRepository.findByUserId(5L)).thenReturn(Optional.empty());
+        when(freeParseRepository.findById(5L)).thenReturn(Optional.empty());
+        when(freeParseRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.recordSuccessfulParse(5L);
+
+        var saved = ArgumentCaptor.forClass(FreeParseEntity.class);
+        verify(freeParseRepository).save(saved.capture());
+        assertThat(saved.getValue().getUsedCount()).isEqualTo(1);
     }
 
     @Test
@@ -190,13 +221,14 @@ class SubscriptionServiceImplTest {
     @Test
     void cardCheckoutDoesNotRequirePhone() {
         var properties = new SubscriptionProperties(
-                true, 4900, 30, 30, 2, new SubscriptionProperties.YooKassa("shop", "secret", "https://app", 1, true));
+                true, 4900, 30, 30, 2, 1, new SubscriptionProperties.YooKassa("shop", "secret", "https://app", 1, true));
         var telegram = new TelegramIntegrationProperties("token", 86_400, "https://app", "", "bot", "app", false);
         var receiptService = new SubscriptionServiceImpl(
                 properties,
                 subscriptionRepository,
                 paymentRepository,
                 parseUsageRepository,
+                freeParseRepository,
                 userService,
                 telegramBotClient,
                 telegram,

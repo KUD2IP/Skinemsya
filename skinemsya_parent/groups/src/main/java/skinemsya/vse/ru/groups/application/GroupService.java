@@ -11,6 +11,8 @@ public interface GroupService {
 
     Group createStandalone(String name, long ownerUserId);
 
+    Group createOneOff(String name, long ownerUserId);
+
     Group createFromChat(long telegramChatId, String chatTitle, long userId);
 
     void joinChatLinkedGroup(long groupId, long userId);

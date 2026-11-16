@@ -23,18 +23,11 @@ public class TelegramBotUpdateService {
             """
             👋 Привет! Это <b>Skinemsya</b>.
 
-            💸 Делите общие расходы в компании: один платит по чеку, остальные скидываются. Сборы живут в группах Telegram.
+            Один платит по чеку, остальные выбирают своё и скидываются.
 
-            🚀 <b>Как начать</b>
-            1. Добавьте бота в групповой чат.
-            2. Откройте приложение из этого чата — вы сразу попадёте в группу Skinemsya.
-            3. Создайте сбор, укажите, кто платил, добавьте позиции или фото чека.
-            4. Каждый выбирает своё и отмечает перевод в приложении.
-            5. Плательщик подтверждает переводы и закрывает сбор.
+            🚀 Для одного ужина или такси создайте <b>сбор без группы</b> в приложении. Для постоянной компании добавьте бота в чат.
 
-            💬 Напоминания и статусы приходят в групповой чат, не в личку.
-
-            ℹ️ /help — подробнее, /open — кнопка приложения.""";
+            Хотите сначала увидеть процесс? Нажмите «Посмотреть пример».""";
 
     private static final String GROUP_START =
             """
@@ -170,7 +163,7 @@ public class TelegramBotUpdateService {
         }
 
         if ("private".equals(chatType)) {
-            sendOpenAppReply(chatId, "private", replyText(command, true));
+            sendOpenAppReply(chatId, "private", replyText(command, true), command == BotCommand.START);
             return;
         }
 
@@ -182,12 +175,17 @@ public class TelegramBotUpdateService {
             ensureChatLinkedGroup(chatId, chatTitle(chat), message.path("from"));
         }
 
-        sendOpenAppReply(chatId, chatType, replyText(command, false));
+        sendOpenAppReply(chatId, chatType, replyText(command, false), false);
     }
 
-    private void sendOpenAppReply(long chatId, String chatType, String text) {
+    private void sendOpenAppReply(long chatId, String chatType, String text, boolean withDemo) {
         try {
-            telegramBotClient.sendMessageWithOpenAppButton(chatId, text, OPEN_BUTTON, chatType);
+            if (withDemo) {
+                telegramBotClient.sendMessageWithOpenAppAndDemoButtons(
+                        chatId, text, OPEN_BUTTON, "Посмотреть пример", chatType);
+            } else {
+                telegramBotClient.sendMessageWithOpenAppButton(chatId, text, OPEN_BUTTON, chatType);
+            }
         } catch (RuntimeException ex) {
             log.error("Failed to send bot command reply in chat {}", chatId, ex);
         }

@@ -22,6 +22,7 @@ public interface GroupRepository extends JpaRepository<GroupEntity, Long> {
             """
             SELECT g FROM GroupEntity g
             WHERE g.id IN (SELECT gm.groupId FROM GroupMemberEntity gm WHERE gm.userId = :userId)
+            AND g.type <> skinemsya.vse.ru.groups.domain.GroupType.ONE_OFF
             """)
     Page<GroupEntity> findAllByMemberUserId(@Param("userId") long userId, Pageable pageable);
 

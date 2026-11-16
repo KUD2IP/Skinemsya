@@ -143,6 +143,7 @@ public class ReceiptServiceImpl implements ReceiptService {
         receipt.setTotalKopecks(mlResponse.total() == null ? null : toKopecks(mlResponse.total()));
         receipt.setStatus(ReceiptStatus.PROCESSED);
         receiptRepository.save(receipt);
+        receiptParseAccess.recordSuccessfulParse(userId);
         return toDomain(receipt);
     }
 

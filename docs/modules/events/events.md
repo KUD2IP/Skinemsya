@@ -2,11 +2,13 @@
 
 ## Purpose
 
-Модуль `events` управляет мероприятиями внутри групп: создание, плательщик, участники, статус жизненного цикла.
+Модуль `events` управляет групповыми и одноразовыми сборами: создание, плательщик, участники, статус жизненного цикла.
 
 ## Responsibilities
 
 - Создание и редактирование мероприятия внутри группы.
+- Создание одноразового сбора через `OneOffEventService`: техническая `ONE_OFF`-группа сохраняет правила членства, но скрыта от списка групп; создатель сразу становится плательщиком.
+- Отдельный пагинированный список одноразовых сборов текущего пользователя. Текстового поиска на сервере нет: клиент фильтрует загруженные страницы по названию.
 - Назначение и смена плательщика до финального расчета.
 - Управление участниками мероприятия, включая исключение участника владельцем группы.
 - Контроль статуса мероприятия: черновик, распределение, расчет, завершено.
@@ -47,7 +49,9 @@
 - `EventService.delete(eventId, requesterId)` → void
 - `EventService.removeParticipant(eventId, requesterId, targetUserId)` → `Event`
 - `EventService.revertToDraft(eventId, requesterId)` → `Event`
-- REST: `POST /api/v1/groups/{groupId}/events`, `GET /api/v1/events/{id}`, `GET /api/v1/events/{id}/invite-link`, `POST /api/v1/events/{id}/revert-to-draft`, `DELETE /api/v1/events/{id}`, `DELETE /api/v1/events/{id}/participants/{userId}`
+- `OneOffEventService.create(name, description, creatorId, expectedParticipantCount)` → `Event`
+- `EventService.listOneOffForUser(userId, pageRequest)` → `PageResult<Event>`
+- REST: `POST /api/v1/events/one-off`, `GET /api/v1/events/one-off`, `POST /api/v1/groups/{groupId}/events`, `GET /api/v1/events/{id}`, `GET /api/v1/events/{id}/invite-link`, `POST /api/v1/events/{id}/revert-to-draft`, `DELETE /api/v1/events/{id}`, `DELETE /api/v1/events/{id}/participants/{userId}`
 
 ## Authorization Rules
 
@@ -57,7 +61,7 @@
 | Remove participant | Group owner. Cannot remove payer or creator. Blocked if event is completed or debts are locked. |
 | Leave event | Participant who is not payer or creator. Blocked when the event is completed, or when this participant's own debt is `PENDING_CONFIRMATION`. Another participant's marked or paid transfer does not block. Leaving drops this participant's selections and unpaid debt. |
 | Revert to draft | Payer or creator. From `DISTRIBUTION` or `CALCULATED` only, and only when no debt is `PENDING_CONFIRMATION` or `PAID`. Clears selections and unpaid debts; positions, receipts, shared marks and participants stay. Already `DRAFT` is unchanged. `COMPLETED` is rejected. |
-| Invite link | Any group member. `startapp=event_{id}` joins the group (including standalone) and tries to join the event. |
+| Invite link | Any group member. `startapp=event_<32 hex>` joins the group (including hidden one-off) and tries to join the event. Numeric ids are not accepted as invite credentials. |
 
 ## Future Extensions
 

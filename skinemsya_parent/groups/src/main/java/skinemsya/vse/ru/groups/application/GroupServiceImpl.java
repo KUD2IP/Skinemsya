@@ -71,13 +71,22 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     public Group createStandalone(String name, long ownerUserId) {
+        return createOwnedGroup(name, ownerUserId, GroupType.STANDALONE);
+    }
+
+    @Override
+    public Group createOneOff(String name, long ownerUserId) {
+        return createOwnedGroup(name, ownerUserId, GroupType.ONE_OFF);
+    }
+
+    private Group createOwnedGroup(String name, long ownerUserId, GroupType type) {
         validateName(name);
         requireUserExists(ownerUserId);
 
         var now = Instant.now();
         var entity = new GroupEntity();
         entity.setName(name.trim());
-        entity.setType(GroupType.STANDALONE);
+        entity.setType(type);
         entity.setTelegramChatId(null);
         entity.setOwnerId(ownerUserId);
         entity.setInviteCode(InviteCodes.random());
@@ -135,7 +144,7 @@ public class GroupServiceImpl implements GroupService {
     public Group addMember(long groupId, long ownerUserId, long memberUserId) {
         var group = getActiveGroup(groupId);
         requireOwner(group, ownerUserId);
-        if (group.getType() != GroupType.STANDALONE) {
+        if (group.getType() == GroupType.CHAT_LINKED) {
             throw new StandaloneGroupRequiredForManualMemberException();
         }
         requireUserExists(memberUserId);

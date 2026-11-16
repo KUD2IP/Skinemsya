@@ -12,7 +12,8 @@ public record SubscriptionResponse(
         long priceKopecks,
         int stars,
         boolean yookassaAvailable,
-        boolean starsAvailable) {
+        boolean starsAvailable,
+        int freeParsesRemaining) {
 
     public static SubscriptionResponse from(SubscriptionView view) {
         return new SubscriptionResponse(
@@ -23,6 +24,7 @@ public record SubscriptionResponse(
                 view.priceKopecks(),
                 view.stars(),
                 view.yookassaAvailable(),
-                view.starsAvailable());
+                view.starsAvailable(),
+                view.freeParsesRemaining());
     }
 }

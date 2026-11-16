@@ -1,6 +1,9 @@
 package skinemsya.vse.ru.files.api;
 
+import java.util.concurrent.TimeUnit;
+
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -60,6 +63,8 @@ public class FileController {
         var stream = fileService.getContent(fileId, userId, sharedAccess || stored.ownerId() == userId);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_TYPE, stored.mimeType())
+                .cacheControl(CacheControl.maxAge(1, TimeUnit.DAYS).cachePrivate())
+                .contentLength(stored.sizeBytes())
                 .body(new InputStreamResource(stream));
     }
 

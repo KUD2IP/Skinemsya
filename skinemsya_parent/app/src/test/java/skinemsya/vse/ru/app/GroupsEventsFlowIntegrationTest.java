@@ -538,4 +538,43 @@ class GroupsEventsFlowIntegrationTest {
                 .andExpect(jsonPath("$.joinedCount").value(1))
                 .andExpect(jsonPath("$.currentUserJoined").value(true));
     }
+
+    @Test
+    void shouldCreateAndListSecureOneOffEventWithoutVisibleGroup() throws Exception {
+        var ownerToken = authenticate(mockMvc, 200_019L, "OneOffOwner");
+        var outsiderToken = authenticate(mockMvc, 200_020L, "OneOffOutsider");
+
+        var eventResponse = mockMvc.perform(post("/api/v1/events/one-off")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"One dinner\",\"expectedParticipantCount\":3}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.oneOff").value(true))
+                .andExpect(jsonPath("$.payerId").value(fetchUserId(mockMvc, ownerToken)))
+                .andExpect(jsonPath("$.currentUserJoined").value(true))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        long eventId = Long.parseLong(readJsonNumberField(eventResponse, "id"));
+
+        mockMvc.perform(get("/api/v1/events/one-off").header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value(eventId));
+        mockMvc.perform(get("/api/v1/groups").header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0));
+        mockMvc.perform(get("/api/v1/events/" + eventId + "/invite-link")
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.startParam").value(org.hamcrest.Matchers.matchesPattern("event_[0-9a-f]{32}")));
+
+        mockMvc.perform(get("/api/v1/events/" + eventId).header("Authorization", "Bearer " + outsiderToken))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/join")
+                        .header("Authorization", "Bearer " + outsiderToken))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/events/one-off").header("Authorization", "Bearer " + outsiderToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0));
+    }
 }

@@ -36,5 +36,7 @@ public interface EventService {
 
     PageResult<Event> listByGroup(long groupId, long requesterId, PageRequest pageRequest);
 
+    PageResult<Event> listOneOffForUser(long userId, PageRequest pageRequest);
+
     void delete(long eventId, long requesterId);
 }

@@ -20,6 +20,11 @@ public interface TelegramBotClient {
     TelegramSentMessage sendMessageWithOpenAppButton(
             long chatId, String text, String buttonText, String chatType, String startParam);
 
+    default TelegramSentMessage sendMessageWithOpenAppAndDemoButtons(
+            long chatId, String text, String buttonText, String demoButtonText, String chatType) {
+        return sendMessageWithOpenAppButton(chatId, text, buttonText, chatType, null);
+    }
+
     void pinMessage(long chatId, long messageId);
 
     void sendMessage(long chatId, String text);

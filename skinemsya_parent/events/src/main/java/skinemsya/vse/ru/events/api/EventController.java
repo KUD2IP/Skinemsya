@@ -18,12 +18,14 @@ import skinemsya.vse.ru.common.domain.DomainException;
 import skinemsya.vse.ru.common.domain.ErrorCode;
 import skinemsya.vse.ru.common.security.AuthenticatedUser;
 import skinemsya.vse.ru.events.api.dto.CreateEventRequest;
+import skinemsya.vse.ru.events.api.dto.CreateOneOffEventRequest;
 import skinemsya.vse.ru.events.api.dto.EventResponse;
 import skinemsya.vse.ru.events.api.dto.InviteLinkResponse;
 import skinemsya.vse.ru.events.api.dto.UpdateEventRequest;
 import skinemsya.vse.ru.events.api.dto.UpdateExpectedParticipantsRequest;
 import skinemsya.vse.ru.events.application.EventAccessPort;
 import skinemsya.vse.ru.events.application.EventService;
+import skinemsya.vse.ru.events.application.OneOffEventService;
 import skinemsya.vse.ru.events.domain.Event;
 import skinemsya.vse.ru.events.domain.exception.EventNotFoundException;
 import skinemsya.vse.ru.groups.application.GroupAccessService;
@@ -39,6 +41,7 @@ import skinemsya.vse.ru.users.domain.PayoutRequisites;
 public class EventController {
 
     private final EventService eventService;
+    private final OneOffEventService oneOffEventService;
     private final EventAccessPort eventAccessPort;
     private final GroupAccessService groupAccessService;
     private final GroupService groupService;
@@ -47,12 +50,14 @@ public class EventController {
 
     public EventController(
             EventService eventService,
+            OneOffEventService oneOffEventService,
             EventAccessPort eventAccessPort,
             GroupAccessService groupAccessService,
             GroupService groupService,
             TelegramBotClient telegramBotClient,
             UserService userService) {
         this.eventService = eventService;
+        this.oneOffEventService = oneOffEventService;
         this.eventAccessPort = eventAccessPort;
         this.groupAccessService = groupAccessService;
         this.groupService = groupService;
@@ -78,6 +83,28 @@ public class EventController {
                 userId);
     }
 
+    @PostMapping("/api/v1/events/one-off")
+    @ResponseStatus(HttpStatus.CREATED)
+    public EventResponse createOneOffEvent(
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+            @Valid @RequestBody CreateOneOffEventRequest request) {
+        long userId = requireUserId(authenticatedUser);
+        return toResponse(
+                oneOffEventService.create(
+                        request.name(), request.description(), userId, request.expectedParticipantCount()),
+                userId);
+    }
+
+    @GetMapping("/api/v1/events/one-off")
+    public PageResult<EventResponse> listOneOffEvents(
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        long userId = requireUserId(authenticatedUser);
+        var result = eventService.listOneOffForUser(userId, resolvePageRequest(page, size));
+        return mapPage(result, event -> toResponse(event, userId));
+    }
+
     @GetMapping("/api/v1/groups/{groupId}/events")
     public PageResult<EventResponse> listEvents(
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
@@ -100,7 +127,9 @@ public class EventController {
         return new InviteLinkResponse(
                 telegramBotClient.buildMiniAppDeepLink(startParam),
                 startParam,
-                InviteShareText.forEvent(event.name(), group.name()));
+                group.type() == skinemsya.vse.ru.groups.domain.GroupType.ONE_OFF
+                        ? InviteShareText.forOneOffEvent(event.name())
+                        : InviteShareText.forEvent(event.name(), group.name()));
     }
 
     @GetMapping("/api/v1/events/{eventId}")
@@ -199,6 +228,7 @@ public class EventController {
     }
 
     private EventResponse toResponse(Event event, long userId) {
+        var group = groupService.findById(event.groupId()).orElseThrow(GroupNotFoundException::new);
         return new EventResponse(
                 event.id(),
                 event.groupId(),
@@ -211,6 +241,7 @@ public class EventController {
                 event.expectedParticipantCount(),
                 eventAccessPort.countParticipants(event.id()),
                 eventAccessPort.isParticipant(event.id(), userId),
+                group.type() == skinemsya.vse.ru.groups.domain.GroupType.ONE_OFF,
                 event.createdAt(),
                 event.updatedAt());
     }

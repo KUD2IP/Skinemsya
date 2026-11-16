@@ -4,7 +4,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "skinemsya.subscription")
 public record SubscriptionProperties(
-        boolean enforced, long priceKopecks, int periodDays, int stars, int maxParsesPerDay, YooKassa yookassa) {
+        boolean enforced,
+        long priceKopecks,
+        int periodDays,
+        int stars,
+        int maxParsesPerDay,
+        int freeParses,
+        YooKassa yookassa) {
 
     public SubscriptionProperties {
         if (priceKopecks <= 0) {
@@ -18,6 +24,9 @@ public record SubscriptionProperties(
         }
         if (maxParsesPerDay <= 0) {
             maxParsesPerDay = 100;
+        }
+        if (freeParses <= 0) {
+            freeParses = 1;
         }
         if (yookassa == null) {
             yookassa = new YooKassa("", "", "", 1, true);

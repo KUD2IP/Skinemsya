@@ -27,6 +27,8 @@ import skinemsya.vse.ru.subscriptions.domain.SubscriptionProvider;
 import skinemsya.vse.ru.subscriptions.domain.SubscriptionView;
 import skinemsya.vse.ru.subscriptions.infrastructure.config.AdminProperties;
 import skinemsya.vse.ru.subscriptions.infrastructure.config.SubscriptionProperties;
+import skinemsya.vse.ru.subscriptions.infrastructure.persistence.FreeParseEntity;
+import skinemsya.vse.ru.subscriptions.infrastructure.persistence.FreeParseRepository;
 import skinemsya.vse.ru.subscriptions.infrastructure.persistence.ParseUsageEntity;
 import skinemsya.vse.ru.subscriptions.infrastructure.persistence.ParseUsageRepository;
 import skinemsya.vse.ru.subscriptions.infrastructure.persistence.SubscriptionEntity;
@@ -47,6 +49,7 @@ public class SubscriptionServiceImpl implements ReceiptParseAccess {
     private final SubscriptionRepository subscriptionRepository;
     private final SubscriptionPaymentRepository paymentRepository;
     private final ParseUsageRepository parseUsageRepository;
+    private final FreeParseRepository freeParseRepository;
     private final UserService userService;
     private final TelegramBotClient telegramBotClient;
     private final TelegramIntegrationProperties telegramProperties;
@@ -58,6 +61,7 @@ public class SubscriptionServiceImpl implements ReceiptParseAccess {
             SubscriptionRepository subscriptionRepository,
             SubscriptionPaymentRepository paymentRepository,
             ParseUsageRepository parseUsageRepository,
+            FreeParseRepository freeParseRepository,
             UserService userService,
             TelegramBotClient telegramBotClient,
             TelegramIntegrationProperties telegramProperties,
@@ -67,6 +71,7 @@ public class SubscriptionServiceImpl implements ReceiptParseAccess {
         this.subscriptionRepository = subscriptionRepository;
         this.paymentRepository = paymentRepository;
         this.parseUsageRepository = parseUsageRepository;
+        this.freeParseRepository = freeParseRepository;
         this.userService = userService;
         this.telegramBotClient = telegramBotClient;
         this.telegramProperties = telegramProperties;
@@ -86,7 +91,8 @@ public class SubscriptionServiceImpl implements ReceiptParseAccess {
                 properties.priceKopecks(),
                 properties.stars(),
                 yooKassaClient.getIfAvailable() != null,
-                starsConfigured());
+                starsConfigured(),
+                freeParsesRemaining(userId));
     }
 
     public SubscriptionCheckout checkout(long userId, SubscriptionProvider provider, boolean sbp) {
@@ -293,10 +299,34 @@ public class SubscriptionServiceImpl implements ReceiptParseAccess {
         }
         SubscriptionEntity subscription =
                 subscriptionRepository.findByUserId(userId).orElse(null);
-        if (!isActive(subscription, Instant.now())) {
+        if (!isActive(subscription, Instant.now()) && freeParsesRemaining(userId) <= 0) {
             throw new DomainException(
                     ErrorCode.SUBSCRIPTION_REQUIRED, "Чтобы прочитать чек, оформите распознавание на 30 дней");
         }
+    }
+
+    @Override
+    public void recordSuccessfulParse(long userId) {
+        if (!properties.enforced() || adminUser(userId)) {
+            return;
+        }
+        SubscriptionEntity subscription = subscriptionRepository.findByUserId(userId).orElse(null);
+        if (isActive(subscription, Instant.now())) {
+            return;
+        }
+        FreeParseEntity row = freeParseRepository.findById(userId).orElseGet(() -> {
+            var created = new FreeParseEntity();
+            created.setUserId(userId);
+            created.setUsedCount(0);
+            return created;
+        });
+        row.setUsedCount(row.getUsedCount() + 1);
+        freeParseRepository.save(row);
+    }
+
+    private int freeParsesRemaining(long userId) {
+        int used = freeParseRepository.findById(userId).map(FreeParseEntity::getUsedCount).orElse(0);
+        return Math.max(0, properties.freeParses() - used);
     }
 
     @Override

@@ -15,5 +15,6 @@ public record EventResponse(
         int expectedParticipantCount,
         long joinedCount,
         boolean currentUserJoined,
+        boolean oneOff,
         Instant createdAt,
         Instant updatedAt) {}

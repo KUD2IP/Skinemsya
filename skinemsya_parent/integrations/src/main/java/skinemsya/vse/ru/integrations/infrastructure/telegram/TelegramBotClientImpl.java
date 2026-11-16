@@ -58,6 +58,23 @@ public class TelegramBotClientImpl implements TelegramBotClient {
     @Override
     public TelegramSentMessage sendMessageWithOpenAppButton(
             long chatId, String text, String buttonText, String chatType, String startParam) {
+        return sendMessageWithButtons(
+                chatId, text, List.of(openAppButton(buttonText, chatType, startParam, chatId)));
+    }
+
+    @Override
+    public TelegramSentMessage sendMessageWithOpenAppAndDemoButtons(
+            long chatId, String text, String buttonText, String demoButtonText, String chatType) {
+        return sendMessageWithButtons(
+                chatId,
+                text,
+                List.of(
+                        openAppButton(buttonText, chatType, null, chatId),
+                        Map.of("text", demoButtonText, "url", buildMiniAppDeepLink("demo"))));
+    }
+
+    private Map<String, Object> openAppButton(
+            String buttonText, String chatType, String startParam, long chatId) {
         Map<String, Object> button = new LinkedHashMap<>();
         button.put("text", buttonText);
         if (isGroupChat(chatType)) {
@@ -67,10 +84,16 @@ public class TelegramBotClientImpl implements TelegramBotClient {
         } else {
             button.put("web_app", Map.of("url", requireMiniAppUrl()));
         }
+        return button;
+    }
 
+    private TelegramSentMessage sendMessageWithButtons(
+            long chatId, String text, List<Map<String, Object>> buttons) {
         var payload = baseMessagePayload(chatId, text);
         payload.put("parse_mode", "HTML");
-        payload.put("reply_markup", Map.of("inline_keyboard", List.of(List.of(button))));
+        payload.put(
+                "reply_markup",
+                Map.of("inline_keyboard", buttons.stream().map(List::of).toList()));
 
         JsonNode result = callApi("sendMessage", payload);
         return new TelegramSentMessage(result.path("message_id").asLong());

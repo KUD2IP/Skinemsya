@@ -10,4 +10,5 @@ public record SubscriptionView(
         long priceKopecks,
         int stars,
         boolean yookassaAvailable,
-        boolean starsAvailable) {}
+        boolean starsAvailable,
+        int freeParsesRemaining) {}

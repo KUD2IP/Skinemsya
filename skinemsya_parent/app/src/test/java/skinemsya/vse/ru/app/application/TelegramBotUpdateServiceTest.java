@@ -117,16 +117,20 @@ class TelegramBotUpdateServiceTest {
                 }
                 """);
 
-        when(telegramBotClient.sendMessageWithOpenAppButton(
-                        eq(700_010L), any(), eq("Открыть Skinemsya"), eq("private")))
-                .thenReturn(new TelegramSentMessage(2L));
-
         updateService.handleUpdate(update);
 
         verify(groupService, never()).createFromChat(anyLong(), any(), anyLong());
-        String reply = capturedReply(700_010L, "private");
+        var text = ArgumentCaptor.forClass(String.class);
+        verify(telegramBotClient)
+                .sendMessageWithOpenAppAndDemoButtons(
+                        eq(700_010L),
+                        text.capture(),
+                        eq("Открыть Skinemsya"),
+                        eq("Посмотреть пример"),
+                        eq("private"));
+        String reply = text.getValue();
         assertThat(reply).contains("Привет! Это");
-        assertThat(reply).contains("Как начать");
+        assertThat(reply).contains("сбор без группы");
         assertThat(reply).doesNotContain("личные уведомления");
     }
 

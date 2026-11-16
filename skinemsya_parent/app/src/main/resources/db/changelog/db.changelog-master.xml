@@ -22,5 +22,6 @@
     <include file="db/changelog/changes/20261108-002-invite-codes.xml"/>
     <include file="db/changelog/changes/20261110-001-evening-predictions.xml"/>
     <include file="db/changelog/changes/20261112-001-user-photo-url.xml"/>
+    <include file="db/changelog/changes/20261116-001-free-receipt-parse.xml"/>
 
 </databaseChangeLog>

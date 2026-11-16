@@ -78,6 +78,7 @@ skinemsya:
     period-days: ${SUBSCRIPTION_PERIOD_DAYS:30}
     stars: ${SUBSCRIPTION_STARS:25}
     max-parses-per-day: ${SUBSCRIPTION_MAX_PARSES_PER_DAY:100}
+    free-parses: ${SUBSCRIPTION_FREE_PARSES:1}
     yookassa:
       shop-id: ${YOOKASSA_SHOP_ID:}
       secret-key: ${YOOKASSA_SECRET_KEY:}

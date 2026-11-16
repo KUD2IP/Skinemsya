@@ -17,9 +17,9 @@
 
 ## Domain Objects
 
-- `Group` — группа с `id`, `name`, `type` (`CHAT_LINKED` | `STANDALONE`), `telegramChatId` (nullable), `ownerId`.
+- `Group` — группа с `id`, `name`, `type` (`CHAT_LINKED` | `STANDALONE` | `ONE_OFF`), `telegramChatId` (nullable), `ownerId`.
 - `GroupMember` — связь user ↔ group с `role` (`owner` | `member`).
-- `GroupType` — enum: `CHAT_LINKED`, `STANDALONE`.
+- `GroupType` — enum: `CHAT_LINKED`, `STANDALONE`, `ONE_OFF`. Последний тип служебный: создаётся вместе с одноразовым сбором и исключается из `GET /api/v1/groups`.
 
 ## Dependencies
 
@@ -42,6 +42,7 @@
 
 - `GroupService.createFromChat(chatId, chatName, ownerId)` → `Group`
 - `GroupService.createStandalone(name, ownerId)` → `Group`
+- `GroupService.createOneOff(name, ownerId)` → служебная группа для разового сбора; отдельный публичный UI у неё отсутствует.
 - `GroupService.addMember(groupId, userId)` → `GroupMember`
 - `GroupService.addMemberByTelegramId(groupId, telegramUserId)` → `GroupMember`
 - `GroupService.findByChatId(telegramChatId)` → `Optional<Group>`

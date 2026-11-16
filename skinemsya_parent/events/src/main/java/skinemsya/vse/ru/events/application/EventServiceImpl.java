@@ -267,6 +267,15 @@ public class EventServiceImpl implements EventService, EventAccessPort, GroupDel
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public PageResult<Event> listOneOffForUser(long userId, PageRequest pageRequest) {
+        var page = eventRepository.findOneOffByMemberUserId(
+                userId, org.springframework.data.domain.PageRequest.of(pageRequest.page(), pageRequest.size()));
+        var items = page.getContent().stream().map(eventMapper::toDomain).toList();
+        return PageResult.of(items, pageRequest, page.getTotalElements());
+    }
+
+    @Override
     public void delete(long eventId, long requesterId) {
         var entity = getActiveEvent(eventId);
         groupAccessService.requireMember(entity.getGroupId(), requesterId);

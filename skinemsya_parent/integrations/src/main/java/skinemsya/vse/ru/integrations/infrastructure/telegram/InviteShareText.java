@@ -8,6 +8,10 @@ public final class InviteShareText {
         return "Присоединяйся к группе «" + groupName + "» в Skinemsya — делим расходы вместе:";
     }
 
+    public static String forOneOffEvent(String eventName) {
+        return "Присоединяйся к сбору «" + eventName + "» в Skinemsya — делим расходы вместе:";
+    }
+
     public static String forEvent(String eventName, String groupName) {
         return "Присоединяйся к сбору «" + eventName + "» в группе «" + groupName
                 + "» в Skinemsya — делим расходы вместе:";
