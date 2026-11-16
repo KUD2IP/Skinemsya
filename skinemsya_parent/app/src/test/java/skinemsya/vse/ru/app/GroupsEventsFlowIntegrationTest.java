@@ -570,8 +570,7 @@ class GroupsEventsFlowIntegrationTest {
 
         mockMvc.perform(get("/api/v1/events/" + eventId).header("Authorization", "Bearer " + outsiderToken))
                 .andExpect(status().isForbidden());
-        mockMvc.perform(post("/api/v1/events/" + eventId + "/join")
-                        .header("Authorization", "Bearer " + outsiderToken))
+        mockMvc.perform(post("/api/v1/events/" + eventId + "/join").header("Authorization", "Bearer " + outsiderToken))
                 .andExpect(status().isForbidden());
         mockMvc.perform(get("/api/v1/events/one-off").header("Authorization", "Bearer " + outsiderToken))
                 .andExpect(status().isOk())

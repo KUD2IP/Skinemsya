@@ -58,8 +58,7 @@ public class TelegramBotClientImpl implements TelegramBotClient {
     @Override
     public TelegramSentMessage sendMessageWithOpenAppButton(
             long chatId, String text, String buttonText, String chatType, String startParam) {
-        return sendMessageWithButtons(
-                chatId, text, List.of(openAppButton(buttonText, chatType, startParam, chatId)));
+        return sendMessageWithButtons(chatId, text, List.of(openAppButton(buttonText, chatType, startParam, chatId)));
     }
 
     @Override
@@ -73,8 +72,7 @@ public class TelegramBotClientImpl implements TelegramBotClient {
                         Map.of("text", demoButtonText, "url", buildMiniAppDeepLink("demo"))));
     }
 
-    private Map<String, Object> openAppButton(
-            String buttonText, String chatType, String startParam, long chatId) {
+    private Map<String, Object> openAppButton(String buttonText, String chatType, String startParam, long chatId) {
         Map<String, Object> button = new LinkedHashMap<>();
         button.put("text", buttonText);
         if (isGroupChat(chatType)) {
@@ -87,8 +85,7 @@ public class TelegramBotClientImpl implements TelegramBotClient {
         return button;
     }
 
-    private TelegramSentMessage sendMessageWithButtons(
-            long chatId, String text, List<Map<String, Object>> buttons) {
+    private TelegramSentMessage sendMessageWithButtons(long chatId, String text, List<Map<String, Object>> buttons) {
         var payload = baseMessagePayload(chatId, text);
         payload.put("parse_mode", "HTML");
         payload.put(

@@ -310,7 +310,8 @@ public class SubscriptionServiceImpl implements ReceiptParseAccess {
         if (!properties.enforced() || adminUser(userId)) {
             return;
         }
-        SubscriptionEntity subscription = subscriptionRepository.findByUserId(userId).orElse(null);
+        SubscriptionEntity subscription =
+                subscriptionRepository.findByUserId(userId).orElse(null);
         if (isActive(subscription, Instant.now())) {
             return;
         }
@@ -325,7 +326,10 @@ public class SubscriptionServiceImpl implements ReceiptParseAccess {
     }
 
     private int freeParsesRemaining(long userId) {
-        int used = freeParseRepository.findById(userId).map(FreeParseEntity::getUsedCount).orElse(0);
+        int used = freeParseRepository
+                .findById(userId)
+                .map(FreeParseEntity::getUsedCount)
+                .orElse(0);
         return Math.max(0, properties.freeParses() - used);
     }
 

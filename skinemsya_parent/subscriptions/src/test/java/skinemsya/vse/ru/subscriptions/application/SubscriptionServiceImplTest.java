@@ -221,7 +221,13 @@ class SubscriptionServiceImplTest {
     @Test
     void cardCheckoutDoesNotRequirePhone() {
         var properties = new SubscriptionProperties(
-                true, 4900, 30, 30, 2, 1, new SubscriptionProperties.YooKassa("shop", "secret", "https://app", 1, true));
+                true,
+                4900,
+                30,
+                30,
+                2,
+                1,
+                new SubscriptionProperties.YooKassa("shop", "secret", "https://app", 1, true));
         var telegram = new TelegramIntegrationProperties("token", 86_400, "https://app", "", "bot", "app", false);
         var receiptService = new SubscriptionServiceImpl(
                 properties,

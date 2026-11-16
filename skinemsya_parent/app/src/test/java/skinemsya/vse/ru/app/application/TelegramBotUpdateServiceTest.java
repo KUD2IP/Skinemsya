@@ -123,11 +123,7 @@ class TelegramBotUpdateServiceTest {
         var text = ArgumentCaptor.forClass(String.class);
         verify(telegramBotClient)
                 .sendMessageWithOpenAppAndDemoButtons(
-                        eq(700_010L),
-                        text.capture(),
-                        eq("Открыть Skinemsya"),
-                        eq("Посмотреть пример"),
-                        eq("private"));
+                        eq(700_010L), text.capture(), eq("Открыть Skinemsya"), eq("Посмотреть пример"), eq("private"));
         String reply = text.getValue();
         assertThat(reply).contains("Привет! Это");
         assertThat(reply).contains("сбор без группы");
