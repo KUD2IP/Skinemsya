@@ -21,13 +21,15 @@ public class TelegramBotUpdateService {
 
     private static final String PRIVATE_START =
             """
-            👋 Привет! Это <b>Skinemsya</b>.
+            Привет, это <b>Скинемся</b> 💚
 
-            Один платит по чеку, остальные выбирают своё и скидываются.
+            Хорошо потусовались?
+            Просто отсканируй чек, пригласи друзей, с которыми отдыхали, и каждый легко выберет свои позиции.
 
-            🚀 Для одного ужина или такси создайте <b>сбор без группы</b> в приложении. Для постоянной компании добавьте бота в чат.
+            Можно создать разовый сбор и поделиться ссылкой или добавить меня в группу.
 
-            Хотите сначала увидеть процесс? Нажмите «Посмотреть пример».""";
+            Показать, что я умею?
+            Нажми «Посмотреть демо»""";
 
     private static final String GROUP_START =
             """
@@ -35,11 +37,11 @@ public class TelegramBotUpdateService {
 
     private static final String PRIVATE_HELP =
             """
-            💸 <b>Skinemsya</b> — приложение, чтобы скинуться по чеку в компании.
+            💸 <b>Скинемся</b> — приложение, чтобы скинуться по чеку в компании.
 
             📋 <b>Как пользоваться</b>
             • Добавьте бота в групповой чат друзей или поездки.
-            • Откройте приложение из этого чата — вы автоматически попадёте в группу Skinemsya.
+            • Откройте приложение из этого чата — вы автоматически попадёте в группу в Скинемся.
             • В приложении будут только те, кто уже заходил: полный список участников Telegram боту недоступен.
             • Создайте сбор, выберите плательщика и добавьте позиции вручную или с фото чека.
             • Каждый выбирает своё и отмечает перевод. Плательщик подтверждает переводы и закрывает сбор.
@@ -49,17 +51,17 @@ public class TelegramBotUpdateService {
             ⌨️ <b>Команды</b>
             /start — приветствие и как начать
             /help — эта справка
-            /open — сообщение с кнопкой «Открыть Skinemsya»
+            /open — сообщение с кнопкой «Открыть Скинемся»
             /vecher — предсказание на вечер
 
             💬 Напоминания и статусы приходят в групповой чат.""";
 
     private static final String GROUP_HELP =
             """
-            💸 <b>Skinemsya</b> — приложение, чтобы скинуться по чеку в этом чате.
+            💸 <b>Скинемся</b> — приложение, чтобы скинуться по чеку в этом чате.
 
             📋 <b>Как пользоваться</b>
-            • Откройте приложение из этого чата — вы автоматически попадёте в группу Skinemsya.
+            • Откройте приложение из этого чата — вы автоматически попадёте в группу в Скинемся.
             • В приложении будут только те, кто уже заходил: полный список участников Telegram боту недоступен.
             • Создайте сбор, выберите плательщика и добавьте позиции вручную или с фото чека.
             • Каждый выбирает своё и отмечает перевод. Плательщик подтверждает переводы и закрывает сбор.
@@ -69,13 +71,13 @@ public class TelegramBotUpdateService {
             ⌨️ <b>Команды</b>
             /start — открыть приложение из чата
             /help — эта справка
-            /open — сообщение с кнопкой «Открыть Skinemsya»
+            /open — сообщение с кнопкой «Открыть Скинемся»
             /vecher — предсказание на вечер. Ответом на сообщение гадает на его автора
 
             💬 Напоминания и статусы приходят в этот чат.""";
 
-    private static final String OPEN_HINT = "📲 Откройте Skinemsya, чтобы делить расходы.";
-    private static final String OPEN_BUTTON = "Открыть Skinemsya";
+    private static final String OPEN_HINT = "📲 Откройте Скинемся, чтобы делить расходы.";
+    private static final String OPEN_BUTTON = "Открыть Скинемся";
     private static final java.util.Set<String> JOINED_STATUSES = java.util.Set.of("member", "administrator", "creator");
     private static final java.util.Set<String> LEFT_STATUSES = java.util.Set.of("left", "kicked");
 
@@ -182,7 +184,7 @@ public class TelegramBotUpdateService {
         try {
             if (withDemo) {
                 telegramBotClient.sendMessageWithOpenAppAndDemoButtons(
-                        chatId, text, OPEN_BUTTON, "Посмотреть пример", chatType);
+                        chatId, text, OPEN_BUTTON, "Посмотреть демо", chatType);
             } else {
                 telegramBotClient.sendMessageWithOpenAppButton(chatId, text, OPEN_BUTTON, chatType);
             }

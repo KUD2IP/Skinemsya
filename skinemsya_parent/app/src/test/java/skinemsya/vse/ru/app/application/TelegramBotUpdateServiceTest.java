@@ -95,7 +95,7 @@ class TelegramBotUpdateServiceTest {
 
         when(userService.upsertFromTelegram(any(TelegramUserData.class))).thenReturn(user(2L));
         when(groupService.createFromChat(eq(-100_501L), eq("Trip"), eq(2L))).thenReturn(group(11L, "Trip"));
-        when(telegramBotClient.sendMessageWithOpenAppButton(eq(-100_501L), any(), eq("Открыть Skinemsya"), eq("group")))
+        when(telegramBotClient.sendMessageWithOpenAppButton(eq(-100_501L), any(), eq("Открыть Скинемся"), eq("group")))
                 .thenReturn(new TelegramSentMessage(1L));
 
         updateService.handleUpdate(update);
@@ -123,10 +123,10 @@ class TelegramBotUpdateServiceTest {
         var text = ArgumentCaptor.forClass(String.class);
         verify(telegramBotClient)
                 .sendMessageWithOpenAppAndDemoButtons(
-                        eq(700_010L), text.capture(), eq("Открыть Skinemsya"), eq("Посмотреть пример"), eq("private"));
+                        eq(700_010L), text.capture(), eq("Открыть Скинемся"), eq("Посмотреть демо"), eq("private"));
         String reply = text.getValue();
-        assertThat(reply).contains("Привет! Это");
-        assertThat(reply).contains("сбор без группы");
+        assertThat(reply).contains("Привет, это");
+        assertThat(reply).contains("разовый сбор");
         assertThat(reply).doesNotContain("личные уведомления");
     }
 
@@ -159,7 +159,7 @@ class TelegramBotUpdateServiceTest {
         updateService.handleUpdate(commandUpdate(700_012L, "private", "/open"));
 
         verify(groupService, never()).createFromChat(anyLong(), any(), anyLong());
-        assertThat(capturedReply(700_012L, "private")).contains("Откройте Skinemsya, чтобы делить расходы");
+        assertThat(capturedReply(700_012L, "private")).contains("Откройте Скинемся, чтобы делить расходы");
     }
 
     @Test
@@ -168,7 +168,7 @@ class TelegramBotUpdateServiceTest {
         updateService.handleUpdate(commandUpdate(-100_504L, "supergroup", "/open"));
 
         verify(groupService, never()).createFromChat(anyLong(), any(), anyLong());
-        assertThat(capturedReply(-100_504L, "supergroup")).contains("Откройте Skinemsya, чтобы делить расходы");
+        assertThat(capturedReply(-100_504L, "supergroup")).contains("Откройте Скинемся, чтобы делить расходы");
     }
 
     @Test
@@ -242,14 +242,14 @@ class TelegramBotUpdateServiceTest {
     }
 
     private void stubOpenAppButton() {
-        when(telegramBotClient.sendMessageWithOpenAppButton(anyLong(), any(), eq("Открыть Skinemsya"), any()))
+        when(telegramBotClient.sendMessageWithOpenAppButton(anyLong(), any(), eq("Открыть Скинемся"), any()))
                 .thenReturn(new TelegramSentMessage(1L));
     }
 
     private String capturedReply(long chatId, String chatType) {
         var text = ArgumentCaptor.forClass(String.class);
         verify(telegramBotClient)
-                .sendMessageWithOpenAppButton(eq(chatId), text.capture(), eq("Открыть Skinemsya"), eq(chatType));
+                .sendMessageWithOpenAppButton(eq(chatId), text.capture(), eq("Открыть Скинемся"), eq(chatType));
         return text.getValue();
     }
 

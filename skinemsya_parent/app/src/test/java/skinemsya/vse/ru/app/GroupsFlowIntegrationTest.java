@@ -351,7 +351,7 @@ class GroupsFlowIntegrationTest {
                 .andExpect(
                         jsonPath("$.url").value(org.hamcrest.Matchers.matchesPattern(".*startapp=group_[0-9a-f]{32}")))
                 .andExpect(jsonPath("$.shareText")
-                        .value("Присоединяйся к группе «Invite friends» в Skinemsya — делим расходы вместе:"))
+                        .value("Присоединяйся к группе «Invite friends» в Скинемся — делим расходы вместе:"))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();

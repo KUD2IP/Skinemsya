@@ -147,7 +147,7 @@ public class TelegramBotClientImpl implements TelegramBotClient {
     @Override
     public void setMyCommands() {
         List<Map<String, String>> commands = List.of(
-                Map.of("command", "start", "description", "Начать работу с Skinemsya"),
+                Map.of("command", "start", "description", "Начать работу со Скинемся"),
                 Map.of("command", "open", "description", "Открыть приложение"),
                 Map.of("command", "help", "description", "Справка по командам"),
                 Map.of("command", "vecher", "description", "Предсказание на вечер"));

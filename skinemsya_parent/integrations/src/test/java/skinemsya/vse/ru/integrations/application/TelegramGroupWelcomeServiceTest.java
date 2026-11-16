@@ -32,7 +32,8 @@ class TelegramGroupWelcomeServiceTest {
         String welcome = botClient.htmlMessages.getFirst();
         assertThat(welcome).contains("Добро пожаловать");
         assertThat(welcome).contains("@ivan");
-        assertThat(welcome).contains("откройте Skinemsya из этого чата");
+        assertThat(welcome).contains("откройте Скинемся из этого чата");
+        assertThat(botClient.buttonMessages).containsExactly("💚 Скинемся по чеку");
         assertThat(welcome).doesNotContain("админы");
         assertThat(welcome).doesNotContain("Личные уведомления");
         assertThat(botClient.buttonMessages).hasSize(1);

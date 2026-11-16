@@ -12,8 +12,8 @@ public class TelegramGroupWelcomeService {
 
     private static final Logger log = LoggerFactory.getLogger(TelegramGroupWelcomeService.class);
 
-    private static final String BUTTON_LABEL = "Открыть Skinemsya";
-    private static final String PINNED_MESSAGE = "💸 Учёт и разделение расходов";
+    private static final String BUTTON_LABEL = "Открыть Скинемся";
+    private static final String PINNED_MESSAGE = "💚 Скинемся по чеку";
     private static final Set<String> JOINED_STATUSES = Set.of("member", "administrator", "creator");
     private static final Set<String> LEFT_STATUSES = Set.of("left", "kicked");
 
@@ -57,14 +57,14 @@ public class TelegramGroupWelcomeService {
             botClient.sendHtmlMessage(
                     chatId,
                     """
-                    👋 <b>Добро пожаловать в Skinemsya!</b>
+                    👋 <b>Добро пожаловать в Скинемся!</b>
 
                     Делите расходы в группе «<b>%s</b>» — просто и удобно.
 
                     📊 <b>Добавил(а) бота:</b>
                     • %s
 
-                    ℹ️ Чтобы попасть в группу в приложении, откройте Skinemsya из этого чата.
+                    ℹ️ Чтобы попасть в группу в приложении, откройте Скинемся из этого чата.
                     В приложении будут только те, кто уже заходил: полный список участников Telegram боту недоступен."""
                             .formatted(chatTitle, addedBy));
         } catch (RuntimeException ex) {

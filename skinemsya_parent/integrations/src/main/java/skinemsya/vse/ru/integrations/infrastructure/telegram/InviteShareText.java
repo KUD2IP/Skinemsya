@@ -5,15 +5,15 @@ public final class InviteShareText {
     private InviteShareText() {}
 
     public static String forGroup(String groupName) {
-        return "Присоединяйся к группе «" + groupName + "» в Skinemsya — делим расходы вместе:";
+        return "Присоединяйся к группе «" + groupName + "» в Скинемся — делим расходы вместе:";
     }
 
     public static String forOneOffEvent(String eventName) {
-        return "Присоединяйся к сбору «" + eventName + "» в Skinemsya — делим расходы вместе:";
+        return "Присоединяйся к сбору «" + eventName + "» в Скинемся — делим расходы вместе:";
     }
 
     public static String forEvent(String eventName, String groupName) {
         return "Присоединяйся к сбору «" + eventName + "» в группе «" + groupName
-                + "» в Skinemsya — делим расходы вместе:";
+                + "» в Скинемся — делим расходы вместе:";
     }
 }
