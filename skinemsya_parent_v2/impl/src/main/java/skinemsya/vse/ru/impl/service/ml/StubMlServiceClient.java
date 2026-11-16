@@ -1,0 +1,28 @@
+package skinemsya.vse.ru.impl.service.ml;
+
+import java.util.List;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.stereotype.Component;
+import skinemsya.vse.ru.api.internal.pojo.ml.MlReceiptItem;
+import skinemsya.vse.ru.api.internal.pojo.ml.MlReceiptResponse;
+import skinemsya.vse.ru.api.internal.service.ml.MlServiceClient;
+
+/** Заглушка распознавания чеков, когда ключ OpenRouter не настроен. */
+@Component
+@ConditionalOnExpression("'${skinemsya.receipt-vision.api-key:}'.isEmpty()")
+public class StubMlServiceClient implements MlServiceClient {
+
+    @Override
+    public MlReceiptResponse recognize(byte[] imageBytes, String mimeType) {
+        return new MlReceiptResponse(
+                "Sample Cafe",
+                null,
+                850.0,
+                "RUB",
+                List.of(
+                        new MlReceiptItem("Салат Цезарь", 1.0, 450.0, 450.0, 0.92),
+                        new MlReceiptItem("Капучино", 2.0, 200.0, 400.0, 0.88)),
+                0.90,
+                List.of());
+    }
+}

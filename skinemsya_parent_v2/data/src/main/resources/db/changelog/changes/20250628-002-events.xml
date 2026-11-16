@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20250628-002" author="system">
+        <createTable tableName="events">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" primaryKeyName="pk_events"/>
+            </column>
+            <column name="group_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="payer_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMPTZ">
+                <constraints nullable="false"/>
+            </column>
+            <column name="deleted_at" type="TIMESTAMPTZ"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="events" baseColumnNames="group_id"
+                                 referencedTableName="groups" referencedColumnNames="id"
+                                 constraintName="fk_events_groups"/>
+
+        <addForeignKeyConstraint baseTableName="events" baseColumnNames="payer_id"
+                                 referencedTableName="users" referencedColumnNames="id"
+                                 constraintName="fk_events_payer"/>
+
+        <addForeignKeyConstraint baseTableName="events" baseColumnNames="created_by"
+                                 referencedTableName="users" referencedColumnNames="id"
+                                 constraintName="fk_events_created_by"/>
+
+        <createIndex tableName="events" indexName="idx_events_group_id">
+            <column name="group_id"/>
+        </createIndex>
+
+        <createIndex tableName="events" indexName="idx_events_deleted_at">
+            <column name="deleted_at"/>
+        </createIndex>
+
+        <createTable tableName="event_participants">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" primaryKeyName="pk_event_participants"/>
+            </column>
+            <column name="event_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint tableName="event_participants" columnNames="event_id,user_id"
+                             constraintName="uk_event_participants_event_user"/>
+
+        <addForeignKeyConstraint baseTableName="event_participants" baseColumnNames="event_id"
+                                 referencedTableName="events" referencedColumnNames="id"
+                                 constraintName="fk_event_participants_events"/>
+
+        <addForeignKeyConstraint baseTableName="event_participants" baseColumnNames="user_id"
+                                 referencedTableName="users" referencedColumnNames="id"
+                                 constraintName="fk_event_participants_users"/>
+
+        <rollback>
+            <dropTable tableName="event_participants"/>
+            <dropTable tableName="events"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,159 @@
+openapi: 3.0.3
+info:
+  title: Skinemsya Groups REST API
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    CreateStandaloneGroupRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+    ChatLinkedGroupRequest:
+      type: object
+      required:
+        - initData
+      properties:
+        initData:
+          type: string
+          minLength: 1
+    UpdateGroupRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+    AddGroupMemberRequest:
+      type: object
+      required:
+        - telegramUsername
+      properties:
+        telegramUsername:
+          type: string
+          pattern: '^@?[a-zA-Z0-9_]{5,32}$'
+          minLength: 5
+          maxLength: 33
+    GroupResponse:
+      type: object
+      required:
+        - id
+        - name
+        - type
+        - ownerId
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        type:
+          type: string
+          enum:
+            - CHAT_LINKED
+            - STANDALONE
+        telegramChatId:
+          type: integer
+          format: int64
+        ownerId:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    GroupMemberViewResponse:
+      type: object
+      required:
+        - id
+        - groupId
+        - userId
+        - role
+        - telegramUserId
+      properties:
+        id:
+          type: integer
+          format: int64
+        groupId:
+          type: integer
+          format: int64
+        userId:
+          type: integer
+          format: int64
+        role:
+          type: string
+          enum:
+            - OWNER
+            - MEMBER
+        displayName:
+          type: string
+        telegramUsername:
+          type: string
+        telegramUserId:
+          type: integer
+          format: int64
+        joinedAt:
+          type: string
+          format: date-time
+        photoUrl:
+          type: string
+    InviteLinkResponse:
+      type: object
+      required:
+        - url
+        - startParam
+        - shareText
+      properties:
+        url:
+          type: string
+        startParam:
+          type: string
+        shareText:
+          type: string
+    PageGroupResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupResponse'
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    PageGroupMemberViewResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupMemberViewResponse'
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32

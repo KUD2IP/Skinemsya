@@ -1,0 +1,65 @@
+openapi: 3.0.3
+info:
+  title: Skinemsya Auth REST API
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    TelegramAuthRequest:
+      type: object
+      required:
+        - initData
+      properties:
+        initData:
+          type: string
+          minLength: 1
+          x-field-extra-annotation: '@com.fasterxml.jackson.annotation.JsonAlias("init_data")'
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          minLength: 1
+    TokenResponse:
+      type: object
+      required:
+        - accessToken
+        - refreshToken
+        - expiresIn
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresIn:
+          type: integer
+          format: int64
+        chatBootstrap:
+          $ref: '#/components/schemas/ChatBootstrapResponse'
+    ChatBootstrapResponse:
+      type: object
+      required:
+        - groupId
+        - groupType
+        - suggestedAction
+      properties:
+        groupId:
+          type: integer
+          format: int64
+        groupName:
+          type: string
+        groupType:
+          type: string
+          enum:
+            - CHAT_LINKED
+            - STANDALONE
+        suggestedAction:
+          type: string
+          enum:
+            - CREATE_EVENT
+            - OPEN_APP
+        eventId:
+          type: integer
+          format: int64

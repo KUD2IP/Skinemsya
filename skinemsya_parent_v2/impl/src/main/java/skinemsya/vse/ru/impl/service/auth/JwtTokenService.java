@@ -1,0 +1,61 @@
+package skinemsya.vse.ru.impl.service.auth;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Date;
+import javax.crypto.SecretKey;
+import org.springframework.stereotype.Service;
+import skinemsya.vse.ru.api.internal.enums.ErrorCode;
+import skinemsya.vse.ru.api.internal.ex.DomainException;
+import skinemsya.vse.ru.impl.support.properties.JwtProperties;
+
+/** Создание и проверка JWT access-токенов. */
+@Service
+public class JwtTokenService {
+
+    private final JwtProperties jwtProperties;
+    private final SecretKey secretKey;
+
+    /** Создаёт сервис и проверяет криптографический секрет. */
+    public JwtTokenService(JwtProperties jwtProperties) {
+        this.jwtProperties = jwtProperties;
+        if (jwtProperties.secret() == null || jwtProperties.secret().length() < 32) {
+            throw new IllegalStateException("JWT secret must be at least 32 characters");
+        }
+        this.secretKey = Keys.hmacShaKeyFor(jwtProperties.secret().getBytes(StandardCharsets.UTF_8));
+    }
+
+    /** Создаёт access-токен для пользователя. */
+    public String createAccessToken(long userId) {
+        var now = Instant.now();
+        var expiresAt = now.plus(jwtProperties.accessTtl());
+        return Jwts.builder()
+                .subject(String.valueOf(userId))
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(expiresAt))
+                .signWith(secretKey)
+                .compact();
+    }
+
+    /** Проверяет access-токен и возвращает идентификатор пользователя. */
+    public long parseUserId(String accessToken) {
+        try {
+            Claims claims = Jwts.parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseSignedClaims(accessToken)
+                    .getPayload();
+            return Long.parseLong(claims.getSubject());
+        } catch (Exception ex) {
+            throw new DomainException(ErrorCode.AUTHENTICATION_ERROR, "Invalid access token", ex);
+        }
+    }
+
+    /** Возвращает время жизни access-токена в секундах. */
+    public long accessTtlSeconds() {
+        return jwtProperties.accessTtl().getSeconds();
+    }
+}

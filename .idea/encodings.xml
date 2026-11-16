@@ -17,6 +17,16 @@
     <file url="file://$PROJECT_DIR$/skinemsya_parent/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/skinemsya_parent/subscriptions/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/skinemsya_parent/users/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/skinemsya_parent_v2/api/external/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/skinemsya_parent_v2/api/internal/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/skinemsya_parent_v2/api/rest/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/skinemsya_parent_v2/api/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/skinemsya_parent_v2/api/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/skinemsya_parent_v2/data/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/skinemsya_parent_v2/impl/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/skinemsya_parent_v2/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/skinemsya_parent_v2/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/skinemsya_parent_v2/test-support/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/resources" charset="UTF-8" />
   </component>

@@ -1,0 +1,87 @@
+openapi: 3.0.3
+info:
+  title: Skinemsya Payments REST API
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    ConfirmDebtorRequest:
+      type: object
+      properties:
+        screenshotFileId:
+          type: integer
+          format: int64
+          minimum: 1
+    PaymentResponse:
+      type: object
+      required:
+        - id
+        - debtId
+        - status
+      properties:
+        id:
+          type: integer
+          format: int64
+        debtId:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum:
+            - CREATED
+            - DEBTOR_CONFIRMED
+            - PAYER_CONFIRMED
+            - CANCELLED
+            - DISPUTED
+        screenshotFileId:
+          type: integer
+          format: int64
+        debtorConfirmedAt:
+          type: string
+          format: date-time
+        payerConfirmedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    PaymentDetailsResponse:
+      type: object
+      required:
+        - debtId
+        - eventId
+        - amountKopecks
+        - creditorId
+        - status
+      properties:
+        debtId:
+          type: integer
+          format: int64
+        eventId:
+          type: integer
+          format: int64
+        amountKopecks:
+          type: integer
+          format: int64
+        creditorId:
+          type: integer
+          format: int64
+        creditorName:
+          type: string
+        paymentDetails:
+          type: string
+        phone:
+          type: string
+        preferredBank:
+          type: string
+        status:
+          type: string
+          enum:
+            - CREATED
+            - DEBTOR_CONFIRMED
+            - PAYER_CONFIRMED
+            - CANCELLED
+            - DISPUTED

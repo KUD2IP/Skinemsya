@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20250704-003-payments" author="skinemsya">
+        <createTable tableName="payments">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="debt_id" type="BIGINT">
+                <constraints nullable="false" unique="true" foreignKeyName="fk_payments_debt"
+                             references="debts(id)"/>
+            </column>
+            <column name="status" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="screenshot_file_id" type="BIGINT"/>
+            <column name="debtor_confirmed_at" type="TIMESTAMPTZ"/>
+            <column name="payer_confirmed_at" type="TIMESTAMPTZ"/>
+            <column name="created_at" type="TIMESTAMPTZ">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMPTZ">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="payer_reminder_jobs">
+            <column name="id" type="BIGSERIAL">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="payment_id" type="BIGINT">
+                <constraints nullable="false" unique="true" foreignKeyName="fk_reminder_payment"
+                             references="payments(id)"/>
+            </column>
+            <column name="scheduled_at" type="TIMESTAMPTZ">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sent_at" type="TIMESTAMPTZ"/>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

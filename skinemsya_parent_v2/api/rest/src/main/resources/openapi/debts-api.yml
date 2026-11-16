@@ -1,0 +1,108 @@
+openapi: 3.0.3
+info:
+  title: Skinemsya Debts REST API
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    DebtResponse:
+      type: object
+      required:
+        - id
+        - eventId
+        - debtorId
+        - creditorId
+        - amountKopecks
+        - status
+      properties:
+        id:
+          type: integer
+          format: int64
+        eventId:
+          type: integer
+          format: int64
+        debtorId:
+          type: integer
+          format: int64
+        creditorId:
+          type: integer
+          format: int64
+        amountKopecks:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum:
+            - UNPAID
+            - PENDING_CONFIRMATION
+            - PAID
+        paymentStatus:
+          type: string
+        screenshotFileId:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    DebtSummaryResponse:
+      type: object
+      required:
+        - totalOwedKopecks
+        - totalToReceiveKopecks
+        - unpaidCount
+        - pendingCount
+      properties:
+        totalOwedKopecks:
+          type: integer
+          format: int64
+        totalToReceiveKopecks:
+          type: integer
+          format: int64
+        unpaidCount:
+          type: integer
+          format: int64
+        pendingCount:
+          type: integer
+          format: int64
+    ParticipantStatusItem:
+      type: object
+      required:
+        - userId
+        - selectionCompleted
+        - debtStatus
+      properties:
+        userId:
+          type: integer
+          format: int64
+        selectionCompleted:
+          type: boolean
+        debtStatus:
+          type: string
+    ParticipantsStatusResponse:
+      type: object
+      required:
+        - totalParticipants
+        - expectedParticipantCount
+        - joinedCount
+        - completedSelections
+        - participants
+      properties:
+        totalParticipants:
+          type: integer
+          format: int64
+        expectedParticipantCount:
+          type: integer
+          format: int64
+        joinedCount:
+          type: integer
+          format: int64
+        completedSelections:
+          type: integer
+          format: int64
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParticipantStatusItem'

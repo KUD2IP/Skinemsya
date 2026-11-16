@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260823-001-groups-telegram-chat-id-active-unique" author="skinemsya">
+        <dropUniqueConstraint tableName="groups" constraintName="uk_groups_telegram_chat_id"/>
+        <sql>
+            CREATE UNIQUE INDEX uk_groups_telegram_chat_id_active
+                ON groups (telegram_chat_id)
+                WHERE deleted_at IS NULL AND telegram_chat_id IS NOT NULL;
+        </sql>
+        <rollback>
+            <sql>DROP INDEX IF EXISTS uk_groups_telegram_chat_id_active;</sql>
+            <addUniqueConstraint tableName="groups" columnNames="telegram_chat_id"
+                                 constraintName="uk_groups_telegram_chat_id"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

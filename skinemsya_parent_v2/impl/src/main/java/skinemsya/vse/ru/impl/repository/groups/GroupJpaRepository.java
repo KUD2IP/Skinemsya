@@ -1,0 +1,55 @@
+package skinemsya.vse.ru.impl.repository.groups;
+
+import java.time.Instant;
+import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import skinemsya.vse.ru.data.entity.groups.GroupEntity;
+
+/** Spring Data репозиторий групп. */
+public interface GroupJpaRepository extends JpaRepository<GroupEntity, Long> {
+
+    Optional<GroupEntity> findByTelegramChatId(Long telegramChatId);
+
+    Optional<GroupEntity> findByInviteCode(String inviteCode);
+
+    @Query(
+            """
+            SELECT g FROM GroupEntity g
+            WHERE g.id IN (SELECT gm.groupId FROM GroupMemberEntity gm WHERE gm.userId = :userId)
+            """)
+    Page<GroupEntity> findAllByMemberUserId(@Param("userId") long userId, Pageable pageable);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(
+            value =
+                    """
+            INSERT INTO groups (name, type, telegram_chat_id, owner_id, invite_code, created_at, updated_at)
+            VALUES (:name, 'CHAT_LINKED', :telegramChatId, :ownerId, :inviteCode, :createdAt, :updatedAt)
+            ON CONFLICT (telegram_chat_id) WHERE deleted_at IS NULL AND telegram_chat_id IS NOT NULL DO NOTHING
+            """,
+            nativeQuery = true)
+    int insertChatLinkedGroupIfAbsent(
+            @Param("name") String name,
+            @Param("telegramChatId") long telegramChatId,
+            @Param("ownerId") long ownerId,
+            @Param("inviteCode") String inviteCode,
+            @Param("createdAt") Instant createdAt,
+            @Param("updatedAt") Instant updatedAt);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(
+            """
+            UPDATE GroupEntity g
+            SET g.deletedAt = :deletedAt, g.updatedAt = :updatedAt
+            WHERE g.id = :groupId
+            """)
+    int markDeleted(
+            @Param("groupId") long groupId,
+            @Param("deletedAt") Instant deletedAt,
+            @Param("updatedAt") Instant updatedAt);
+}

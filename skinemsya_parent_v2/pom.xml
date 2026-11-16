@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>skinemsya.vse.ru</groupId>
+        <artifactId>skinemsya-vse</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>skinemsya-parent</artifactId>
+    <packaging>pom</packaging>
+    <name>Skinemsya Backend V2</name>
+
+    <modules>
+        <module>api</module>
+        <module>data</module>
+        <module>impl</module>
+    </modules>
+
+    <properties>
+        <jackson-databind-nullable.version>0.2.1</jackson-databind-nullable.version>
+        <openapi-generator-maven-plugin.version>7.5.0</openapi-generator-maven-plugin.version>
+        <swagger-annotations.version>2.2.22</swagger-annotations.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.openapitools</groupId>
+                <artifactId>jackson-databind-nullable</artifactId>
+                <version>${jackson-databind-nullable.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>skinemsya.vse.ru</groupId>
+                <artifactId>skinemsya-api-internal</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>skinemsya.vse.ru</groupId>
+                <artifactId>skinemsya-api-rest</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>skinemsya.vse.ru</groupId>
+                <artifactId>skinemsya-api-external</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>skinemsya.vse.ru</groupId>
+                <artifactId>skinemsya-data</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>skinemsya.vse.ru</groupId>
+                <artifactId>skinemsya-api-internal</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+            </dependency>
+            <dependency>
+                <groupId>skinemsya.vse.ru</groupId>
+                <artifactId>skinemsya-api-rest</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+            </dependency>
+            <dependency>
+                <groupId>skinemsya.vse.ru</groupId>
+                <artifactId>skinemsya-data</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+            </dependency>
+            <dependency>
+                <groupId>io.swagger.core.v3</groupId>
+                <artifactId>swagger-annotations</artifactId>
+                <version>${swagger-annotations.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-checkstyle-plugin</artifactId>
+                    <configuration>
+                        <configLocation>${maven.multiModuleProjectDirectory}/../checkstyle.xml</configLocation>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>com.github.spotbugs</groupId>
+                    <artifactId>spotbugs-maven-plugin</artifactId>
+                    <configuration>
+                        <excludeFilterFile>${maven.multiModuleProjectDirectory}/../spotbugs-exclude.xml</excludeFilterFile>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.openapitools</groupId>
+                    <artifactId>openapi-generator-maven-plugin</artifactId>
+                    <version>${openapi-generator-maven-plugin.version}</version>
+                    <configuration>
+                        <configOptions>
+                            <useSpringBoot3>true</useSpringBoot3>
+                            <useJakartaEe>true</useJakartaEe>
+                            <useBeanValidation>true</useBeanValidation>
+                        </configOptions>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>

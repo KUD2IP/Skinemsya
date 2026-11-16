@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <include file="db/changelog/changes/20250616-001-users.xml"/>
+    <include file="db/changelog/changes/20250616-002-refresh-tokens.xml"/>
+    <include file="db/changelog/changes/20250628-001-groups.xml"/>
+    <include file="db/changelog/changes/20250628-002-events.xml"/>
+    <include file="db/changelog/changes/20250704-001-files.xml"/>
+    <include file="db/changelog/changes/20250704-002-event-selection-completed.xml"/>
+    <include file="db/changelog/changes/20250704-003-debts.xml"/>
+    <include file="db/changelog/changes/20250704-003-payments.xml"/>
+    <include file="db/changelog/changes/20250704-004-payments-screenshot-fk.xml"/>
+    <include file="db/changelog/changes/20250704-005-user-preferred-bank.xml"/>
+    <include file="db/changelog/changes/20260822-001-event-expected-participants.xml"/>
+    <include file="db/changelog/changes/20260823-001-groups-telegram-chat-id-active-unique.xml"/>
+    <include file="db/changelog/changes/20261108-002-groups-invite-code.xml"/>
+    <include file="db/changelog/changes/20261108-002-events-invite-code.xml"/>
+    <include file="db/changelog/changes/20261112-001-user-photo-url.xml"/>
+
+</databaseChangeLog>

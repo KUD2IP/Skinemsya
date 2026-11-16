@@ -1,0 +1,45 @@
+openapi: 3.0.3
+info:
+  title: Skinemsya Users REST API
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    UserResponse:
+      type: object
+      required:
+        - id
+        - telegramUserId
+      properties:
+        id:
+          type: integer
+          format: int64
+        telegramUserId:
+          type: integer
+          format: int64
+        displayName:
+          type: string
+        paymentDetails:
+          type: string
+        phone:
+          type: string
+        preferredBank:
+          type: string
+        notificationSettings:
+          type: string
+        photoUrl:
+          type: string
+    UpdateProfileRequest:
+      type: object
+      properties:
+        paymentDetails:
+          type: string
+          maxLength: 2000
+        phone:
+          type: string
+          maxLength: 20
+        preferredBank:
+          type: string
+          maxLength: 100
+        notificationSettings:
+          type: string
